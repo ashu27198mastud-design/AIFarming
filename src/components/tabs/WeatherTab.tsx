@@ -65,15 +65,15 @@ export default function WeatherTab({ t, coords }: Props) {
           <span className="text-sm font-bold">{alert.text}</span>
         </div>
       )) : (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">No threshold-based weather alerts in the next 7 days.</div>
+        <div className="rounded-3xl border border-[#D8E0E8] bg-[#F3F6F9] p-4 text-sm font-bold text-[#52687C]">No threshold-based weather alerts in the next 7 days.</div>
       )}
 
       {current && (
         <div className="m3-card text-center">
           <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-500">GPS {coords.lat.toFixed(3)}, {coords.lng.toFixed(3)} · {forecast?.dataSource}</span>
           <div className="mb-2 flex items-center justify-center gap-4">
-            <CloudRain className="h-16 w-16 text-zinc-700" />
-            <div><h2 className="text-4xl font-extrabold text-zinc-800">{Math.round(current.temperatureC)}°C</h2><p className="text-sm font-semibold text-zinc-500">Live hourly forecast</p></div>
+            <CloudRain className="h-16 w-16 text-[#61788D]" />
+            <div><h2 className="text-4xl font-extrabold text-[#242824]">{Math.round(current.temperatureC)}°C</h2><p className="text-sm font-semibold text-zinc-500">Live hourly forecast</p></div>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2 border-t border-zinc-100 pt-4">
             <div><Wind className="mx-auto h-4 w-4 text-zinc-500" /><span className="block text-xs font-bold text-zinc-400">Wind</span><span className="text-sm font-extrabold text-zinc-700">{Math.round(current.windSpeedKmh)} km/h</span></div>
@@ -86,7 +86,7 @@ export default function WeatherTab({ t, coords }: Props) {
       <div className="m3-card space-y-3">
         <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">{t.forecast}</span>
         {forecast?.daily.map((day) => (
-          <div key={day.date} className="flex items-center justify-between border-b border-zinc-50 py-2 text-sm font-bold text-zinc-700 last:border-0">
+          <div key={day.date} className="flex items-center justify-between border-b border-zinc-100 py-2 text-sm font-bold text-zinc-700 last:border-0">
             <span>{new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}</span>
             <span className="flex items-center gap-2"><span>{weatherIcon(day)}</span><span className="text-zinc-500">Rain {Math.round(day.precipProbability)}%</span></span>
             <span className="font-mono text-xs">{Math.round(day.maxTempC)}° / {Math.round(day.minTempC)}°</span>
