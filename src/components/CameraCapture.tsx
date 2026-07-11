@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Camera, Upload, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Camera, ImagePlus, RotateCcw, Upload, X } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 export type PreparedMedia = {
@@ -15,6 +15,7 @@ type Props = {
   value: PreparedMedia | null;
   onChange: (media: PreparedMedia | null) => void;
   disabled?: boolean;
+  captureToken?: number;
 };
 
 function canvasToBlob(canvas: HTMLCanvasElement, quality = 0.86): Promise<Blob> {
@@ -142,10 +143,22 @@ async function prepareImage(file: File): Promise<PreparedMedia> {
   };
 }
 
-export default function CameraCapture({ t, value, onChange, disabled }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
+export default function CameraCapture({ t, value, onChange, disabled, captureToken = 0 }: Props) {
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const lastCaptureTokenRef = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraOpen(false);
+  };
 
   const handleFile = async (file: File) => {
     setError(null);
@@ -162,14 +175,92 @@ export default function CameraCapture({ t, value, onChange, disabled }: Props) {
       onChange(null);
     } finally {
       setPreparing(false);
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
+      if (galleryInputRef.current) galleryInputRef.current.value = '';
     }
   };
 
+  const startCamera = async () => {
+    if (disabled || preparing) return;
+    setError(null);
+
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera API unavailable');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+      window.requestAnimationFrame(() => {
+        if (!videoRef.current) return;
+        videoRef.current.srcObject = stream;
+        void videoRef.current.play().catch(() => undefined);
+      });
+    } catch (caught) {
+      console.warn('Live camera unavailable, falling back to device capture:', caught);
+      cameraInputRef.current?.click();
+    }
+  };
+
+  const captureFrame = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setError('Camera is still starting. Please try again.');
+      return;
+    }
+
+    const maxDimension = 1200;
+    const scale = Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await canvasToBlob(canvas, 0.9);
+    stopCamera();
+    await handleFile(new File([blob], `kisanmitra-camera-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+  };
+
+  useEffect(() => {
+    if (captureToken > 0 && captureToken !== lastCaptureTokenRef.current) {
+      lastCaptureTokenRef.current = captureToken;
+      const timer = window.setTimeout(() => void startCamera(), 80);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [captureToken]);
+
+  useEffect(() => () => stopCamera(), []);
+
+  if (cameraOpen) {
+    return (
+      <div className="camera-viewfinder">
+        <video ref={videoRef} autoPlay playsInline muted className="viewfinder-video" aria-label="Live crop camera" />
+        <div className="absolute inset-x-0 bottom-5 z-10 flex items-center justify-center gap-5 px-5">
+          <button type="button" onClick={stopCamera} className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md" aria-label="Close camera">
+            <X className="h-5 w-5" />
+          </button>
+          <button type="button" onClick={() => void captureFrame()} className="camera-shutter" aria-label="Take crop photo">
+            <Camera className="h-7 w-7 text-[#2E7D32]" />
+          </button>
+          <button type="button" onClick={() => { stopCamera(); window.setTimeout(() => void startCamera(), 120); }} className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md" aria-label="Restart camera">
+            <RotateCcw className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (value) {
     return (
-      <div className="relative h-64 overflow-hidden rounded-2xl bg-black">
+      <div className="relative h-72 overflow-hidden rounded-[28px] border border-white/80 bg-black shadow-[0_20px_45px_rgba(20,60,27,0.18)]">
         <img src={value.previewUrl} alt="Crop preview" className="h-full w-full object-cover" />
-        <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full bg-black/65 text-white" aria-label="Remove image">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-white/10" />
+        <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white shadow-lg backdrop-blur-md" aria-label="Remove image">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -177,17 +268,28 @@ export default function CameraCapture({ t, value, onChange, disabled }: Props) {
   }
 
   return (
-    <div className="m3-card border-2 border-dashed border-[#2E7D32]/25 p-8 text-center">
-      <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F5E9] text-[#2E7D32]">
-        <Camera className="h-10 w-10" />
-      </div>
-      <h2 className="mb-2 text-xl font-black text-zinc-800">{t.takePhoto}</h2>
-      <p className="mb-6 text-sm font-medium text-zinc-500">स्पष्ट पत्ती, तना किंवा संपूर्ण पौधा दिखाएं / Capture a clear leaf, stem or whole plant.</p>
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" className="hidden" onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])} />
-      <button type="button" disabled={disabled || preparing} onClick={() => inputRef.current?.click()} className="btn-m3-primary w-full">
-        <Upload className="h-5 w-5" /> {preparing ? 'Preparing media...' : t.chooseGallery}
+    <div className="m3-card border-dashed p-7 text-center">
+      <button type="button" onClick={() => void startCamera()} disabled={disabled || preparing} className="camera-launch-orb animate-camera-pulse mx-auto mb-5" aria-label={t.takePhoto}>
+        <Camera className="relative z-10 h-11 w-11" />
       </button>
-      {error && <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</div>}
+      <span className="section-kicker mb-2">AI Crop Vision</span>
+      <h2 className="mb-2 text-[22px] font-extrabold text-zinc-900">{t.takePhoto}</h2>
+      <p className="mx-auto mb-6 max-w-[330px] text-sm font-semibold leading-relaxed text-zinc-500">स्पष्ट पत्ती, तना किंवा संपूर्ण पौधा दिखाएं / Capture a clear leaf, stem or whole plant.</p>
+
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])} />
+      <input ref={galleryInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" className="hidden" onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])} />
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="btn-m3-primary w-full">
+          <Camera className="h-5 w-5" /> {preparing ? 'Preparing...' : t.takePhoto}
+        </button>
+        <button type="button" disabled={disabled || preparing} onClick={() => galleryInputRef.current?.click()} className="btn-m3-secondary w-full">
+          {preparing ? <Upload className="h-5 w-5 animate-pulse" /> : <ImagePlus className="h-5 w-5" />} {t.chooseGallery}
+        </button>
+      </div>
+
+      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">Photo, gallery image or video up to 30 seconds</p>
+      {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50/90 p-3 text-sm font-semibold text-red-700 shadow-sm">{error}</div>}
     </div>
   );
 }
