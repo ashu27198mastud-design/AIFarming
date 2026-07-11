@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Minus, ShieldCheck, TrendingDown, TrendingUp } from 'lucide-react';
+import { CalendarDays, Minus, ShieldCheck, TrendingDown, TrendingUp } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 const CROPS = [
@@ -51,6 +51,22 @@ function hint(direction: MandiResponse['trend']['direction']): string {
   if (direction === 'rising') return 'भाव बढ़ रहे हैं — गुणवत्ता और कटाई की तैयारी सही हो तो बिक्री पर विचार करें / Prices are rising — consider selling if crop quality and harvest readiness are suitable.';
   if (direction === 'falling') return 'भाव नीचे जा रहे हैं — भंडारण लागत और खराब होने के जोखिम की तुलना करें / Prices are falling — compare storage cost against spoilage risk before waiting.';
   return 'भाव स्थिर हैं — निकटतम मंडी, परिवहन लागत और फसल की परिपक्वता की तुलना करें / Prices are stable — compare nearby markets, transport cost and crop maturity.';
+}
+
+function dailyBriefing(current: MandiResponse, record: MandiRecord): string[] {
+  const trendLine = current.trend.direction === 'rising'
+    ? `${record.commodity} is up ${Math.abs(current.trend.percent)}%: prepare graded produce and compare buyers.`
+    : current.trend.direction === 'falling'
+      ? `${record.commodity} is down ${Math.abs(current.trend.percent)}%: check storage and spoilage cost before waiting.`
+      : `${record.commodity} prices are stable: transport cost may decide the best mandi.`;
+  const spread = record.maxPrice - record.minPrice;
+  const spreadLine = spread > record.modalPrice * 0.25
+    ? 'Wide price range today: quality grading and buyer comparison can materially change your return.'
+    : 'Price range is relatively tight: prioritize the nearest reliable buyer and lower transport cost.';
+  const sourceLine = current.dataSource === 'live'
+    ? `Live mandi records refreshed ${new Date(current.fetchedAt).toLocaleDateString('en-IN')}.`
+    : `Latest live record is unavailable; showing last-known data dated ${record.arrivalDate}.`;
+  return [trendLine, spreadLine, sourceLine];
 }
 
 function marketDecision(current: MandiResponse, record: MandiRecord): { label: string; detail: string; score: number; tone: string } {
@@ -113,6 +129,7 @@ export default function MandiTab({ t, market }: Props) {
     return [...current.records].sort((a, b) => parseArrivalDate(b.arrivalDate) - parseArrivalDate(a.arrivalDate))[0];
   }, [current]);
   const decision = current && record ? marketDecision(current, record) : null;
+  const news = current && record ? dailyBriefing(current, record) : [];
 
   const TrendIcon = current?.trend.direction === 'rising' ? TrendingUp : current?.trend.direction === 'falling' ? TrendingDown : Minus;
 
@@ -135,6 +152,19 @@ export default function MandiTab({ t, market }: Props) {
 
       {current && record && decision && (
         <>
+          <section className="m3-card space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="section-kicker"><CalendarDays className="h-3.5 w-3.5 text-[#61788D]" /> Today&apos;s mandi news</span>
+              <span className="metric-pill">{new Date(current.fetchedAt).toLocaleDateString('en-IN')}</span>
+            </div>
+            {news.map((item, index) => (
+              <div key={item} className="flex gap-3 border-b border-zinc-100 pb-3 text-sm font-semibold leading-relaxed text-zinc-700 last:border-0 last:pb-0">
+                <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#EEF2F5] text-[11px] font-black text-[#52687A]">{index + 1}</span>
+                <p>{item}</p>
+              </div>
+            ))}
+          </section>
+
           <div className={`rounded-3xl border p-4 ${decision.tone === 'danger' ? 'border-rose-200 bg-rose-50 text-rose-800' : decision.tone === 'watch' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-[#D9E0DB] bg-[#F5F7F5] text-[#4B5750]'}`}>
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0" />
