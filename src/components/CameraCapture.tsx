@@ -558,9 +558,13 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       </div>
 
       <div className="capture-actions">
-        <label className={`capture-action capture-action-primary ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
+        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="capture-action capture-action-primary">
           <Camera className="h-5 w-5" />
-          <span>{preparing ? 'Preparing photo...' : 'Open camera'}</span>
+          <span>Start live camera</span>
+        </button>
+        <label className={`capture-action ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
+          <Camera className="h-5 w-5" />
+          <span>Take phone photo</span>
           <input
             type="file"
             accept="image/*"
@@ -587,10 +591,6 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
             }}
           />
         </label>
-        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="capture-action">
-          <Camera className="h-5 w-5" />
-          <span>Use live webcam</span>
-        </button>
       </div>
 
       <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">The diagnosis is guidance only. Confirm severe cases with a local agronomist.</p>
