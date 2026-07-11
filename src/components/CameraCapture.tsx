@@ -1,13 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Camera, ImagePlus, RotateCcw, Upload, X } from 'lucide-react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+import { Camera, ImagePlus, RefreshCcw, RotateCcw, Upload, X } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 export type PreparedMedia = {
   file: File;
   previewUrl: string;
   previewDataUrl: string;
+};
+
+export type CameraCaptureHandle = {
+  openCamera: () => void;
+  openDeviceCamera: () => void;
 };
 
 type Props = {
@@ -20,7 +32,11 @@ type Props = {
 
 function canvasToBlob(canvas: HTMLCanvasElement, quality = 0.86): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Unable to create image frame'))), 'image/jpeg', quality);
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Unable to create image frame'))),
+      'image/jpeg',
+      quality,
+    );
   });
 }
 
@@ -34,10 +50,12 @@ function sharpnessScore(canvas: HTMLCanvasElement): number {
   const { width, height } = canvas;
   const data = ctx.getImageData(0, 0, width, height).data;
   const gray = new Float32Array(width * height);
+
   for (let i = 0; i < gray.length; i += 1) {
     const offset = i * 4;
     gray[i] = data[offset] * 0.299 + data[offset + 1] * 0.587 + data[offset + 2] * 0.114;
   }
+
   let sum = 0;
   let sumSquares = 0;
   let count = 0;
@@ -50,6 +68,7 @@ function sharpnessScore(canvas: HTMLCanvasElement): number {
       count += 1;
     }
   }
+
   if (!count) return 0;
   const mean = sum / count;
   return sumSquares / count - mean * mean;
@@ -143,7 +162,10 @@ async function prepareImage(file: File): Promise<PreparedMedia> {
   };
 }
 
-export default function CameraCapture({ t, value, onChange, disabled, captureToken = 0 }: Props) {
+const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapture(
+  { t, value, onChange, disabled, captureToken = 0 },
+  ref,
+) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -152,16 +174,28 @@ export default function CameraCapture({ t, value, onChange, disabled, captureTok
   const [error, setError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
+  const [showDeviceFallback, setShowDeviceFallback] = useState(false);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    setActiveStream(null);
+    setCameraReady(false);
     if (videoRef.current) videoRef.current.srcObject = null;
     setCameraOpen(false);
-  };
+  }, []);
 
-  const handleFile = async (file: File) => {
+  const openDeviceCamera = useCallback(() => {
     setError(null);
+    setShowDeviceFallback(false);
+    cameraInputRef.current?.click();
+  }, []);
+
+  const handleFile = useCallback(async (file: File) => {
+    setError(null);
+    setShowDeviceFallback(false);
     if (file.size > 25 * 1024 * 1024) {
       setError('File size is too large. Maximum 25 MB.');
       return;
@@ -178,14 +212,28 @@ export default function CameraCapture({ t, value, onChange, disabled, captureTok
       if (cameraInputRef.current) cameraInputRef.current.value = '';
       if (galleryInputRef.current) galleryInputRef.current.value = '';
     }
-  };
+  }, [onChange]);
 
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     if (disabled || preparing) return;
     setError(null);
+    setShowDeviceFallback(false);
+
+    if (!window.isSecureContext) {
+      setError('Live camera requires a secure HTTPS connection. Use the device camera button below.');
+      setShowDeviceFallback(true);
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      openDeviceCamera();
+      return;
+    }
+
+    stopCamera();
+    setCameraOpen(true);
 
     try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera API unavailable');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
@@ -195,22 +243,47 @@ export default function CameraCapture({ t, value, onChange, disabled, captureTok
         },
       });
       streamRef.current = stream;
-      setCameraOpen(true);
-      window.requestAnimationFrame(() => {
-        if (!videoRef.current) return;
-        videoRef.current.srcObject = stream;
-        void videoRef.current.play().catch(() => undefined);
-      });
+      setActiveStream(stream);
     } catch (caught) {
-      console.warn('Live camera unavailable, falling back to device capture:', caught);
-      cameraInputRef.current?.click();
+      const cameraError = caught as DOMException;
+      stopCamera();
+      setShowDeviceFallback(true);
+      if (cameraError?.name === 'NotAllowedError' || cameraError?.name === 'SecurityError') {
+        setError('Camera permission was blocked. Allow camera access in browser settings, or use Open device camera.');
+      } else if (cameraError?.name === 'NotFoundError') {
+        setError('No camera was detected. Use gallery upload or another device.');
+      } else if (cameraError?.name === 'NotReadableError') {
+        setError('The camera is being used by another app. Close it and try again.');
+      } else {
+        setError('Live camera could not start. Use the device camera option below.');
+      }
     }
-  };
+  }, [disabled, openDeviceCamera, preparing, stopCamera]);
 
-  const captureFrame = async () => {
+  useEffect(() => {
+    if (!cameraOpen || !activeStream || !videoRef.current) return undefined;
     const video = videoRef.current;
-    if (!video || !video.videoWidth || !video.videoHeight) {
-      setError('Camera is still starting. Please try again.');
+    video.srcObject = activeStream;
+
+    const playVideo = async () => {
+      try {
+        await video.play();
+        setCameraReady(true);
+      } catch {
+        setCameraReady(false);
+        setError('Camera opened but preview could not start. Tap restart or use the device camera.');
+      }
+    };
+
+    video.addEventListener('loadedmetadata', playVideo);
+    if (video.readyState >= 1) void playVideo();
+    return () => video.removeEventListener('loadedmetadata', playVideo);
+  }, [activeStream, cameraOpen]);
+
+  const captureFrame = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video || !cameraReady || !video.videoWidth || !video.videoHeight) {
+      setError('Camera is still starting. Please wait a moment and try again.');
       return;
     }
 
@@ -223,31 +296,63 @@ export default function CameraCapture({ t, value, onChange, disabled, captureTok
     const blob = await canvasToBlob(canvas, 0.9);
     stopCamera();
     await handleFile(new File([blob], `kisanmitra-camera-${Date.now()}.jpg`, { type: 'image/jpeg' }));
-  };
+  }, [cameraReady, handleFile, stopCamera]);
+
+  useImperativeHandle(ref, () => ({
+    openCamera: () => void startCamera(),
+    openDeviceCamera,
+  }), [openDeviceCamera, startCamera]);
 
   useEffect(() => {
     if (captureToken > 0 && captureToken !== lastCaptureTokenRef.current) {
       lastCaptureTokenRef.current = captureToken;
-      const timer = window.setTimeout(() => void startCamera(), 80);
-      return () => window.clearTimeout(timer);
+      void startCamera();
     }
-    return undefined;
-  }, [captureToken]);
+  }, [captureToken, startCamera]);
 
-  useEffect(() => () => stopCamera(), []);
+  useEffect(() => () => stopCamera(), [stopCamera]);
+
+  const hiddenInputs = (
+    <>
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onClick={(event) => { event.currentTarget.value = ''; }}
+        onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+        className="hidden"
+        onClick={(event) => { event.currentTarget.value = ''; }}
+        onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])}
+      />
+    </>
+  );
 
   if (cameraOpen) {
     return (
       <div className="camera-viewfinder">
+        {hiddenInputs}
         <video ref={videoRef} autoPlay playsInline muted className="viewfinder-video" aria-label="Live crop camera" />
+        {!cameraReady && (
+          <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center bg-[#101311]/75 px-8 text-center text-white backdrop-blur-sm">
+            <RefreshCcw className="mb-3 h-8 w-8 animate-spin" />
+            <p className="text-sm font-bold">Starting camera…</p>
+          </div>
+        )}
         <div className="absolute inset-x-0 bottom-5 z-10 flex items-center justify-center gap-5 px-5">
-          <button type="button" onClick={stopCamera} className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md" aria-label="Close camera">
+          <button type="button" onClick={stopCamera} className="camera-control" aria-label="Close camera">
             <X className="h-5 w-5" />
           </button>
-          <button type="button" onClick={() => void captureFrame()} className="camera-shutter" aria-label="Take crop photo">
-            <Camera className="h-7 w-7 text-[#2E7D32]" />
+          <button type="button" onClick={() => void captureFrame()} disabled={!cameraReady} className="camera-shutter" aria-label="Take crop photo">
+            <Camera className="h-7 w-7" />
           </button>
-          <button type="button" onClick={() => { stopCamera(); window.setTimeout(() => void startCamera(), 120); }} className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md" aria-label="Restart camera">
+          <button type="button" onClick={() => { stopCamera(); window.setTimeout(() => void startCamera(), 80); }} className="camera-control" aria-label="Restart camera">
             <RotateCcw className="h-5 w-5" />
           </button>
         </div>
@@ -257,10 +362,11 @@ export default function CameraCapture({ t, value, onChange, disabled, captureTok
 
   if (value) {
     return (
-      <div className="relative h-72 overflow-hidden rounded-[28px] border border-white/80 bg-black shadow-[0_20px_45px_rgba(20,60,27,0.18)]">
+      <div className="relative h-72 overflow-hidden rounded-[28px] border border-white/80 bg-black shadow-[0_22px_50px_rgba(34,38,36,0.18)]">
+        {hiddenInputs}
         <img src={value.previewUrl} alt="Crop preview" className="h-full w-full object-cover" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-white/10" />
-        <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white shadow-lg backdrop-blur-md" aria-label="Remove image">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/24 via-transparent to-white/10" />
+        <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-md" aria-label="Remove image">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -269,27 +375,33 @@ export default function CameraCapture({ t, value, onChange, disabled, captureTok
 
   return (
     <div className="m3-card border-dashed p-7 text-center">
+      {hiddenInputs}
       <button type="button" onClick={() => void startCamera()} disabled={disabled || preparing} className="camera-launch-orb animate-camera-pulse mx-auto mb-5" aria-label={t.takePhoto}>
         <Camera className="relative z-10 h-11 w-11" />
       </button>
       <span className="section-kicker mb-2">AI Crop Vision</span>
-      <h2 className="mb-2 text-[22px] font-extrabold text-zinc-900">{t.takePhoto}</h2>
-      <p className="mx-auto mb-6 max-w-[330px] text-sm font-semibold leading-relaxed text-zinc-500">स्पष्ट पत्ती, तना किंवा संपूर्ण पौधा दिखाएं / Capture a clear leaf, stem or whole plant.</p>
-
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])} />
-      <input ref={galleryInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" className="hidden" onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])} />
+      <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">{t.takePhoto}</h2>
+      <p className="mx-auto mb-6 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">स्पष्ट पत्ती, तना किंवा संपूर्ण पौधा दिखाएं / Capture a clear leaf, stem or whole plant.</p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="btn-m3-primary w-full">
-          <Camera className="h-5 w-5" /> {preparing ? 'Preparing...' : t.takePhoto}
+          <Camera className="h-5 w-5" /> {preparing ? 'Preparing…' : t.takePhoto}
         </button>
         <button type="button" disabled={disabled || preparing} onClick={() => galleryInputRef.current?.click()} className="btn-m3-secondary w-full">
           {preparing ? <Upload className="h-5 w-5 animate-pulse" /> : <ImagePlus className="h-5 w-5" />} {t.chooseGallery}
         </button>
       </div>
 
-      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">Photo, gallery image or video up to 30 seconds</p>
-      {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50/90 p-3 text-sm font-semibold text-red-700 shadow-sm">{error}</div>}
+      {showDeviceFallback && (
+        <button type="button" onClick={openDeviceCamera} className="mt-3 w-full rounded-2xl border border-[#C9AE7B]/40 bg-[#FBF6EC] px-4 py-3 text-sm font-extrabold text-[#5B4B32] shadow-sm">
+          <Camera className="mr-2 inline h-4 w-4" /> Open device camera
+        </button>
+      )}
+
+      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">Live camera, device camera, gallery image or video up to 30 seconds</p>
+      {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm">{error}</div>}
     </div>
   );
-}
+});
+
+export default CameraCapture;
