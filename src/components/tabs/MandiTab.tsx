@@ -32,7 +32,7 @@ type MandiResponse = {
 
 type Props = {
   t: TranslationSet;
-  market: { state: string; district: string };
+  market: { state: string; district: string; distanceKm: number };
 };
 
 function parseArrivalDate(value: string): number {
@@ -134,7 +134,15 @@ export default function MandiTab({ t, market }: Props) {
   const TrendIcon = current?.trend.direction === 'rising' ? TrendingUp : current?.trend.direction === 'falling' ? TrendingDown : Minus;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <section className="mandi-location-bar">
+        <div>
+          <span className="section-kicker">GPS market intelligence</span>
+          <h2 className="mt-2 text-2xl font-black text-[#202723]">{market.district}, {market.state}</h2>
+          <p className="mt-1 text-sm font-semibold text-zinc-600">Nearest supported mandi district · approximately {market.distanceKm} km from your GPS location</p>
+        </div>
+        <span className="live-location-dot">GPS linked</span>
+      </section>
       <div className="flex flex-wrap gap-2">
         {CROPS.map((crop) => (
           <button
