@@ -44,6 +44,15 @@ function canvasToDataUrl(canvas: HTMLCanvasElement, quality = 0.82): string {
   return canvas.toDataURL('image/jpeg', quality);
 }
 
+function shouldUseNativeCamera(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const userAgent = navigator.userAgent || '';
+  const mobileUserAgent = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+  const iPadDesktopMode = /Macintosh/i.test(userAgent) && navigator.maxTouchPoints > 1;
+  const coarseTouch = window.matchMedia?.('(pointer: coarse)').matches && navigator.maxTouchPoints > 0;
+  return mobileUserAgent || iPadDesktopMode || coarseTouch;
+}
+
 function sharpnessScore(canvas: HTMLCanvasElement): number {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return 0;
@@ -228,7 +237,20 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   const openDeviceCamera = useCallback(() => {
     setError(null);
     setShowDeviceFallback(false);
-    cameraInputRef.current?.click();
+    const input = cameraInputRef.current;
+    if (!input) {
+      setError('Device camera control is unavailable. Please reload and try again.');
+      return;
+    }
+
+    input.value = '';
+    const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+    try {
+      if (typeof pickerInput.showPicker === 'function') pickerInput.showPicker();
+      else input.click();
+    } catch {
+      input.click();
+    }
   }, []);
 
   const handleFile = useCallback(async (file: File) => {
@@ -257,6 +279,14 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
     setError(null);
     setShowDeviceFallback(false);
     setCaptureComplete(false);
+
+    // Mobile browsers are much more reliable when the operating system camera
+    // handles capture through an input with capture="environment".
+    if (shouldUseNativeCamera()) {
+      stopCamera();
+      openDeviceCamera();
+      return;
+    }
 
     if (!window.isSecureContext) {
       setError('Live camera requires a secure HTTPS connection. Use the device camera button below.');
@@ -396,17 +426,27 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         type="file"
         accept="image/*"
         capture="environment"
-        className="hidden"
+        className="fixed left-[-10000px] top-0 h-px w-px opacity-0"
+        aria-hidden="true"
+        tabIndex={-1}
         onClick={(event) => { event.currentTarget.value = ''; }}
-        onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void handleFile(file);
+        }}
       />
       <input
         ref={galleryInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
-        className="hidden"
+        className="fixed left-[-10000px] top-0 h-px w-px opacity-0"
+        aria-hidden="true"
+        tabIndex={-1}
         onClick={(event) => { event.currentTarget.value = ''; }}
-        onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void handleFile(file);
+        }}
       />
     </>
   );
@@ -475,7 +515,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {showDeviceFallback && (
           <button
             type="button"
-            onClick={() => { stopCamera(); window.setTimeout(openDeviceCamera, 80); }}
+            onClick={() => { stopCamera(); openDeviceCamera(); }}
             className="absolute bottom-24 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/30 bg-black/62 px-4 py-2.5 text-xs font-extrabold text-white shadow-lg backdrop-blur-md"
           >
             Open device camera
@@ -517,13 +557,11 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         </button>
       </div>
 
-      {showDeviceFallback && (
-        <button type="button" onClick={openDeviceCamera} className="mt-3 w-full rounded-2xl border border-[#C9AE7B]/40 bg-[#FBF6EC] px-4 py-3 text-sm font-extrabold text-[#5B4B32] shadow-sm">
-          <Camera className="mr-2 inline h-4 w-4" /> Open device camera
-        </button>
-      )}
+      <button type="button" onClick={openDeviceCamera} disabled={disabled || preparing} className="mt-3 w-full rounded-2xl border border-[#C9AE7B]/40 bg-[#FBF6EC] px-4 py-3 text-sm font-extrabold text-[#5B4B32] shadow-sm">
+        <Camera className="mr-2 inline h-4 w-4" /> फोन कैमरा खोलें / Open phone camera
+      </button>
 
-      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">Live camera, device camera, gallery image or video up to 30 seconds</p>
+      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">On phones, Take Photo uses the device camera for reliable capture</p>
       {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm">{error}</div>}
     </div>
   );
