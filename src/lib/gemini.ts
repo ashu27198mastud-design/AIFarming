@@ -174,3 +174,78 @@ function getDemoAssistantResponse(prompt: string): string {
   }
   return 'नमस्कार! मैं किसानमित्र हूँ। मैं फसल स्वास्थ्य, मौसम और बाजार निर्णय में मदद कर सकता हूँ।\n\nHello! I am KisanMitra. I can assist with crop health, weather, and market decisions.';
 }
+
+
+export type SoilReportAnalysis = {
+  soilType: 'black' | 'red' | 'alluvial' | 'sandy' | 'clay' | 'unknown';
+  ph: number | null;
+  nitrogen: string;
+  phosphorus: string;
+  potassium: string;
+  organicCarbon: string;
+  summary: string;
+  warnings: string[];
+  recommendations: string[];
+  confidence: number;
+  isFallback?: boolean;
+};
+
+export async function analyzeSoilReport(fileBase64: string, mimeType: string): Promise<SoilReportAnalysis> {
+  const fallback: SoilReportAnalysis = {
+    soilType: 'unknown',
+    ph: null,
+    nitrogen: 'Not detected',
+    phosphorus: 'Not detected',
+    potassium: 'Not detected',
+    organicCarbon: 'Not detected',
+    summary: 'The report could not be read automatically. Enter soil type and pH manually.',
+    warnings: ['Do not choose fertilizer dosage until the report is reviewed.'],
+    recommendations: ['Ask a soil-testing lab or local agriculture officer to confirm the report.'],
+    confidence: 0,
+    isFallback: true,
+  };
+  if (!genAI) return fallback;
+
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    safetySettings: GEMINI_SAFETY_SETTINGS,
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+  });
+
+  const prompt = `Read this Indian agricultural soil-test report. Extract only values genuinely visible in the document.
+Return JSON with exactly:
+{
+  "soilType": "black|red|alluvial|sandy|clay|unknown",
+  "ph": 0,
+  "nitrogen": "visible value and status, or Not detected",
+  "phosphorus": "visible value and status, or Not detected",
+  "potassium": "visible value and status, or Not detected",
+  "organicCarbon": "visible value and status, or Not detected",
+  "summary": "one plain-language sentence",
+  "warnings": ["maximum three evidence-based warnings"],
+  "recommendations": ["maximum three safe next steps, no invented fertilizer dosage"],
+  "confidence": 0
+}
+If text is unclear, use null/Not detected and lower confidence. Never invent readings or fertilizer dosage.`;
+
+  try {
+    const result = await model.generateContent([prompt, { inlineData: { data: fileBase64, mimeType } }]);
+    const raw = JSON.parse(result.response.text()) as Partial<SoilReportAnalysis>;
+    const allowed = ['black', 'red', 'alluvial', 'sandy', 'clay', 'unknown'];
+    return {
+      soilType: allowed.includes(raw.soilType || '') ? raw.soilType as SoilReportAnalysis['soilType'] : 'unknown',
+      ph: typeof raw.ph === 'number' && raw.ph >= 0 && raw.ph <= 14 ? raw.ph : null,
+      nitrogen: raw.nitrogen || 'Not detected',
+      phosphorus: raw.phosphorus || 'Not detected',
+      potassium: raw.potassium || 'Not detected',
+      organicCarbon: raw.organicCarbon || 'Not detected',
+      summary: raw.summary || fallback.summary,
+      warnings: Array.isArray(raw.warnings) ? raw.warnings.slice(0, 3) : [],
+      recommendations: Array.isArray(raw.recommendations) ? raw.recommendations.slice(0, 3) : [],
+      confidence: typeof raw.confidence === 'number' ? Math.max(0, Math.min(100, raw.confidence)) : 0,
+    };
+  } catch (error) {
+    console.error('Soil report analysis failed:', error);
+    return fallback;
+  }
+}
