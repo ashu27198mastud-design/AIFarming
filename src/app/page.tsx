@@ -1,7 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, ChevronDown, Navigation, RefreshCw, Sparkles, Sprout } from 'lucide-react';
+import {
+  AlertTriangle,
+  BookOpen,
+  BrainCircuit,
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  FlaskConical,
+  Leaf,
+  LineChart,
+  Navigation,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  Sprout,
+  TrendingUp,
+} from 'lucide-react';
 import BottomNav, { type TabId } from '@/components/BottomNav';
 import HomeTab, {
   type HomeTabHandle,
@@ -10,8 +26,10 @@ import HomeTab, {
 import WeatherTab from '@/components/tabs/WeatherTab';
 import MandiTab from '@/components/tabs/MandiTab';
 import FarmTab from '@/components/tabs/FarmTab';
+import { buildFarmIntelligence } from '@/lib/farm-intelligence';
 import { LANGUAGES, TRANSLATIONS, resolveGpsMarket, resolveGpsToLanguage, type LanguageCode } from '@/lib/i18n';
 import { useFarmStore } from '@/store/farmStore';
+import type { WeatherForecast } from '@/types';
 
 const DEFAULT_COORDS = { lat: 20.014, lng: 73.785 };
 const SCAN_STORAGE_KEY = 'km-scans-history-v2';
@@ -26,8 +44,19 @@ export default function Home() {
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'searching' | 'success' | 'error'>('idle');
   const [coords, setCoords] = useState(DEFAULT_COORDS);
   const [scans, setScans] = useState<ScanHistoryItem[]>([]);
+  const [forecast, setForecast] = useState<WeatherForecast | null>(null);
   const t = TRANSLATIONS[lang];
   const market = useMemo(() => resolveGpsMarket(coords.lat, coords.lng), [coords.lat, coords.lng]);
+  const intelligence = useMemo(
+    () => buildFarmIntelligence({
+      coords,
+      forecast,
+      scans,
+      farm: { region: farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares },
+    }),
+    [coords, farmTwin.farmSizeHectares, farmTwin.region, forecast, scans],
+  );
+  const topCrop = intelligence.cropRecommendations[0];
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(console.error);
@@ -45,6 +74,15 @@ export default function Home() {
     document.documentElement.lang = lang;
     localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
   }, [lang]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/weather?lat=${coords.lat}&lng=${coords.lng}`, { signal: controller.signal })
+      .then((response) => response.json())
+      .then((payload: WeatherForecast) => setForecast(payload))
+      .catch(() => setForecast(null));
+    return () => controller.abort();
+  }, [coords.lat, coords.lng]);
 
   const changeLanguage = (next: LanguageCode) => {
     setLang(next);
@@ -103,9 +141,9 @@ export default function Home() {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-[22px] font-extrabold tracking-[-0.035em] text-[#202421]">{t.title}</h1>
-                <span className="hidden items-center gap-1 rounded-full border border-[#DCCBAA]/60 bg-[#FBF7EF]/90 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-[#7A6645] shadow-sm sm:inline-flex">
-                  <Sparkles className="h-3 w-3" /> AI
+                <h1 className="truncate text-[22px] font-extrabold text-[#202421]">{t.title}</h1>
+                <span className="hidden items-center gap-1 rounded-full border border-[#DCCBAA]/60 bg-[#FBF7EF]/90 px-2 py-0.5 text-[9px] font-black uppercase text-[#7A6645] shadow-sm sm:inline-flex">
+                  <Sparkles className="h-3 w-3" /> Predict
                 </span>
               </div>
               <p className="truncate text-[11px] font-semibold text-[#777B77]">{t.tagline}</p>
@@ -143,7 +181,106 @@ export default function Home() {
 
         <main className="premium-main flex-1 overflow-y-auto p-4 pb-32 sm:p-5 sm:pb-32">
           <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
-            <HomeTab ref={homeTabRef} t={t} lang={lang} coords={coords} onAddScan={addScan} />
+            <div className="space-y-5">
+              <section className="m3-card bg-[#FFFDF8]">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <span className="section-kicker mb-2"><BrainCircuit className="h-3.5 w-3.5 text-[#B18C56]" /> Predictive cockpit</span>
+                    <h2 className="text-[24px] font-black text-[#202421]">{intelligence.todayAction}</h2>
+                    <p className="mt-2 text-sm font-semibold leading-relaxed text-[#686F69]">{intelligence.actionReason}</p>
+                  </div>
+                  <div className="flex h-20 w-20 flex-shrink-0 flex-col items-center justify-center rounded-[24px] border border-[#E7DDC8] bg-[#FBF6EA] shadow-sm">
+                    <span className="text-[26px] font-black text-[#344039]">{intelligence.readinessScore}</span>
+                    <span className="text-[10px] font-black uppercase text-[#8A7655]">score</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button type="button" onClick={openCamera} className="btn-m3-primary min-h-14 px-3 text-sm">
+                    <Camera className="h-5 w-5" /> Scan crop
+                  </button>
+                  <button type="button" onClick={() => setActiveTab('mandi')} className="btn-m3-secondary min-h-14 px-3 text-sm">
+                    <TrendingUp className="h-5 w-5" /> Market signal
+                  </button>
+                </div>
+              </section>
+
+              <section className="grid grid-cols-2 gap-3">
+                <div className="rounded-[24px] border border-[#D9E0DB] bg-[#F5F8F5] p-4 shadow-sm">
+                  <ShieldCheck className="mb-3 h-6 w-6 text-[#65776E]" />
+                  <span className="block text-[11px] font-black uppercase text-[#6B756F]">Disease risk</span>
+                  <strong className="mt-1 block text-lg capitalize text-[#27302B]">{intelligence.diseaseRisk}</strong>
+                </div>
+                <div className="rounded-[24px] border border-[#E6D9BE] bg-[#FCF7EC] p-4 shadow-sm">
+                  <LineChart className="mb-3 h-6 w-6 text-[#A4824F]" />
+                  <span className="block text-[11px] font-black uppercase text-[#8A7655]">Mandi area</span>
+                  <strong className="mt-1 block text-lg text-[#3E382E]">{market.district}</strong>
+                </div>
+              </section>
+
+              <section className="m3-card space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="section-kicker"><AlertTriangle className="h-3.5 w-3.5 text-[#B18C56]" /> Prevent loss</span>
+                  <span className="metric-pill">{forecast?.dataSource ?? 'loading'}</span>
+                </div>
+                {intelligence.preventiveAlerts.map((alert) => (
+                  <div key={alert.title} className={`rounded-2xl border p-3 text-sm font-bold ${alert.tone === 'danger' ? 'border-rose-200 bg-rose-50 text-rose-800' : alert.tone === 'watch' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-[#D9E0DB] bg-[#F5F8F5] text-[#52665B]'}`}>
+                    <div className="mb-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> {alert.title}</div>
+                    <p className="font-semibold leading-relaxed opacity-90">{alert.detail}</p>
+                  </div>
+                ))}
+              </section>
+
+              <section className="m3-card space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="section-kicker"><Leaf className="h-3.5 w-3.5 text-[#65776E]" /> Crop selection</span>
+                  <span className="metric-pill">Top: {topCrop.score}/100</span>
+                </div>
+                {intelligence.cropRecommendations.slice(0, 3).map((crop) => (
+                  <div key={crop.crop} className="rounded-2xl border border-zinc-100 bg-[#FAFAF8] p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-[16px] font-black text-[#242824]">{crop.localName}</h3>
+                        <p className="text-xs font-bold text-zinc-500">{crop.season} · {crop.waterNeed} water</p>
+                      </div>
+                      <span className="rounded-full bg-[#303733] px-3 py-1 text-xs font-black text-white">{crop.score}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {crop.reasons.map((reason) => <span key={reason} className="rounded-full border border-[#E4DCCB] bg-white px-2.5 py-1 text-[11px] font-bold text-[#6D614B]">{reason}</span>)}
+                    </div>
+                  </div>
+                ))}
+              </section>
+
+              <section className="m3-card space-y-3">
+                <span className="section-kicker"><FlaskConical className="h-3.5 w-3.5 text-[#A84450]" /> Fertilizer selection</span>
+                <h3 className="text-xl font-black text-[#242824]">{intelligence.fertilizerPlan.crop}</h3>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-[#DCE3DE] bg-[#F6F8F6] p-3">
+                    <span className="block text-[11px] font-black uppercase text-[#5D6B63]">Organic first</span>
+                    <p className="mt-1 text-sm font-bold text-[#4F5D55]">{intelligence.fertilizerPlan.organic}</p>
+                  </div>
+                  <div className="rounded-2xl border border-rose-100 bg-[#FFF8F8] p-3">
+                    <span className="block text-[11px] font-black uppercase text-rose-700">Mineral category</span>
+                    <p className="mt-1 text-sm font-bold text-[#A84450]">{intelligence.fertilizerPlan.mineralCategory}</p>
+                  </div>
+                </div>
+                <p className="rounded-2xl border border-[#E4D4B4] bg-[#FBF6EC] p-3 text-sm font-bold text-zinc-700">{intelligence.fertilizerPlan.timing} {intelligence.fertilizerPlan.safety}</p>
+              </section>
+
+              <section className="m3-card space-y-3">
+                <span className="section-kicker"><BookOpen className="h-3.5 w-3.5 text-[#61788D]" /> Guidance and education</span>
+                {intelligence.educationCards.map((card) => (
+                  <div key={card.title} className="rounded-2xl border border-zinc-100 bg-white p-3">
+                    <h3 className="text-sm font-black text-[#252925]">{card.title}</h3>
+                    <p className="mt-1 text-sm font-semibold leading-relaxed text-zinc-600">{card.lesson}</p>
+                    <p className="mt-2 text-xs font-black text-[#6F5D3E]">Action: {card.action}</p>
+                  </div>
+                ))}
+              </section>
+
+              <HomeTab ref={homeTabRef} t={t} lang={lang} coords={coords} onAddScan={addScan} />
+            </div>
           </section>
           <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}>
             <WeatherTab t={t} coords={coords} />
