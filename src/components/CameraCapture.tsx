@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Camera, ImagePlus, RefreshCcw, RotateCcw, Upload, X } from 'lucide-react';
+import { Camera, Check, ImagePlus, RefreshCcw, RotateCcw, Upload, X } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 export type PreparedMedia = {
@@ -151,7 +151,12 @@ async function prepareImage(file: File): Promise<PreparedMedia> {
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(image.width * scale));
   canvas.height = Math.max(1, Math.round(image.height * scale));
-  canvas.getContext('2d')?.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const context = canvas.getContext('2d');
+  if (!context) {
+    URL.revokeObjectURL(src);
+    throw new Error('Unable to prepare image.');
+  }
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
   URL.revokeObjectURL(src);
   const blob = await canvasToBlob(canvas);
   const previewDataUrl = canvasToDataUrl(canvas);
@@ -160,6 +165,37 @@ async function prepareImage(file: File): Promise<PreparedMedia> {
     previewUrl: previewDataUrl,
     previewDataUrl,
   };
+}
+
+async function waitForLiveFrame(video: HTMLVideoElement, timeoutMs = 3500): Promise<void> {
+  const startedAt = Date.now();
+
+  while (
+    (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || video.videoWidth < 2 || video.videoHeight < 2)
+    && Date.now() - startedAt < timeoutMs
+  ) {
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 60));
+  }
+
+  if (video.videoWidth < 2 || video.videoHeight < 2) {
+    throw new Error('Camera frame is not ready yet. Please hold steady and try again.');
+  }
+
+  const frameVideo = video as HTMLVideoElement & {
+    requestVideoFrameCallback?: (callback: () => void) => number;
+  };
+
+  if (frameVideo.requestVideoFrameCallback) {
+    await new Promise<void>((resolve) => {
+      const fallback = window.setTimeout(resolve, 250);
+      frameVideo.requestVideoFrameCallback?.(() => {
+        window.clearTimeout(fallback);
+        resolve();
+      });
+    });
+  } else {
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 80));
+  }
 }
 
 const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapture(
@@ -175,6 +211,8 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   const [preparing, setPreparing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [captureInProgress, setCaptureInProgress] = useState(false);
+  const [captureComplete, setCaptureComplete] = useState(false);
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
   const [showDeviceFallback, setShowDeviceFallback] = useState(false);
 
@@ -215,9 +253,10 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   }, [onChange]);
 
   const startCamera = useCallback(async () => {
-    if (disabled || preparing) return;
+    if (disabled || preparing || captureInProgress) return;
     setError(null);
     setShowDeviceFallback(false);
+    setCaptureComplete(false);
 
     if (!window.isSecureContext) {
       setError('Live camera requires a secure HTTPS connection. Use the device camera button below.');
@@ -258,17 +297,21 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         setError('Live camera could not start. Use the device camera option below.');
       }
     }
-  }, [disabled, openDeviceCamera, preparing, stopCamera]);
+  }, [captureInProgress, disabled, openDeviceCamera, preparing, stopCamera]);
 
   useEffect(() => {
     if (!cameraOpen || !activeStream || !videoRef.current) return undefined;
     const video = videoRef.current;
     video.srcObject = activeStream;
 
+    const markReady = () => {
+      if (video.videoWidth > 1 && video.videoHeight > 1) setCameraReady(true);
+    };
+
     const playVideo = async () => {
       try {
         await video.play();
-        setCameraReady(true);
+        markReady();
       } catch {
         setCameraReady(false);
         setError('Camera opened but preview could not start. Tap restart or use the device camera.');
@@ -276,27 +319,61 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
     };
 
     video.addEventListener('loadedmetadata', playVideo);
-    if (video.readyState >= 1) void playVideo();
-    return () => video.removeEventListener('loadedmetadata', playVideo);
+    video.addEventListener('loadeddata', markReady);
+    video.addEventListener('canplay', markReady);
+    video.addEventListener('playing', markReady);
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) void playVideo();
+
+    return () => {
+      video.removeEventListener('loadedmetadata', playVideo);
+      video.removeEventListener('loadeddata', markReady);
+      video.removeEventListener('canplay', markReady);
+      video.removeEventListener('playing', markReady);
+    };
   }, [activeStream, cameraOpen]);
 
   const captureFrame = useCallback(async () => {
+    if (captureInProgress) return;
     const video = videoRef.current;
-    if (!video || !cameraReady || !video.videoWidth || !video.videoHeight) {
-      setError('Camera is still starting. Please wait a moment and try again.');
+    if (!video) {
+      setError('Camera preview is unavailable. Please restart the camera.');
       return;
     }
 
-    const maxDimension = 1200;
-    const scale = Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await canvasToBlob(canvas, 0.9);
-    stopCamera();
-    await handleFile(new File([blob], `kisanmitra-camera-${Date.now()}.jpg`, { type: 'image/jpeg' }));
-  }, [cameraReady, handleFile, stopCamera]);
+    setCaptureInProgress(true);
+    setCaptureComplete(false);
+    setError(null);
+
+    try {
+      await waitForLiveFrame(video);
+      video.pause();
+
+      const maxDimension = 1600;
+      const scale = Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      const context = canvas.getContext('2d', { alpha: false });
+      if (!context) throw new Error('Photo capture is not supported by this browser.');
+
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const previewDataUrl = canvasToDataUrl(canvas, 0.9);
+      const blob = await canvasToBlob(canvas, 0.9);
+      const file = new File([blob], `kisanmitra-camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+      setCaptureComplete(true);
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 120));
+      stopCamera();
+      onChange({ file, previewUrl: previewDataUrl, previewDataUrl });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to capture this photo.');
+      setShowDeviceFallback(true);
+      setCameraReady(video.videoWidth > 1 && video.videoHeight > 1);
+      void video.play().catch(() => undefined);
+    } finally {
+      setCaptureInProgress(false);
+    }
+  }, [captureInProgress, onChange, stopCamera]);
 
   useImperativeHandle(ref, () => ({
     openCamera: () => void startCamera(),
@@ -338,24 +415,72 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
     return (
       <div className="camera-viewfinder">
         {hiddenInputs}
-        <video ref={videoRef} autoPlay playsInline muted className="viewfinder-video" aria-label="Live crop camera" />
-        {!cameraReady && (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="viewfinder-video"
+          aria-label="Live crop camera"
+          onLoadedData={() => setCameraReady(true)}
+          onCanPlay={() => setCameraReady(true)}
+          onPlaying={() => setCameraReady(true)}
+        />
+
+        {!cameraReady && !captureInProgress && (
           <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center bg-[#101311]/75 px-8 text-center text-white backdrop-blur-sm">
             <RefreshCcw className="mb-3 h-8 w-8 animate-spin" />
             <p className="text-sm font-bold">Starting camera…</p>
           </div>
         )}
+
+        {captureInProgress && (
+          <div className="absolute inset-0 z-[12] flex flex-col items-center justify-center bg-white/16 text-white backdrop-blur-[2px]">
+            {captureComplete ? <Check className="mb-2 h-12 w-12" /> : <RefreshCcw className="mb-2 h-10 w-10 animate-spin" />}
+            <p className="text-sm font-extrabold">{captureComplete ? 'Photo captured' : 'Capturing photo…'}</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="absolute inset-x-4 top-4 z-20 rounded-2xl border border-amber-200/40 bg-black/62 px-4 py-3 text-center text-xs font-bold text-white backdrop-blur-md">
+            {error}
+          </div>
+        )}
+
         <div className="absolute inset-x-0 bottom-5 z-10 flex items-center justify-center gap-5 px-5">
-          <button type="button" onClick={stopCamera} className="camera-control" aria-label="Close camera">
+          <button type="button" onClick={stopCamera} disabled={captureInProgress} className="camera-control" aria-label="Close camera">
             <X className="h-5 w-5" />
           </button>
-          <button type="button" onClick={() => void captureFrame()} disabled={!cameraReady} className="camera-shutter" aria-label="Take crop photo">
-            <Camera className="h-7 w-7" />
+          <button
+            type="button"
+            onClick={() => void captureFrame()}
+            disabled={captureInProgress}
+            className="camera-shutter touch-manipulation disabled:opacity-60"
+            aria-label="Take crop photo"
+            aria-busy={captureInProgress}
+          >
+            {captureInProgress ? <RefreshCcw className="h-7 w-7 animate-spin" /> : <Camera className="h-7 w-7" />}
           </button>
-          <button type="button" onClick={() => { stopCamera(); window.setTimeout(() => void startCamera(), 80); }} className="camera-control" aria-label="Restart camera">
+          <button
+            type="button"
+            onClick={() => { stopCamera(); window.setTimeout(() => void startCamera(), 120); }}
+            disabled={captureInProgress}
+            className="camera-control"
+            aria-label="Restart camera"
+          >
             <RotateCcw className="h-5 w-5" />
           </button>
         </div>
+
+        {showDeviceFallback && (
+          <button
+            type="button"
+            onClick={() => { stopCamera(); window.setTimeout(openDeviceCamera, 80); }}
+            className="absolute bottom-24 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/30 bg-black/62 px-4 py-2.5 text-xs font-extrabold text-white shadow-lg backdrop-blur-md"
+          >
+            Open device camera
+          </button>
+        )}
       </div>
     );
   }
