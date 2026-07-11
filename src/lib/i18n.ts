@@ -1,0 +1,154 @@
+export type LanguageCode = 'hi' | 'en' | 'mr';
+
+export type TranslationSet = {
+  title: string;
+  tagline: string;
+  home: string;
+  weather: string;
+  mandi: string;
+  myFarm: string;
+  takePhoto: string;
+  chooseGallery: string;
+  analyzing: string;
+  whatToDo: string;
+  organicOption: string;
+  chemicalOption: string;
+  bestSpray: string;
+  readAloud: string;
+  stopSpeech: string;
+  learnMore: string;
+  savedScans: string;
+  activeCrop: string;
+  farmerName: string;
+  noScans: string;
+  gpsDenied: string;
+  gpsSuccess: string;
+  healthy: string;
+  alert: string;
+  diseased: string;
+  unavailable: string;
+  demoBanner: string;
+  forecast: string;
+  lastKnown: string;
+  livePrice: string;
+  loading: string;
+};
+
+export const LANGUAGES: { code: LanguageCode; name: string }[] = [
+  { code: 'hi', name: 'हिन्दी' },
+  { code: 'en', name: 'English' },
+  { code: 'mr', name: 'मराठी' },
+];
+
+export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
+  hi: {
+    title: 'किसानमित्र',
+    tagline: 'आपकी फसल का साथी',
+    home: 'घर',
+    weather: 'मौसम',
+    mandi: 'मंडी भाव',
+    myFarm: 'मेरा खेत',
+    takePhoto: 'फसल की फोटो लें',
+    chooseGallery: 'गैलरी से चुनें',
+    analyzing: 'आपकी फसल देखी जा रही है...',
+    whatToDo: 'क्या करें / What to do',
+    organicOption: 'जैविक उपचार / Organic',
+    chemicalOption: 'रासायनिक उपचार / Chemical',
+    bestSpray: 'दवा कब डालें / Spray window',
+    readAloud: 'बोलकर सुनाएं',
+    stopSpeech: 'आवाज रोकें',
+    learnMore: 'और जानें',
+    savedScans: 'पुराने स्कैन इतिहास',
+    activeCrop: 'सक्रिय फसल',
+    farmerName: 'किसान: आशा पवार',
+    noScans: 'कोई पुराना इतिहास नहीं मिला',
+    gpsDenied: 'GPS अनुमति नहीं मिली',
+    gpsSuccess: 'स्थान मिला',
+    healthy: 'स्वस्थ',
+    alert: 'ध्यान दें',
+    diseased: 'बीमारी',
+    unavailable: 'विश्लेषण उपलब्ध नहीं',
+    demoBanner: 'डेमो परिणाम — लाइव AI उपलब्ध नहीं / Demo result — live AI unavailable',
+    forecast: '7 दिनों का पूर्वानुमान',
+    lastKnown: 'अंतिम ज्ञात भाव / Last known price',
+    livePrice: 'लाइव मंडी भाव / Live mandi price',
+    loading: 'लोड हो रहा है...',
+  },
+  en: {
+    title: 'KisanMitra',
+    tagline: "Your Crop's Companion",
+    home: 'Home',
+    weather: 'Weather',
+    mandi: 'Mandi Prices',
+    myFarm: 'My Farm',
+    takePhoto: 'Take Crop Photo',
+    chooseGallery: 'Choose from Gallery',
+    analyzing: 'Analyzing your crop...',
+    whatToDo: 'What to do',
+    organicOption: 'Organic Treatment',
+    chemicalOption: 'Chemical Treatment',
+    bestSpray: 'Best Spray Window',
+    readAloud: 'Read Aloud',
+    stopSpeech: 'Stop Speech',
+    learnMore: 'Learn More',
+    savedScans: 'Past Scan History',
+    activeCrop: 'Active Crop',
+    farmerName: 'Farmer: Asha Pawar',
+    noScans: 'No scan history found',
+    gpsDenied: 'GPS permission denied',
+    gpsSuccess: 'Location found',
+    healthy: 'Healthy',
+    alert: 'Attention',
+    diseased: 'Disease',
+    unavailable: 'Analysis unavailable',
+    demoBanner: 'डेमो परिणाम — लाइव AI उपलब्ध नहीं / Demo result — live AI unavailable',
+    forecast: '7-Day Forecast',
+    lastKnown: 'अंतिम ज्ञात भाव / Last known price',
+    livePrice: 'लाइव मंडी भाव / Live mandi price',
+    loading: 'Loading...',
+  },
+  mr: {
+    title: 'किसानमित्र',
+    tagline: 'तुमच्या पिकाचा सोबती',
+    home: 'घर',
+    weather: 'हवामान',
+    mandi: 'बाजार भाव',
+    myFarm: 'माझे शेत',
+    takePhoto: 'पिकाचा फोटो घ्या',
+    chooseGallery: 'गॅलरीतून निवडा',
+    analyzing: 'तुमचे पीक तपासले जात आहे...',
+    whatToDo: 'काय करावे / What to do',
+    organicOption: 'सेंद्रिय उपचार / Organic',
+    chemicalOption: 'रासायनिक उपचार / Chemical',
+    bestSpray: 'फवारणीची योग्य वेळ',
+    readAloud: 'वाचून दाखवा',
+    stopSpeech: 'आवाज थांबवा',
+    learnMore: 'अधिक माहिती',
+    savedScans: 'मागील स्कॅन इतिहास',
+    activeCrop: 'सक्रिय पीक',
+    farmerName: 'शेतकरी: आशा पवार',
+    noScans: 'जुना इतिहास आढळला नाही',
+    gpsDenied: 'GPS परवानगी नाकारली',
+    gpsSuccess: 'स्थान सापडले',
+    healthy: 'निरोगी',
+    alert: 'काळजी घ्या',
+    diseased: 'रोगग्रस्त',
+    unavailable: 'विश्लेषण उपलब्ध नाही',
+    demoBanner: 'डेमो निकाल — थेट AI उपलब्ध नाही / Demo result — live AI unavailable',
+    forecast: '7 दिवसांचा अंदाज',
+    lastKnown: 'शेवटचा ज्ञात भाव / Last known price',
+    livePrice: 'थेट बाजार भाव / Live mandi price',
+    loading: 'लोड होत आहे...',
+  },
+};
+
+export function resolveGpsToLanguage(lat: number, lng: number): LanguageCode {
+  if (lat >= 15.6 && lat <= 22.0 && lng >= 72.6 && lng <= 80.9) return 'mr';
+  return 'hi';
+}
+
+export function resolveGpsMarket(lat: number, lng: number): { state: string; district: string } {
+  if (lat >= 18.3 && lat <= 19.3 && lng >= 72.7 && lng <= 73.2) return { state: 'Maharashtra', district: 'Mumbai' };
+  if (lat >= 18.1 && lat <= 19.5 && lng >= 73.3 && lng <= 74.3) return { state: 'Maharashtra', district: 'Pune' };
+  return { state: 'Maharashtra', district: 'Nashik' };
+}
