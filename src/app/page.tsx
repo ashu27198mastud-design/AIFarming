@@ -232,6 +232,10 @@ export default function Home() {
                 <HomeTab ref={homeTabRef} t={t} lang={lang} coords={coords} onAddScan={addScan} />
               </div>
 
+              <FieldPlanner coords={coords} market={market} />
+            </div>
+
+            <div className="insight-grid">
               <section className="risk-grid grid grid-cols-2 gap-3">
                 <div className="rounded-[24px] border border-[#D9E0DB] bg-[#F5F8F5] p-4 shadow-sm">
                   <ShieldCheck className="mb-3 h-6 w-6 text-[#65776E]" />
@@ -279,8 +283,6 @@ export default function Home() {
                   </div>
                 ))}
               </section>
-
-              <FieldPlanner coords={coords} market={market} />
 
               <section className="m3-card space-y-3">
                 <span className="section-kicker"><FlaskConical className="h-3.5 w-3.5 text-[#A84450]" /> Fertilizer selection</span>
