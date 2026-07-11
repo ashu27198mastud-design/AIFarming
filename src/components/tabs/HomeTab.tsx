@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import CameraCapture, { type PreparedMedia } from '@/components/CameraCapture';
+import CameraCapture, {
+  type CameraCaptureHandle,
+  type PreparedMedia,
+} from '@/components/CameraCapture';
 import DiagnosisCard, { type DiagnosisView } from '@/components/DiagnosisCard';
 import type { TranslationSet } from '@/lib/i18n';
 import type { WeatherForecast } from '@/types';
@@ -17,12 +20,15 @@ export type ScanHistoryItem = {
   dataSource: string;
 };
 
+export type HomeTabHandle = {
+  openCamera: () => void;
+};
+
 type Props = {
   t: TranslationSet;
   lang: string;
   coords: { lat: number; lng: number };
   onAddScan: (scan: ScanHistoryItem) => void;
-  resetToken: number;
 };
 
 function unavailableDiagnosis(): DiagnosisView {
@@ -46,16 +52,23 @@ function unavailableDiagnosis(): DiagnosisView {
   };
 }
 
-export default function HomeTab({ t, lang, coords, onAddScan, resetToken }: Props) {
+const HomeTab = forwardRef<HomeTabHandle, Props>(function HomeTab(
+  { t, lang, coords, onAddScan },
+  ref,
+) {
+  const cameraRef = useRef<CameraCaptureHandle>(null);
   const [media, setMedia] = useState<PreparedMedia | null>(null);
   const [diagnosis, setDiagnosis] = useState<DiagnosisView | null>(null);
   const [loading, setLoading] = useState(false);
   const [weather, setWeather] = useState<WeatherForecast | null>(null);
 
-  useEffect(() => {
-    setMedia(null);
-    setDiagnosis(null);
-  }, [resetToken]);
+  useImperativeHandle(ref, () => ({
+    openCamera: () => {
+      setMedia(null);
+      setDiagnosis(null);
+      cameraRef.current?.openCamera();
+    },
+  }), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -109,9 +122,9 @@ export default function HomeTab({ t, lang, coords, onAddScan, resetToken }: Prop
   return (
     <div className="space-y-5">
       <CameraCapture
+        ref={cameraRef}
         t={t}
         value={media}
-        captureToken={resetToken}
         onChange={(next) => {
           setMedia(next);
           setDiagnosis(null);
@@ -125,10 +138,12 @@ export default function HomeTab({ t, lang, coords, onAddScan, resetToken }: Prop
               <ShieldCheck className="h-5 w-5" /> {loading ? t.analyzing : lang === 'mr' ? 'तपासा / Analyze' : lang === 'hi' ? 'जांच करें / Analyze' : 'Analyze'}
             </button>
           )}
-          {loading && <p className="animate-pulse text-center text-sm font-semibold text-[#2E7D32]">{t.analyzing}</p>}
+          {loading && <p className="animate-pulse text-center text-sm font-semibold text-[#4E5953]">{t.analyzing}</p>}
           {diagnosis && <DiagnosisCard diagnosis={diagnosis} t={t} lang={lang} hourlyWeather={weather?.hourly ?? []} />}
         </div>
       )}
     </div>
   );
-}
+});
+
+export default HomeTab;
