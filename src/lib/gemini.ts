@@ -249,3 +249,85 @@ If text is unclear, use null/Not detected and lower confidence. Never invent rea
     return fallback;
   }
 }
+
+
+export type AiLandPlan = {
+  landQualityScore: number;
+  confidence: number;
+  summary: string;
+  take: Array<{ crop: string; score: number; why: string; fertilizerFocus: string }>;
+  caution: Array<{ crop: string; score: number; why: string }>;
+  avoid: Array<{ crop: string; score: number; why: string }>;
+  preventiveActions: string[];
+  missingEvidence: string[];
+  disclaimer: string;
+};
+
+export async function analyzeLandForCropPlan(context: string, imageBase64?: string, mimeType?: string): Promise<AiLandPlan> {
+  const fallback: AiLandPlan = {
+    landQualityScore: 50,
+    confidence: 35,
+    summary: 'AI planning is unavailable; use the transparent local crop scores and confirm with an agriculture officer.',
+    take: [],
+    caution: [],
+    avoid: [],
+    preventiveActions: ['Confirm soil pH and water availability before sowing.'],
+    missingEvidence: ['Live AI response'],
+    disclaimer: 'Planning guidance only. Confirm seed variety and fertilizer dosage locally.',
+  };
+  if (!genAI) return fallback;
+
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    safetySettings: GEMINI_SAFETY_SETTINGS,
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.15 },
+  });
+  const prompt = `You are the crop-selection decision engine for KisanMitra.
+Evidence: ${context}
+Use only supplied evidence and what is genuinely visible in the optional land image. Score suitability using:
+season/weather 25%, soil report and soil type 25%, water 15%, GPS agro-climate fit 15%, crop rotation 10%, budget/input risk 10%.
+Do not invent live market prices. Do not prescribe fertilizer dosage. Explain uncertainty.
+Return JSON exactly:
+{
+ "landQualityScore": 0,
+ "confidence": 0,
+ "summary": "plain bilingual-friendly English",
+ "take": [{"crop":"", "score":0, "why":"", "fertilizerFocus":"category only"}],
+ "caution": [{"crop":"", "score":0, "why":""}],
+ "avoid": [{"crop":"", "score":0, "why":""}],
+ "preventiveActions": [""],
+ "missingEvidence": [""],
+ "disclaimer": "guidance only"
+}
+Return 2-3 take crops, up to 2 caution crops, and up to 2 avoid crops.`;
+
+  try {
+    const parts: Array<string | { inlineData: { data: string; mimeType: string } }> = [prompt];
+    if (imageBase64 && mimeType) parts.push({ inlineData: { data: imageBase64, mimeType } });
+    const result = await model.generateContent(parts);
+    const raw = JSON.parse(result.response.text()) as Partial<AiLandPlan>;
+    const normalizeCrops = (items: unknown, fertilizer = false) => Array.isArray(items) ? items.slice(0, 3).map((item) => {
+      const crop = item as Record<string, unknown>;
+      return {
+        crop: String(crop.crop || 'Unknown crop'),
+        score: Math.max(0, Math.min(100, Number(crop.score) || 0)),
+        why: String(crop.why || 'Insufficient evidence'),
+        ...(fertilizer ? { fertilizerFocus: String(crop.fertilizerFocus || 'Soil-test based balanced nutrition') } : {}),
+      };
+    }) : [];
+    return {
+      landQualityScore: Math.max(0, Math.min(100, Number(raw.landQualityScore) || 0)),
+      confidence: Math.max(0, Math.min(100, Number(raw.confidence) || 0)),
+      summary: raw.summary || fallback.summary,
+      take: normalizeCrops(raw.take, true) as AiLandPlan['take'],
+      caution: normalizeCrops(raw.caution) as AiLandPlan['caution'],
+      avoid: normalizeCrops(raw.avoid) as AiLandPlan['avoid'],
+      preventiveActions: Array.isArray(raw.preventiveActions) ? raw.preventiveActions.slice(0, 4) : [],
+      missingEvidence: Array.isArray(raw.missingEvidence) ? raw.missingEvidence.slice(0, 4) : [],
+      disclaimer: raw.disclaimer || fallback.disclaimer,
+    };
+  } catch (error) {
+    console.error('Land crop plan analysis failed:', error);
+    return fallback;
+  }
+}
