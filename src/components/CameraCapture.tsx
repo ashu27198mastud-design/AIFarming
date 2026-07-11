@@ -558,7 +558,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       </div>
 
       <div className="capture-actions">
-        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="capture-action capture-action-primary">
+        <button type="button" data-testid="start-live-camera" disabled={disabled || preparing} onClick={() => void startCamera()} className="capture-action capture-action-primary">
           <Camera className="h-5 w-5" />
           <span>Start live camera</span>
         </button>
@@ -566,6 +566,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
           <Camera className="h-5 w-5" />
           <span>Take phone photo</span>
           <input
+            data-testid="take-phone-photo"
             type="file"
             accept="image/*"
             capture="environment"
@@ -581,6 +582,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
           <ImagePlus className="h-5 w-5" />
           <span>Upload photo</span>
           <input
+            data-testid="upload-crop-photo"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             disabled={disabled || preparing}
