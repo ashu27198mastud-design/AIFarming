@@ -265,6 +265,7 @@ export default function FieldPlanner({ coords, market }: Props) {
           <Upload className="mb-2 h-5 w-5 text-[#8A7655]" />
           <span className="text-xs font-black text-[#6F5D3E]">{soilReport ? 'Change soil report' : 'Upload soil report'}</span>
           <input
+            data-testid="upload-soil-report"
             type="file"
             accept="image/*,.pdf,application/pdf"
             className="hidden"
