@@ -544,9 +544,9 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   return (
     <div className="m3-card border-dashed p-7 text-center">
       {hiddenInputs}
-      <button type="button" onClick={openDeviceCamera} disabled={disabled || preparing} className="camera-launch-orb animate-camera-pulse mx-auto mb-5" aria-label={t.takePhoto}>
+      <div className="camera-launch-orb mx-auto mb-5" aria-hidden="true">
         <Camera className="relative z-10 h-11 w-11" />
-      </button>
+      </div>
       <span className="section-kicker mb-2">Crop disease scan</span>
       <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">Capture or upload crop photo</h2>
       <p className="mx-auto mb-5 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">Take a close, clear photo of the affected leaf, stem, fruit, or whole plant. The app will explain the likely disease, visible signs, severity, and next steps.</p>
@@ -557,18 +557,41 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">3. Good light, no blur</div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <button type="button" disabled={disabled || preparing} onClick={openDeviceCamera} className="btn-m3-primary w-full">
-          <Camera className="h-5 w-5" /> {preparing ? 'Preparing...' : 'Take or choose photo'}
-        </button>
-        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="btn-m3-secondary w-full">
-          {preparing ? <Upload className="h-5 w-5 animate-pulse" /> : <Camera className="h-5 w-5" />} Use live webcam
+      <div className="capture-actions">
+        <label className={`capture-action capture-action-primary ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
+          <Camera className="h-5 w-5" />
+          <span>{preparing ? 'Preparing photo...' : 'Open camera'}</span>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            disabled={disabled || preparing}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void handleFile(file);
+              event.currentTarget.value = '';
+            }}
+          />
+        </label>
+        <label className={`capture-action ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
+          <ImagePlus className="h-5 w-5" />
+          <span>Upload photo</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={disabled || preparing}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void handleFile(file);
+              event.currentTarget.value = '';
+            }}
+          />
+        </label>
+        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="capture-action">
+          <Camera className="h-5 w-5" />
+          <span>Use live webcam</span>
         </button>
       </div>
-
-      <button type="button" disabled={disabled || preparing} onClick={() => galleryInputRef.current?.click()} className="mt-3 w-full rounded-2xl border border-[#C9AE7B]/40 bg-[#FBF6EC] px-4 py-3 text-sm font-extrabold text-[#5B4B32] shadow-sm">
-        <ImagePlus className="mr-2 inline h-4 w-4" /> Browse photos and videos
-      </button>
 
       <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">The diagnosis is guidance only. Confirm severe cases with a local agronomist.</p>
       {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm">{error}</div>}

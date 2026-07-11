@@ -147,8 +147,32 @@ export function resolveGpsToLanguage(lat: number, lng: number): LanguageCode {
   return 'hi';
 }
 
-export function resolveGpsMarket(lat: number, lng: number): { state: string; district: string } {
-  if (lat >= 18.3 && lat <= 19.3 && lng >= 72.7 && lng <= 73.2) return { state: 'Maharashtra', district: 'Mumbai' };
-  if (lat >= 18.1 && lat <= 19.5 && lng >= 73.3 && lng <= 74.3) return { state: 'Maharashtra', district: 'Pune' };
-  return { state: 'Maharashtra', district: 'Nashik' };
+const GPS_MARKETS = [
+  { state: 'Maharashtra', district: 'Nashik', lat: 19.9975, lng: 73.7898 },
+  { state: 'Maharashtra', district: 'Pune', lat: 18.5204, lng: 73.8567 },
+  { state: 'Maharashtra', district: 'Mumbai', lat: 19.076, lng: 72.8777 },
+  { state: 'Maharashtra', district: 'Nagpur', lat: 21.1458, lng: 79.0882 },
+  { state: 'Maharashtra', district: 'Ahmednagar', lat: 19.0948, lng: 74.748 },
+  { state: 'Maharashtra', district: 'Solapur', lat: 17.6599, lng: 75.9064 },
+  { state: 'Maharashtra', district: 'Kolhapur', lat: 16.705, lng: 74.2433 },
+  { state: 'Maharashtra', district: 'Jalgaon', lat: 21.0077, lng: 75.5626 },
+  { state: 'Maharashtra', district: 'Aurangabad', lat: 19.8762, lng: 75.3433 },
+  { state: 'Gujarat', district: 'Ahmedabad', lat: 23.0225, lng: 72.5714 },
+  { state: 'Madhya Pradesh', district: 'Indore', lat: 22.7196, lng: 75.8577 },
+  { state: 'Karnataka', district: 'Belgaum', lat: 15.8497, lng: 74.4977 },
+] as const;
+
+function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const radians = (value: number) => value * Math.PI / 180;
+  const dLat = radians(lat2 - lat1);
+  const dLng = radians(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export function resolveGpsMarket(lat: number, lng: number): { state: string; district: string; distanceKm: number } {
+  const nearest = GPS_MARKETS
+    .map((market) => ({ ...market, distanceKm: Math.round(distanceKm(lat, lng, market.lat, market.lng)) }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)[0];
+  return { state: nearest.state, district: nearest.district, distanceKm: nearest.distanceKm };
 }
