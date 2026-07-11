@@ -107,8 +107,17 @@ export default function HomeTab({ t, lang, coords, onAddScan, resetToken }: Prop
   };
 
   return (
-    <div className="space-y-4">
-      <CameraCapture t={t} value={media} onChange={(next) => { setMedia(next); setDiagnosis(null); }} disabled={loading} />
+    <div className="space-y-5">
+      <CameraCapture
+        t={t}
+        value={media}
+        captureToken={resetToken}
+        onChange={(next) => {
+          setMedia(next);
+          setDiagnosis(null);
+        }}
+        disabled={loading}
+      />
       {media && (
         <div className="m3-card space-y-4">
           {!diagnosis && (

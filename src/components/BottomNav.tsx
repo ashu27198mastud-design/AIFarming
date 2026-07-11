@@ -20,14 +20,16 @@ export default function BottomNav({ activeTab, onChange, t }: Props) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#2E7D32]/10 bg-[#FAFDF7]/95 py-2 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[480px] items-center justify-around">
+    <nav className="bottom-dock-wrap" aria-label="Primary navigation">
+      <div className="bottom-dock">
         {items.map(({ id, label, icon: Icon }) => {
           const active = activeTab === id;
           return (
-            <button key={id} type="button" onClick={() => onChange(id)} className="nav-tab-button flex-1 transition-all">
-              <div className={`flex items-center justify-center rounded-full p-2.5 transition-all ${active ? 'bg-[#2E7D32] text-white shadow-sm' : 'text-zinc-500 hover:text-[#2E7D32]'}`}><Icon className="h-6 w-6" /></div>
-              <span className={`mt-1 text-[12px] font-black ${active ? 'text-[#2E7D32]' : 'text-zinc-500'}`}>{label}</span>
+            <button key={id} type="button" onClick={() => onChange(id)} className="nav-tab-button flex-1" aria-current={active ? 'page' : undefined}>
+              <div className={`nav-icon ${active ? 'nav-icon-active' : 'text-zinc-500'}`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <span className={`mt-1 text-[11px] font-extrabold tracking-[-0.01em] ${active ? 'text-[#256F2D]' : 'text-zinc-500'}`}>{label}</span>
             </button>
           );
         })}
