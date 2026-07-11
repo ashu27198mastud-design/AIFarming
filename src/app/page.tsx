@@ -47,6 +47,12 @@ export default function Home() {
   const [coords, setCoords] = useState(DEFAULT_COORDS);
   const [scans, setScans] = useState<ScanHistoryItem[]>([]);
   const [forecast, setForecast] = useState<WeatherForecast | null>(null);
+  const [place, setPlace] = useState<{ village: string; district: string; state: string; source: string }>({
+    village: 'Locating village...',
+    district: 'Nashik',
+    state: 'Maharashtra',
+    source: 'loading',
+  });
   const t = TRANSLATIONS[lang];
   const market = useMemo(() => resolveGpsMarket(coords.lat, coords.lng), [coords.lat, coords.lng]);
   const intelligence = useMemo(
@@ -85,6 +91,15 @@ export default function Home() {
       .catch(() => setForecast(null));
     return () => controller.abort();
   }, [coords.lat, coords.lng]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/location/reverse?lat=${coords.lat}&lng=${coords.lng}&fallback=${encodeURIComponent(market.district)}`, { signal: controller.signal })
+      .then((response) => response.json())
+      .then((payload) => setPlace(payload))
+      .catch(() => setPlace({ village: market.district, district: market.district, state: market.state, source: 'fallback' }));
+    return () => controller.abort();
+  }, [coords.lat, coords.lng, market.district, market.state]);
 
   const changeLanguage = (next: LanguageCode) => {
     setLang(next);
@@ -155,6 +170,10 @@ export default function Home() {
           </button>
 
           <div className="flex flex-shrink-0 items-center gap-2">
+            <div className="location-chip">
+              <Navigation className="h-4 w-4" />
+              <div><span>Village / Town</span><strong>{place.village}</strong></div>
+            </div>
             <button type="button" onClick={locate} disabled={gpsStatus === 'searching'} className="glass-icon-button flex min-h-12 min-w-12 items-center justify-center rounded-[17px]" aria-label="Use GPS">
               {gpsStatus === 'searching' ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Navigation className="h-5 w-5" />}
             </button>
@@ -297,7 +316,7 @@ export default function Home() {
             <WeatherTab t={t} coords={coords} />
           </section>
           <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}>
-            <MandiTab t={t} market={market} />
+            <MandiTab t={t} market={{ ...market, village: place.village }} />
           </section>
           <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}>
             <FarmTab t={t} lang={lang} scans={scans} farm={{ region: farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} />
