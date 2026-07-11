@@ -25,6 +25,23 @@ type SoilAnalysis = {
   confidence: number;
 };
 
+type AiLandPlan = {
+  landQualityScore: number;
+  confidence: number;
+  summary: string;
+  take: Array<{ crop: string; score: number; why: string; fertilizerFocus: string }>;
+  caution: Array<{ crop: string; score: number; why: string }>;
+  avoid: Array<{ crop: string; score: number; why: string }>;
+  preventiveActions: string[];
+  missingEvidence: string[];
+  disclaimer: string;
+};
+
+type Props = {
+  coords: { lat: number; lng: number };
+  market: { state: string; district: string; distanceKm: number };
+};
+
 const CROPS = [
   { name: 'Soyabean', season: 'kharif', soils: ['black', 'alluvial'], water: 'medium', budget: 'low' },
   { name: 'Cotton', season: 'kharif', soils: ['black', 'red'], water: 'medium', budget: 'medium' },
@@ -107,7 +124,7 @@ function scoreCrop(crop: typeof CROPS[number], input: Inputs) {
   };
 }
 
-export default function FieldPlanner() {
+export default function FieldPlanner({ coords, market }: Props) {
   const [inputs, setInputs] = useState<Inputs>({
     soilType: 'unknown',
     ph: '',
@@ -121,6 +138,9 @@ export default function FieldPlanner() {
   const [soilAnalysis, setSoilAnalysis] = useState<SoilAnalysis | null>(null);
   const [soilLoading, setSoilLoading] = useState(false);
   const [soilError, setSoilError] = useState('');
+  const [aiPlan, setAiPlan] = useState<AiLandPlan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState('');
   const [showResults, setShowResults] = useState(false);
   const photoUrl = useMemo(() => landPhoto ? URL.createObjectURL(landPhoto) : '', [landPhoto]);
   const ranked = useMemo(() => CROPS.map((crop) => scoreCrop(crop, inputs)).sort((a, b) => b.score - a.score), [inputs]);
@@ -151,6 +171,38 @@ export default function FieldPlanner() {
       setSoilError(error instanceof Error ? error.message : 'Unable to read soil report');
     } finally {
       setSoilLoading(false);
+    }
+  };
+
+  const buildAiPlan = async () => {
+    setShowResults(true);
+    setPlanLoading(true);
+    setPlanError('');
+    setAiPlan(null);
+    try {
+      const context = {
+        gps: { ...coords, nearestMandiDistrict: market.district, state: market.state, distanceKm: market.distanceKm },
+        season: currentSeason(),
+        soilType: inputs.soilType,
+        ph: inputs.ph || null,
+        waterAvailability: inputs.water,
+        irrigation: inputs.irrigation,
+        budget: inputs.budget,
+        previousCrop: inputs.previousCrop || 'not provided',
+        soilReport: soilAnalysis,
+        evidence: { hasLandPhoto: Boolean(landPhoto), hasSoilReport: Boolean(soilReport) },
+      };
+      const body = new FormData();
+      body.append('context', JSON.stringify(context));
+      if (landPhoto) body.append('landPhoto', landPhoto);
+      const response = await fetch('/api/ai/land-plan', { method: 'POST', body });
+      const payload = await response.json();
+      if (!response.ok || payload.error) throw new Error(payload.error || 'AI plan failed');
+      setAiPlan(payload as AiLandPlan);
+    } catch (error) {
+      setPlanError(error instanceof Error ? error.message : 'AI plan failed');
+    } finally {
+      setPlanLoading(false);
     }
   };
 
@@ -261,12 +313,28 @@ export default function FieldPlanner() {
         </div>
       )}
 
-      <button type="button" onClick={() => setShowResults(true)} className="btn-m3-primary min-h-14 w-full text-sm">
-        <Leaf className="h-5 w-5" /> Build my crop plan
+      <button type="button" onClick={() => void buildAiPlan()} disabled={planLoading} className="btn-m3-primary min-h-14 w-full text-sm">
+        <Leaf className="h-5 w-5" /> {planLoading ? 'AI is analysing land evidence...' : 'Build AI crop plan'}
       </button>
 
       {showResults && (
-        <div className="space-y-3 border-t border-zinc-100 pt-4">
+        <div className="space-y-4 border-t border-zinc-100 pt-4">
+          {planLoading && <div className="soil-analysis-panel"><span className="section-kicker">AI land analysis</span><h3 className="mt-2 text-lg font-black">Combining soil, GPS, season, water and land evidence...</h3><div className="soil-loading-bar"><span /></div></div>}
+          {planError && <p className="rounded-xl bg-rose-50 p-3 text-sm font-bold text-rose-700">{planError} Transparent local scores are shown below.</p>}
+          {aiPlan && (
+            <section className="ai-land-plan">
+              <div className="flex items-start justify-between gap-4">
+                <div><span className="section-kicker">AI land verdict</span><h3 className="mt-2 text-xl font-black">{aiPlan.summary}</h3></div>
+                <div className="land-score"><strong>{aiPlan.landQualityScore}</strong><span>land score</span></div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {aiPlan.take.map((crop) => <div key={crop.crop} className="ai-crop-take"><span>Take</span><strong>{crop.crop} · {crop.score}/100</strong><p>{crop.why}</p><small>Nutrition: {crop.fertilizerFocus}</small></div>)}
+                {aiPlan.avoid.map((crop) => <div key={crop.crop} className="ai-crop-avoid"><span>Avoid now</span><strong>{crop.crop} · {crop.score}/100</strong><p>{crop.why}</p></div>)}
+              </div>
+              {aiPlan.preventiveActions[0] && <p className="mt-3 text-sm font-bold text-[#43534b]">Prevent first: {aiPlan.preventiveActions[0]}</p>}
+              <p className="mt-2 text-[11px] font-bold text-zinc-500">AI confidence {aiPlan.confidence}%. {aiPlan.disclaimer}</p>
+            </section>
+          )}
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-black text-[#242824]">Crop decision</h3>
             <span className="metric-pill">{confidence}% evidence confidence</span>
