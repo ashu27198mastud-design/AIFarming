@@ -544,7 +544,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   return (
     <div className="m3-card border-dashed p-7 text-center">
       {hiddenInputs}
-      <button type="button" onClick={() => void startCamera()} disabled={disabled || preparing} className="camera-launch-orb animate-camera-pulse mx-auto mb-5" aria-label={t.takePhoto}>
+      <button type="button" onClick={openDeviceCamera} disabled={disabled || preparing} className="camera-launch-orb animate-camera-pulse mx-auto mb-5" aria-label={t.takePhoto}>
         <Camera className="relative z-10 h-11 w-11" />
       </button>
       <span className="section-kicker mb-2">Crop disease scan</span>
@@ -558,16 +558,16 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="btn-m3-primary w-full">
-          <Camera className="h-5 w-5" /> {preparing ? 'Preparing...' : 'Take photo'}
+        <button type="button" disabled={disabled || preparing} onClick={openDeviceCamera} className="btn-m3-primary w-full">
+          <Camera className="h-5 w-5" /> {preparing ? 'Preparing...' : 'Take or choose photo'}
         </button>
-        <button type="button" disabled={disabled || preparing} onClick={() => galleryInputRef.current?.click()} className="btn-m3-secondary w-full">
-          {preparing ? <Upload className="h-5 w-5 animate-pulse" /> : <ImagePlus className="h-5 w-5" />} Upload photo
+        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="btn-m3-secondary w-full">
+          {preparing ? <Upload className="h-5 w-5 animate-pulse" /> : <Camera className="h-5 w-5" />} Use live webcam
         </button>
       </div>
 
-      <button type="button" onClick={openDeviceCamera} disabled={disabled || preparing} className="mt-3 w-full rounded-2xl border border-[#C9AE7B]/40 bg-[#FBF6EC] px-4 py-3 text-sm font-extrabold text-[#5B4B32] shadow-sm">
-        <Camera className="mr-2 inline h-4 w-4" /> Open phone camera
+      <button type="button" disabled={disabled || preparing} onClick={() => galleryInputRef.current?.click()} className="mt-3 w-full rounded-2xl border border-[#C9AE7B]/40 bg-[#FBF6EC] px-4 py-3 text-sm font-extrabold text-[#5B4B32] shadow-sm">
+        <ImagePlus className="mr-2 inline h-4 w-4" /> Browse photos and videos
       </button>
 
       <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">The diagnosis is guidance only. Confirm severe cases with a local agronomist.</p>
