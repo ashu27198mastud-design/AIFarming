@@ -43,7 +43,7 @@ function unavailableDiagnosis(): CropDiagnosisResult {
     urgency: 'review',
     questionsForAccuracy: [
       'कृपया प्रभावित पत्ती का साफ़ क्लोज़-अप अपलोड करें। / Upload a clear close-up of the affected leaf.',
-      'पूरे पौधे की एक अतिरिक्त फोटो दें। / Add one full-plant photograph.'
+      'पूरे पौधे की एक अतिरिक्त फोटो दें। / Add one full-plant photograph.',
     ],
     immediateAction: 'इस स्कैन के आधार पर कोई उपचार न करें। कृपया दोबारा प्रयास करें। / Do not apply treatment based on this scan. Please retry.',
     organicOptions: [],
@@ -63,7 +63,7 @@ export async function analyzeCropImage(imageBase64: string, mimeType: string, fa
   }
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-pro',
+    model: 'gemini-2.5-flash',
     safetySettings: GEMINI_SAFETY_SETTINGS,
     generationConfig: {
       responseMimeType: 'application/json',
@@ -142,10 +142,17 @@ Rules:
 
 export async function getKisanMitraRecommendation(prompt: string, farmContext: string): Promise<string> {
   if (!genAI) return getDemoAssistantResponse(prompt);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro', safetySettings: GEMINI_SAFETY_SETTINGS });
+
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    safetySettings: GEMINI_SAFETY_SETTINGS,
+    generationConfig: { temperature: 0.2 },
+  });
+
   const systemPrompt = `You are KisanMitra (किसानमित्र), an expert AI crop companion for Indian farmers.
 Farm context: ${farmContext}
 Respond in a very simple, warm, and helpful tone in bilingual format (Hindi + English). Provide plain recommendations. Avoid technical jargon. Keep formatting clean.`;
+
   try {
     const result = await model.generateContent(`${systemPrompt}\n\nFarmer question: ${prompt}`);
     return result.response.text();

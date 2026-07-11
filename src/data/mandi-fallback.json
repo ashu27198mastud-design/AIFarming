@@ -1,0 +1,7 @@
+[
+  {"commodity":"Tomato","market":"Nashik","district":"Nashik","state":"Maharashtra","minPrice":1800,"maxPrice":2600,"modalPrice":2200,"arrivalDate":"2026-07-10"},
+  {"commodity":"Onion","market":"Lasalgaon","district":"Nashik","state":"Maharashtra","minPrice":1400,"maxPrice":2200,"modalPrice":1850,"arrivalDate":"2026-07-10"},
+  {"commodity":"Wheat","market":"Nashik","district":"Nashik","state":"Maharashtra","minPrice":2300,"maxPrice":2850,"modalPrice":2550,"arrivalDate":"2026-07-09"},
+  {"commodity":"Soyabean","market":"Nashik","district":"Nashik","state":"Maharashtra","minPrice":3900,"maxPrice":4700,"modalPrice":4350,"arrivalDate":"2026-07-09"},
+  {"commodity":"Cotton","market":"Aurangabad","district":"Nashik","state":"Maharashtra","minPrice":6500,"maxPrice":7600,"modalPrice":7100,"arrivalDate":"2026-07-08"}
+]
