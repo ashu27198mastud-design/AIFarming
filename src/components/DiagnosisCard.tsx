@@ -70,7 +70,7 @@ export default function DiagnosisCard({ diagnosis, t, lang, hourlyWeather }: Pro
       ? 'border-amber-200 bg-amber-50 text-amber-700'
       : diagnosis.severity === 'unknown'
         ? 'border-zinc-200 bg-zinc-100 text-zinc-700'
-        : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        : 'border-[#C9D7CF] bg-[#F1F5F2] text-[#52665B]';
 
   const healthLabel = diagnosis.severity === 'critical' || diagnosis.severity === 'high'
     ? t.diseased
@@ -105,58 +105,58 @@ export default function DiagnosisCard({ diagnosis, t, lang, hourlyWeather }: Pro
 
       <div className="flex items-center justify-between">
         <span className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-bold ${healthStyle}`}>{healthLabel}</span>
-        <button type="button" onClick={speak} className="flex min-h-12 min-w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-700" aria-label={speaking ? t.stopSpeech : t.readAloud}>
+        <button type="button" onClick={speak} className="flex min-h-12 min-w-12 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#555D58] shadow-sm" aria-label={speaking ? t.stopSpeech : t.readAloud}>
           {speaking ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
       </div>
 
       <div>
-        <h3 className="mb-1 text-lg font-black text-zinc-800">{diagnosis.mostLikelyIssue}</h3>
+        <h3 className="mb-1 text-lg font-black text-[#242824]">{diagnosis.mostLikelyIssue}</h3>
         {isLive && (
           <div className="flex items-center gap-2">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-100">
-              <div className="h-full rounded-full bg-[#2E7D32]" style={{ width: `${Math.max(0, Math.min(100, diagnosis.confidence))}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-[#6D7C74] to-[#B69A6A]" style={{ width: `${Math.max(0, Math.min(100, diagnosis.confidence))}%` }} />
             </div>
-            <span className="text-xs font-mono font-bold text-[#2E7D32]">{diagnosis.confidence}%</span>
+            <span className="text-xs font-mono font-bold text-[#4E5953]">{diagnosis.confidence}%</span>
           </div>
         )}
       </div>
 
-      <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3.5">
+      <div className="rounded-2xl border border-zinc-100 bg-[#FAFAF8] p-3.5">
         <div className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-zinc-500">
-          <AlertCircle className="h-4 w-4 text-[#2E7D32]" /> {t.whatToDo}
+          <AlertCircle className="h-4 w-4 text-[#69756F]" /> {t.whatToDo}
         </div>
         <ul className="space-y-2 text-sm font-semibold leading-relaxed text-zinc-700">
           {(diagnosis.immediateAction || '').split('\n').filter(Boolean).slice(0, 3).map((step, index) => (
-            <li key={`${step}-${index}`} className="flex items-start gap-2"><span className="font-extrabold text-[#2E7D32]">•</span><span>{step}</span></li>
+            <li key={`${step}-${index}`} className="flex items-start gap-2"><span className="font-extrabold text-[#8C7652]">•</span><span>{step}</span></li>
           ))}
         </ul>
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div className="rounded-2xl border border-[#2E7D32]/10 bg-emerald-50/50 p-3">
-          <span className="mb-1 block text-[11px] font-black tracking-wider text-emerald-800">{t.organicOption}</span>
-          {diagnosis.organicOptions?.length ? diagnosis.organicOptions.map((option) => <div key={option} className="text-sm font-bold text-[#2E7D32]">{option}</div>) : <div className="text-sm font-semibold text-zinc-500">—</div>}
+        <div className="rounded-2xl border border-[#DCE3DE] bg-[#F6F8F6] p-3">
+          <span className="mb-1 block text-[11px] font-black tracking-wider text-[#5D6B63]">{t.organicOption}</span>
+          {diagnosis.organicOptions?.length ? diagnosis.organicOptions.map((option) => <div key={option} className="text-sm font-bold text-[#4F5D55]">{option}</div>) : <div className="text-sm font-semibold text-zinc-500">—</div>}
         </div>
-        <div className="rounded-2xl border border-[#C62828]/10 bg-rose-50/50 p-3">
-          <span className="mb-1 block text-[11px] font-black tracking-wider text-rose-800">{t.chemicalOption}</span>
-          <div className="text-sm font-bold text-[#C62828]">{diagnosis.chemicalCategory || '—'}</div>
+        <div className="rounded-2xl border border-rose-100 bg-[#FFF8F8] p-3">
+          <span className="mb-1 block text-[11px] font-black tracking-wider text-rose-700">{t.chemicalOption}</span>
+          <div className="text-sm font-bold text-[#A84450]">{diagnosis.chemicalCategory || '—'}</div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-2xl border border-amber-200/50 bg-[#FFF8E1] p-3">
+      <div className="flex items-center justify-between rounded-2xl border border-[#E4D4B4] bg-[#FBF6EC] p-3">
         <div>
-          <span className="mb-1 block text-[11px] font-black uppercase tracking-wider text-amber-800">{t.bestSpray}</span>
+          <span className="mb-1 block text-[11px] font-black uppercase tracking-wider text-[#8A6B3D]">{t.bestSpray}</span>
           <span className="text-sm font-bold text-zinc-700">{sprayWindow}</span>
         </div>
-        <Clock className="h-5 w-5 flex-shrink-0 text-amber-700" />
+        <Clock className="h-5 w-5 flex-shrink-0 text-[#A4824F]" />
       </div>
 
-      <button type="button" onClick={() => setExpanded((value) => !value)} className="w-full rounded-xl border border-[#2E7D32]/10 py-2.5 text-sm font-bold text-[#2E7D32]">
+      <button type="button" onClick={() => setExpanded((value) => !value)} className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 text-sm font-bold text-[#4E5752] shadow-sm">
         {t.learnMore} {expanded ? '▲' : '▼'}
       </button>
       {expanded && (
-        <div className="space-y-2 rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm font-semibold text-zinc-600">
+        <div className="space-y-2 rounded-xl border border-zinc-100 bg-[#FAFAF8] p-3 text-sm font-semibold text-zinc-600">
           <p>{diagnosis.preventionAdvice}</p>
           {diagnosis.visibleIndicators?.map((item) => <p key={item}>• {item}</p>)}
           {diagnosis.questionsForAccuracy?.map((item) => <p key={item}>? {item}</p>)}

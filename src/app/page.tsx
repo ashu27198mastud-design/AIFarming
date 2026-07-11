@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, ChevronDown, Navigation, RefreshCw, Sparkles, Sprout } from 'lucide-react';
 import BottomNav, { type TabId } from '@/components/BottomNav';
-import HomeTab, { type ScanHistoryItem } from '@/components/tabs/HomeTab';
+import HomeTab, {
+  type HomeTabHandle,
+  type ScanHistoryItem,
+} from '@/components/tabs/HomeTab';
 import WeatherTab from '@/components/tabs/WeatherTab';
 import MandiTab from '@/components/tabs/MandiTab';
 import FarmTab from '@/components/tabs/FarmTab';
@@ -16,13 +19,13 @@ const LANGUAGE_STORAGE_KEY = 'km-lang';
 
 export default function Home() {
   const { farmTwin } = useFarmStore();
+  const homeTabRef = useRef<HomeTabHandle>(null);
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [lang, setLang] = useState<LanguageCode>('hi');
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'searching' | 'success' | 'error'>('idle');
   const [coords, setCoords] = useState(DEFAULT_COORDS);
   const [scans, setScans] = useState<ScanHistoryItem[]>([]);
-  const [resetToken, setResetToken] = useState(0);
   const t = TRANSLATIONS[lang];
   const market = useMemo(() => resolveGpsMarket(coords.lat, coords.lng), [coords.lat, coords.lng]);
 
@@ -87,7 +90,7 @@ export default function Home() {
 
   const openCamera = () => {
     setActiveTab('home');
-    setResetToken((value) => value + 1);
+    homeTabRef.current?.openCamera();
   };
 
   return (
@@ -95,17 +98,17 @@ export default function Home() {
       <div className="app-shell flex min-h-screen w-full max-w-[520px] flex-col">
         <header className="premium-header sticky top-0 z-30 flex items-center justify-between px-4 py-3.5">
           <button type="button" onClick={() => setActiveTab('home')} className="flex min-w-0 items-center gap-3 text-left">
-            <div className="brand-orb flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[17px] text-[#2E7D32]">
+            <div className="brand-orb flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[17px] text-[#52665B]">
               <Sprout className="relative z-10 h-7 w-7" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-[22px] font-extrabold tracking-[-0.035em] text-[#171A18]">{t.title}</h1>
-                <span className="hidden items-center gap-1 rounded-full border border-emerald-100 bg-white/75 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-emerald-700 shadow-sm sm:inline-flex">
+                <h1 className="truncate text-[22px] font-extrabold tracking-[-0.035em] text-[#202421]">{t.title}</h1>
+                <span className="hidden items-center gap-1 rounded-full border border-[#DCCBAA]/60 bg-[#FBF7EF]/90 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-[#7A6645] shadow-sm sm:inline-flex">
                   <Sparkles className="h-3 w-3" /> AI
                 </span>
               </div>
-              <p className="truncate text-[11px] font-semibold text-zinc-500">{t.tagline}</p>
+              <p className="truncate text-[11px] font-semibold text-[#777B77]">{t.tagline}</p>
             </div>
           </button>
 
@@ -118,13 +121,13 @@ export default function Home() {
                 {LANGUAGES.find((item) => item.code === lang)?.name} <ChevronDown className={`h-4 w-4 transition-transform ${langMenuOpen ? 'rotate-180' : ''}`} />
               </button>
               {langMenuOpen && (
-                <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-[22px] border border-white/90 bg-white/95 p-1.5 shadow-[0_24px_55px_rgba(28,78,36,0.18)] backdrop-blur-xl">
+                <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-[22px] border border-white/90 bg-white/95 p-1.5 shadow-[0_24px_55px_rgba(39,43,41,0.16)] backdrop-blur-xl">
                   {LANGUAGES.map((item) => (
                     <button
                       key={item.code}
                       type="button"
                       onClick={() => changeLanguage(item.code)}
-                      className={`block w-full rounded-2xl px-3.5 py-2.5 text-left text-sm font-bold transition-colors ${lang === item.code ? 'bg-[#E8F5E9] text-[#2E7D32]' : 'text-zinc-700 hover:bg-zinc-50'}`}
+                      className={`block w-full rounded-2xl px-3.5 py-2.5 text-left text-sm font-bold transition-colors ${lang === item.code ? 'bg-[#F1EEE7] text-[#3D4541]' : 'text-zinc-700 hover:bg-zinc-50'}`}
                     >
                       {item.name}
                     </button>
@@ -135,19 +138,27 @@ export default function Home() {
           </div>
         </header>
 
-        {gpsStatus === 'success' && <div className="border-b border-emerald-100 bg-emerald-50/85 px-4 py-2 text-center text-xs font-semibold text-[#2E7D32]">{t.gpsSuccess}: {coords.lat.toFixed(3)}, {coords.lng.toFixed(3)}</div>}
-        {gpsStatus === 'error' && <div className="border-b border-rose-100 bg-rose-50/90 px-4 py-2 text-center text-xs font-semibold text-[#C62828]">{t.gpsDenied}</div>}
+        {gpsStatus === 'success' && <div className="border-b border-[#D8E0E8] bg-[#F2F6FA]/90 px-4 py-2 text-center text-xs font-semibold text-[#4C6379]">{t.gpsSuccess}: {coords.lat.toFixed(3)}, {coords.lng.toFixed(3)}</div>}
+        {gpsStatus === 'error' && <div className="border-b border-rose-100 bg-rose-50/90 px-4 py-2 text-center text-xs font-semibold text-[#A73C4A]">{t.gpsDenied}</div>}
 
         <main className="premium-main flex-1 overflow-y-auto p-4 pb-32 sm:p-5 sm:pb-32">
-          {activeTab === 'home' && <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} resetToken={resetToken} />}
-          {activeTab === 'weather' && <WeatherTab t={t} coords={coords} />}
-          {activeTab === 'mandi' && <MandiTab t={t} market={market} />}
-          {activeTab === 'farm' && <FarmTab t={t} lang={lang} scans={scans} farm={{ region: farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} />}
+          <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
+            <HomeTab ref={homeTabRef} t={t} lang={lang} coords={coords} onAddScan={addScan} />
+          </section>
+          <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}>
+            <WeatherTab t={t} coords={coords} />
+          </section>
+          <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}>
+            <MandiTab t={t} market={market} />
+          </section>
+          <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}>
+            <FarmTab t={t} lang={lang} scans={scans} farm={{ region: farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} />
+          </section>
         </main>
 
         <button type="button" onClick={openCamera} aria-label={t.takePhoto} className="m3-fab">
-          <Camera className="h-6 w-6 text-[#263429]" />
-          <span className="mt-0.5 text-[9px] font-black leading-none text-[#39443B]">{lang === 'en' ? 'Photo' : 'फोटो'}</span>
+          <Camera className="h-6 w-6 text-[#373D39]" />
+          <span className="mt-0.5 text-[9px] font-black leading-none text-[#4B514D]">{lang === 'en' ? 'Photo' : 'फोटो'}</span>
         </button>
         <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} />
       </div>
