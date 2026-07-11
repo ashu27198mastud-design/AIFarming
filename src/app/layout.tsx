@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'KisanMitra — आपकी फसल का साथी | Your Crop\'s Companion',
-  description: 'किसानमित्र — भारतीय किसानों के लिए एक सरल और सुगम कृषि सहायक ऐप। फ़ोटो लें और बीमारी की तुरंत जांच करें। | KisanMitra — A simple and direct farmer-first crop assistant. Take a photo to diagnose crop diseases instantly.',
+  description: 'किसानमित्र — भारतीय किसानों के लिए एक सरल और सुगम कृषि सहायक ऐप। फ़ोटो लें और बीमारी की तुरंत जांच करें। | KisanMitra — A simple and direct farmer-first crop assistant.',
   keywords: ['KisanMitra', 'किसानमित्र', 'smart farming India', 'crop disease diagnosis', 'AI farmer assistant', 'mandi prices'],
   authors: [{ name: 'KisanMitra Team' }],
   openGraph: {
@@ -13,22 +13,25 @@ export const metadata: Metadata = {
     siteName: 'KisanMitra',
   },
   manifest: '/manifest.json',
-  icons: { icon: '/favicon.ico' },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/icons/icon-192.png',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   themeColor: '#FAFDF7',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="bg-[#FAFDF7] min-h-screen antialiased">
-        {children}
-      </body>
+    <html lang="hi">
+      <body className="min-h-screen bg-[#FAFDF7] antialiased">{children}</body>
     </html>
   );
 }
