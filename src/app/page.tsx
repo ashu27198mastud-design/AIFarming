@@ -660,7 +660,7 @@ export default function Home() {
                   )}
 
                   {/* DIAGNOSIS RESULT CARD IN THE EXACT REQUESTED ORDER */}
-                  {diagnosis && (
+                  {diagnosis && !diagnosis.error && (
                     <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="space-y-4 pt-2 border-t border-zinc-100">
                       
                       {/* a) Traffic-light health badge */}
@@ -761,6 +761,12 @@ export default function Home() {
                       </div>
 
                     </motion.div>
+                  )}
+
+                  {diagnosis && diagnosis.error && (
+                    <div className="mt-4 p-4 bg-[#FFEBEE] border border-[#FFCDD2] text-[#C62828] rounded-2xl text-sm font-semibold text-center">
+                      {diagnosis.error}
+                    </div>
                   )}
                 </motion.div>
               )}
