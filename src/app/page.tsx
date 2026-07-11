@@ -39,6 +39,7 @@ const LANGUAGE_STORAGE_KEY = 'km-lang';
 export default function Home() {
   const { farmTwin } = useFarmStore();
   const homeTabRef = useRef<HomeTabHandle>(null);
+  const scannerSectionRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [lang, setLang] = useState<LanguageCode>('hi');
   const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -129,7 +130,9 @@ export default function Home() {
 
   const openCamera = () => {
     setActiveTab('home');
-    homeTabRef.current?.openCamera();
+    window.requestAnimationFrame(() => {
+      scannerSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   return (
@@ -206,7 +209,11 @@ export default function Home() {
                 </div>
               </section>
 
-              <section className="grid grid-cols-2 gap-3">
+              <div ref={scannerSectionRef} className="scan-zone">
+                <HomeTab ref={homeTabRef} t={t} lang={lang} coords={coords} onAddScan={addScan} />
+              </div>
+
+              <section className="risk-grid grid grid-cols-2 gap-3">
                 <div className="rounded-[24px] border border-[#D9E0DB] bg-[#F5F8F5] p-4 shadow-sm">
                   <ShieldCheck className="mb-3 h-6 w-6 text-[#65776E]" />
                   <span className="block text-[11px] font-black uppercase text-[#6B756F]">Disease risk</span>
@@ -216,6 +223,7 @@ export default function Home() {
                   <LineChart className="mb-3 h-6 w-6 text-[#A4824F]" />
                   <span className="block text-[11px] font-black uppercase text-[#8A7655]">Mandi area</span>
                   <strong className="mt-1 block text-lg text-[#3E382E]">{market.district}</strong>
+                  <span className="mt-1 block text-[11px] font-bold text-[#8A7655]">GPS match · {market.distanceKm} km</span>
                 </div>
               </section>
 
@@ -282,7 +290,7 @@ export default function Home() {
                 ))}
               </section>
 
-              <HomeTab ref={homeTabRef} t={t} lang={lang} coords={coords} onAddScan={addScan} />
+              
             </div>
           </section>
           <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}>
