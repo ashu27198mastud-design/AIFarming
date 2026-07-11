@@ -66,7 +66,7 @@ const HomeTab = forwardRef<HomeTabHandle, Props>(function HomeTab(
     openCamera: () => {
       setMedia(null);
       setDiagnosis(null);
-      cameraRef.current?.openCamera();
+      cameraRef.current?.openDeviceCamera();
     },
   }), []);
 
