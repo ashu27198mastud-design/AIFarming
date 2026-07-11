@@ -261,7 +261,7 @@ export default function Home() {
                 ))}
               </section>
 
-              <FieldPlanner />
+              <FieldPlanner coords={coords} market={market} />
 
               <section className="m3-card space-y-3">
                 <span className="section-kicker"><FlaskConical className="h-3.5 w-3.5 text-[#A84450]" /> Fertilizer selection</span>
