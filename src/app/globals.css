@@ -975,3 +975,66 @@ body {
   .dashboard-hero > div:first-child { align-items: flex-start; }
   .soil-metrics { grid-template-columns: 1fr; }
 }
+
+
+.ai-land-plan {
+  border: 1px solid rgba(23,63,49,0.18);
+  border-radius: 16px;
+  background: #f2f8f4;
+  padding: 18px;
+  box-shadow: inset 0 1px 0 white, 0 5px 0 rgba(23,63,49,0.06);
+}
+
+.land-score {
+  display: flex;
+  width: 82px;
+  height: 82px;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(213,169,78,0.45);
+  border-radius: 18px;
+  background: #fff9ec;
+  box-shadow: inset 0 1px 0 white, 0 5px 0 rgba(158,116,32,0.14);
+}
+
+.land-score strong { font-size: 27px; color: var(--km-green); }
+.land-score span { font-size: 9px; font-weight: 900; text-transform: uppercase; color: #876c35; }
+
+.ai-crop-take,
+.ai-crop-avoid {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  border-radius: 13px;
+  padding: 13px;
+}
+
+.ai-crop-take {
+  border: 1px solid rgba(23,100,67,0.2);
+  background: white;
+  box-shadow: 0 4px 0 rgba(23,100,67,0.08);
+}
+
+.ai-crop-avoid {
+  border: 1px solid rgba(216,108,89,0.22);
+  background: #fff8f6;
+  box-shadow: 0 4px 0 rgba(216,108,89,0.08);
+}
+
+.ai-crop-take > span,
+.ai-crop-avoid > span {
+  font-size: 9px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.ai-crop-take > span { color: #176443; }
+.ai-crop-avoid > span { color: #b04737; }
+.ai-crop-take strong,
+.ai-crop-avoid strong { overflow-wrap: anywhere; font-size: 14px; color: var(--km-ink); }
+.ai-crop-take p,
+.ai-crop-avoid p { font-size: 12px; font-weight: 650; line-height: 1.45; color: #5d6862; }
+.ai-crop-take small { font-size: 10px; font-weight: 800; color: #53665c; }
