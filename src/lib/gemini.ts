@@ -14,53 +14,136 @@ export const GEMINI_SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
 ];
 
+export type CropDiagnosisResult = {
+  mostLikelyIssue: string;
+  alternativePossibilities: string[];
+  confidence: number;
+  visibleIndicators: string[];
+  severity: 'healthy' | 'low' | 'medium' | 'high' | 'critical' | 'unknown';
+  urgency: 'none' | 'routine' | 'soon' | 'urgent' | 'immediate' | 'review';
+  questionsForAccuracy: string[];
+  immediateAction: string;
+  organicOptions: string[];
+  chemicalCategory: string;
+  preventionAdvice: string;
+  followUpDays: number;
+  requiresExpert: boolean;
+  imageQuality: 'poor' | 'acceptable' | 'good';
+  imageCategory: 'crop' | 'non-crop' | 'unclear';
+  isFallback?: boolean;
+};
+
+function unavailableDiagnosis(): CropDiagnosisResult {
+  return {
+    mostLikelyIssue: 'विश्लेषण उपलब्ध नहीं / Analysis unavailable',
+    alternativePossibilities: [],
+    confidence: 0,
+    visibleIndicators: [],
+    severity: 'unknown',
+    urgency: 'review',
+    questionsForAccuracy: [
+      'कृपया प्रभावित पत्ती का साफ़ क्लोज़-अप अपलोड करें। / Upload a clear close-up of the affected leaf.',
+      'पूरे पौधे की एक अतिरिक्त फोटो दें। / Add one full-plant photograph.'
+    ],
+    immediateAction: 'इस स्कैन के आधार पर कोई उपचार न करें। कृपया दोबारा प्रयास करें। / Do not apply treatment based on this scan. Please retry.',
+    organicOptions: [],
+    chemicalCategory: '',
+    preventionAdvice: 'स्पष्ट पहचान के बिना रसायन का उपयोग न करें। / Avoid chemical use without a clear diagnosis.',
+    followUpDays: 0,
+    requiresExpert: false,
+    imageQuality: 'poor',
+    imageCategory: 'unclear',
+    isFallback: true,
+  };
+}
+
 export async function analyzeCropImage(imageBase64: string, mimeType: string, farmContext: string): Promise<string> {
   if (!genAI) {
-    return JSON.stringify(getDemoDiagnosisResponse());
+    return JSON.stringify(unavailableDiagnosis());
   }
+
   const model = genAI.getGenerativeModel({
     model: 'gemini-1.5-pro',
     safetySettings: GEMINI_SAFETY_SETTINGS,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.2,
+    },
   });
-  const prompt = `You are KisanMitra (किसानमित्र), an expert farmer-first agronomist assistant. 
+
+  const prompt = `You are KisanMitra, an expert agronomist assistant.
 Farm context: ${farmContext}
 
-Analyze the uploaded crop image and return a structured JSON response with these exact fields:
-{
-  "mostLikelyIssue": "Name of disease/deficiency in Hindi + English (e.g., अगेती झुलसा / Early Blight)",
-  "alternativePossibilities": ["string in Hindi + English"],
-  "confidence": number (0-100),
-  "visibleIndicators": ["simple visible symptoms in Hindi + English"],
-  "severity": "low|medium|high|critical",
-  "urgency": "routine|soon|urgent|immediate",
-  "questionsForAccuracy": ["clarifying questions in Hindi + English"],
-  "immediateAction": "What the farmer should do right now (max 3 simple steps, clear, one line each, in Hindi + English)",
-  "organicOptions": ["organic treatment/fertilizer with local Indian names and approx cost in ₹ (e.g., नीम का तेल / Neem Oil - ₹150)"],
-  "chemicalCategory": "chemical option with local Indian brand/product names and approx cost in ₹ (e.g., मैंकोज़ेब / Mancozeb 75 WP - ₹250)",
-  "preventionAdvice": "Simple preventive advice in Hindi + English",
-  "followUpDays": number,
-  "requiresExpert": boolean
-}
+Analyse ONLY what is genuinely visible in the uploaded image. Never reuse a default diagnosis.
 
-IMPORTANT: Do not provide dangerous pesticide dosages. Refer users to local agriculture officers for exact volume. Keep descriptions simple, avoiding technical jargon, so it is understandable for smallholder farmers.`;
+First classify the image as one of:
+- crop: a recognisable crop or plant is visible
+- non-crop: no crop or plant is visible
+- unclear: image is too blurry, dark, distant, obstructed, or insufficient
+
+Rules:
+1. Do not assume the crop is tomato merely because the farm context mentions tomato.
+2. Healthy must only be returned when the visible plant tissue shows no meaningful symptoms.
+3. If the image is non-crop or unclear, set severity to unknown, confidence below 30, avoid naming a disease, and ask for a clearer image.
+4. Different visible symptoms must produce different diagnoses.
+5. If confidence is below 50, avoid treatment-specific chemical advice and request more evidence.
+6. Do not provide pesticide dosages. Refer the farmer to the product label or local agriculture officer.
+7. Return only JSON with these exact fields:
+{
+  "mostLikelyIssue": "Hindi + English diagnosis, or Unable to determine",
+  "alternativePossibilities": ["Hindi + English"],
+  "confidence": 0,
+  "visibleIndicators": ["Hindi + English observations"],
+  "severity": "healthy|low|medium|high|critical|unknown",
+  "urgency": "none|routine|soon|urgent|immediate|review",
+  "questionsForAccuracy": ["Hindi + English questions"],
+  "immediateAction": "Maximum 3 short bilingual steps separated by newline",
+  "organicOptions": ["Bilingual safe options"],
+  "chemicalCategory": "General category only, no dosage",
+  "preventionAdvice": "Bilingual prevention advice",
+  "followUpDays": 0,
+  "requiresExpert": false,
+  "imageQuality": "poor|acceptable|good",
+  "imageCategory": "crop|non-crop|unclear"
+}`;
+
   try {
     const result = await model.generateContent([
       prompt,
       { inlineData: { data: imageBase64, mimeType } },
     ]);
+
     const text = result.response.text();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    return jsonMatch ? jsonMatch[0] : JSON.stringify(getDemoDiagnosisResponse());
+    const parsed = JSON.parse(text) as CropDiagnosisResult;
+
+    return JSON.stringify({
+      ...parsed,
+      mostLikelyIssue: parsed.mostLikelyIssue || 'निर्धारित नहीं किया जा सका / Unable to determine crop condition',
+      alternativePossibilities: Array.isArray(parsed.alternativePossibilities) ? parsed.alternativePossibilities : [],
+      visibleIndicators: Array.isArray(parsed.visibleIndicators) ? parsed.visibleIndicators : [],
+      questionsForAccuracy: Array.isArray(parsed.questionsForAccuracy) ? parsed.questionsForAccuracy : [],
+      organicOptions: Array.isArray(parsed.organicOptions) ? parsed.organicOptions : [],
+      confidence: Number.isFinite(parsed.confidence) ? Math.max(0, Math.min(100, parsed.confidence)) : 0,
+      severity: parsed.severity || 'unknown',
+      urgency: parsed.urgency || 'review',
+      immediateAction: parsed.immediateAction || 'कृपया स्पष्ट फोटो के साथ पुनः प्रयास करें। / Please retry with a clearer image.',
+      chemicalCategory: parsed.chemicalCategory || '',
+      preventionAdvice: parsed.preventionAdvice || '',
+      followUpDays: Number.isFinite(parsed.followUpDays) ? parsed.followUpDays : 0,
+      requiresExpert: Boolean(parsed.requiresExpert),
+      imageQuality: parsed.imageQuality || 'poor',
+      imageCategory: parsed.imageCategory || 'unclear',
+    });
   } catch (error) {
     console.error('Gemini API error:', error);
-    return JSON.stringify(getDemoDiagnosisResponse());
+    return JSON.stringify(unavailableDiagnosis());
   }
 }
 
 export async function getKisanMitraRecommendation(prompt: string, farmContext: string): Promise<string> {
   if (!genAI) return getDemoAssistantResponse(prompt);
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro', safetySettings: GEMINI_SAFETY_SETTINGS });
-  const systemPrompt = `You are KisanMitra (किसानमित्र), an expert AI crop companion for Indian farmers. 
+  const systemPrompt = `You are KisanMitra (किसानमित्र), an expert AI crop companion for Indian farmers.
 Farm context: ${farmContext}
 Respond in a very simple, warm, and helpful tone in bilingual format (Hindi + English). Provide plain recommendations. Avoid technical jargon. Keep formatting clean.`;
   try {
@@ -71,46 +154,16 @@ Respond in a very simple, warm, and helpful tone in bilingual format (Hindi + En
   }
 }
 
-function getDemoDiagnosisResponse() {
-  return {
-    mostLikelyIssue: 'अगेती झुलसा / Early Blight (Alternaria solani)',
-    alternativePossibilities: [
-      'पर्णदाग रोग / Septoria Leaf Spot (सेप्टोरिया लीफ स्पॉट)',
-      'जीवाणु चित्ती रोग / Bacterial Speck (बैक्टीरियल स्पेक)'
-    ],
-    confidence: 78,
-    visibleIndicators: [
-      'निचले पत्तों पर गोल गहरे भूरे छल्ले / Circular dark brown rings on lower leaves',
-      'धब्बों के चारों ओर पीलापन / Yellow halo surrounding lesions'
-    ],
-    severity: 'medium',
-    urgency: 'soon',
-    questionsForAccuracy: [
-      'क्या यह केवल नीचे के पत्तों पर है? / Is this only on lower leaves?',
-      'क्या ऊपरी नए पत्ते भी पीले हो रहे हैं? / Are the upper new leaves yellowing?'
-    ],
-    immediateAction: '1. संक्रमित पत्तों को तुरंत तोड़कर नष्ट करें। / Remove and destroy affected leaves.\n2. हवा का संचार बढ़ाने के लिए बीच की खरपतवार साफ करें। / Clear weeds to increase airflow.\n3. फफूंदनाशक का छिड़काव करें। / Apply fungicide spray.',
-    organicOptions: [
-      'नीम का तेल और खाने का सोडा / Neem oil + baking soda solution (₹150 - ₹200)',
-      'ट्राइकोडर्मा जैविक नियंत्रण / Trichoderma biocontrol agent (₹120)'
-    ],
-    chemicalCategory: 'ताम्र फफूंदनाशक जैसे कॉपर ऑक्सीक्लोराइड / Copper Oxychloride 50 WP (₹250 - ₹300)',
-    preventionAdvice: 'फसल चक्र अपनाएं और सिंचाई करते समय पत्तों पर पानी न डालें। / Rotate crops and avoid overhead irrigation to keep foliage dry.',
-    followUpDays: 5,
-    requiresExpert: false,
-  };
-}
-
 function getDemoAssistantResponse(prompt: string): string {
   const lower = prompt.toLowerCase();
   if (lower.includes('tomato') || lower.includes('disease') || lower.includes('leaf') || lower.includes('टमाटर') || lower.includes('बीमारी')) {
-    return 'टमाटर के पौधों में आर्द्रता अधिक होने से फफूंद रोग (Early Blight) का खतरा बढ़ गया है। नीम का तेल या फफूंदनाशक का छिड़काव करें।\n\nFungal risk (Early Blight) is high due to humidity in your tomato field. Apply neem oil or copper-based fungicide spray soon.';
+    return 'कृपया प्रभावित पत्ती और पूरे पौधे की स्पष्ट फोटो अपलोड करें। बिना फोटो विश्लेषण के बीमारी तय नहीं की जाएगी।\n\nPlease upload a clear affected-leaf image and one full-plant image. No disease will be assumed without image analysis.';
   }
   if (lower.includes('water') || lower.includes('irrigation') || lower.includes('पानी') || lower.includes('सिंचाई')) {
-    return 'खेत में नमी ७८% है, जो पर्याप्त है। आगामी १८ घंटों में बारिश का अनुमान है, इसलिए अभी सिंचाई रोक दें।\n\nSoil moisture is 78%, which is sufficient. Rain is expected in the next 18 hours, so pause irrigation for now.';
+    return 'सिंचाई का निर्णय मिट्टी की नमी और ताज़ा मौसम पूर्वानुमान देखकर लें।\n\nUse current soil-moisture readings and the latest weather forecast before irrigating.';
   }
   if (lower.includes('market') || lower.includes('price') || lower.includes('sell') || lower.includes('मंडी') || lower.includes('भाव')) {
-    return 'नाशिक मंडी में टमाटर के भाव १२% बढ़ गए हैं। अभी बेचना लाभदायक रहेगा।\n\nNashik APMC prices are up 12% for tomatoes. It is a good time to sell.';
+    return 'मंडी डेटा उपलब्ध होने पर स्थानीय भाव, परिवहन लागत और फसल की परिपक्वता की तुलना करें।\n\nWhen market data is available, compare local prices, transport cost, and crop maturity.';
   }
-  return 'नमस्कार! मैं किसानमित्र (KisanMitra) हूँ। मैं आपकी फसल की बीमारी, मौसम और मंडी भाव की जानकारी दे सकता हूँ। आप क्या पूछना चाहते हैं?\n\nHello! I am KisanMitra. I can help with crop disease diagnosis, weather alerts, and mandi prices. How can I help you today?';
+  return 'नमस्कार! मैं किसानमित्र हूँ। मैं फसल स्वास्थ्य, मौसम और बाजार निर्णय में मदद कर सकता हूँ।\n\nHello! I am KisanMitra. I can assist with crop health, weather, and market decisions.';
 }
