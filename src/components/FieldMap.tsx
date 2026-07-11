@@ -65,7 +65,7 @@ export default function FieldMap({ fields, selectedFieldId, activeLayer }: Field
         }
       ).addTo(map);
 
-      const popup = L.popup({ className: 'aether-popup' }).setContent(
+      const popup = L.popup({ className: 'kisanmitra-popup' }).setContent(
         `<div style="background:#161B22;color:#F0EDE8;padding:8px;border-radius:8px;font-size:12px;">
           <strong>${field.name}</strong><br/>
           ${field.areaHectares}ha &middot; ${field.irrigationMethod}<br/>

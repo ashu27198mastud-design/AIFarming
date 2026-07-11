@@ -1,0 +1,17 @@
+{
+  "name": "KisanMitra — आपकी फसल का साथी",
+  "short_name": "KisanMitra",
+  "description": "किसानमित्र — भारतीय किसानों के लिए एक सरल और सुगम कृषि सहायक ऐप। फ़ोटो लें और बीमारी की तुरंत जांच करें। | KisanMitra — Your Crop's Companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFDF7",
+  "theme_color": "#2E7D32",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

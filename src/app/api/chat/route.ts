@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAetherRecommendation } from '@/lib/gemini';
+import { getKisanMitraRecommendation } from '@/lib/gemini';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
-    const response = await getAetherRecommendation(message, farmContext ?? '');
+    const response = await getKisanMitraRecommendation(message, farmContext ?? '');
     return NextResponse.json({
       response,
       dataSource: process.env.GEMINI_API_KEY ? 'live' : 'simulated',

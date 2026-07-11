@@ -1,4 +1,4 @@
-// AETHER AG — Real-Time Venue Intelligence Rule Engine (RVIRE)
+// KisanMitra — Real-Time Venue Intelligence Rule Engine (RVIRE)
 import type { ResolutionCard, FarmTwin, WeatherForecast, SoilReading, IrrigationAction } from '@/types';
 
 interface RuleContext {

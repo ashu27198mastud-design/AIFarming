@@ -1,4 +1,4 @@
-// AETHER AG — Complete Seeded Demo Data (Asha's Farm, Maharashtra, India)
+// KisanMitra — Complete Seeded Demo Data (Asha's Farm, Maharashtra, India)
 import type {
   FarmTwin, Field, CropCycle, StreamCard, ResolutionCard,
   DroneMission, IrrigationAction, WeatherForecast, HarvestScenario,
@@ -20,7 +20,7 @@ export const DEMO_FARM_TWIN: FarmTwin = {
   farmerName: 'Asha Pawar',
   country: 'India',
   region: 'Nashik, Maharashtra',
-  farmName: 'Aether Green Farm',
+  farmName: 'KisanMitra Model Farm',
   farmSizeHectares: 2,
   farmMode: 'small_plot',
   countryCode: 'IN',
@@ -163,7 +163,7 @@ export const DEMO_RESOLUTION_CARDS: Record<string, ResolutionCard> = {
     dataSource: 'simulated',
     alternatives: ['Apply neem oil (organic) — effective but slower acting', 'Increase canopy ventilation only — lower effectiveness', 'Wait and monitor — not recommended given confidence level'],
     requiresApproval: true,
-    followUpVerification: 'Photograph tomato canopy after 48 hours. Aether will compare with current observation.',
+    followUpVerification: 'Photograph tomato canopy after 48 hours. KisanMitra will compare with current observation.',
     actionType: 'record_treatment',
     status: 'active',
     createdAt: new Date().toISOString(),
@@ -187,7 +187,7 @@ export const DEMO_RESOLUTION_CARDS: Record<string, ResolutionCard> = {
     dataSource: 'simulated',
     alternatives: ['Reduce irrigation to 30% of scheduled volume', 'Proceed with irrigation and open drainage — higher risk'],
     requiresApproval: true,
-    followUpVerification: 'Check soil moisture reading after rainfall event. Aether will recommend next irrigation window.',
+    followUpVerification: 'Check soil moisture reading after rainfall event. KisanMitra will recommend next irrigation window.',
     actionType: 'pause_irrigation',
     status: 'active',
     createdAt: new Date().toISOString(),
@@ -211,7 +211,7 @@ export const DEMO_RESOLUTION_CARDS: Record<string, ResolutionCard> = {
     dataSource: 'simulated',
     alternatives: ['Sell through cooperative (+₹2/kg premium, 3-day delay)', 'Explore export grade sorting (+₹5/kg for A-grade)'],
     requiresApproval: false,
-    followUpVerification: 'Record actual harvest yield and sale price. Aether will update Farm Twin and price model.',
+    followUpVerification: 'Record actual harvest yield and sale price. KisanMitra will update Farm Twin and price model.',
     actionType: 'harvest_window',
     status: 'active',
     createdAt: new Date().toISOString(),

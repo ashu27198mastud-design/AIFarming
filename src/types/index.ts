@@ -1,4 +1,4 @@
-// AETHER AG — Complete TypeScript Type Definitions
+// KisanMitra — Complete TypeScript Type Definitions
 
 export type PriorityLevel = 'critical' | 'high' | 'medium' | 'low';
 export type DataSourceType = 'live' | 'cached' | 'simulated';
@@ -463,9 +463,9 @@ export interface ResearchExperiment {
   disclaimer: string;
 }
 
-export interface AetherChatMessage {
+export interface KisanMitraChatMessage {
   id: string;
-  role: 'user' | 'aether';
+  role: 'user' | 'kisanmitra';
   content: string;
   imageUrl?: string;
   timestamp: string;

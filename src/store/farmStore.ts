@@ -1,4 +1,4 @@
-// AETHER AG — Zustand Farm Store
+// KisanMitra — Zustand Farm Store
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { FarmTwin, ResolutionCard, StreamCard, IrrigationAction, DroneMission, OutcomeVerification, CountryPack, TimelineEvent } from '@/types';
@@ -125,6 +125,6 @@ export const useFarmStore = create<FarmStore>()(
         verifications: state.verifications.map(v => v.id === id ? { ...v, ...updates } : v),
       })),
     }),
-    { name: 'aether-farm-store', skipHydration: true }
+    { name: 'kisanmitra-farm-store', skipHydration: true }
   )
 );

@@ -1,4 +1,4 @@
-// AETHER AG — Open-Meteo Weather Adapter
+// KisanMitra — Open-Meteo Weather Adapter
 import type { WeatherForecast, HourlyWeather, DailyWeather } from '@/types';
 
 const DEMO_LOCATION = { lat: 20.014, lng: 73.785 }; // Nashik, Maharashtra
