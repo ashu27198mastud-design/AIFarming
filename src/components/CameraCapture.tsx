@@ -470,14 +470,14 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {!cameraReady && !captureInProgress && (
           <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center bg-[#101311]/75 px-8 text-center text-white backdrop-blur-sm">
             <RefreshCcw className="mb-3 h-8 w-8 animate-spin" />
-            <p className="text-sm font-bold">Starting camera…</p>
+            <p className="text-sm font-bold">Starting camera...</p>
           </div>
         )}
 
         {captureInProgress && (
           <div className="absolute inset-0 z-[12] flex flex-col items-center justify-center bg-white/16 text-white backdrop-blur-[2px]">
             {captureComplete ? <Check className="mb-2 h-12 w-12" /> : <RefreshCcw className="mb-2 h-10 w-10 animate-spin" />}
-            <p className="text-sm font-extrabold">{captureComplete ? 'Photo captured' : 'Capturing photo…'}</p>
+            <p className="text-sm font-extrabold">{captureComplete ? 'Photo captured' : 'Capturing photo...'}</p>
           </div>
         )}
 
@@ -531,6 +531,9 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {hiddenInputs}
         <img src={value.previewUrl} alt="Crop preview" className="h-full w-full object-cover" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/24 via-transparent to-white/10" />
+        <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-black/58 px-4 py-3 text-left text-xs font-bold text-white backdrop-blur-md">
+          Photo ready. Tap Analyze to understand disease, severity, visible signs, and next action.
+        </div>
         <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-md" aria-label="Remove image">
           <X className="h-5 w-5" />
         </button>
@@ -544,24 +547,30 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       <button type="button" onClick={() => void startCamera()} disabled={disabled || preparing} className="camera-launch-orb animate-camera-pulse mx-auto mb-5" aria-label={t.takePhoto}>
         <Camera className="relative z-10 h-11 w-11" />
       </button>
-      <span className="section-kicker mb-2">AI Crop Vision</span>
-      <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">{t.takePhoto}</h2>
-      <p className="mx-auto mb-6 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">स्पष्ट पत्ती, तना किंवा संपूर्ण पौधा दिखाएं / Capture a clear leaf, stem or whole plant.</p>
+      <span className="section-kicker mb-2">Crop disease scan</span>
+      <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">Capture or upload crop photo</h2>
+      <p className="mx-auto mb-5 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">Take a close, clear photo of the affected leaf, stem, fruit, or whole plant. The app will explain the likely disease, visible signs, severity, and next steps.</p>
+
+      <div className="mb-5 grid grid-cols-3 gap-2 text-left">
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">1. Close-up symptom</div>
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">2. Full plant if possible</div>
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">3. Good light, no blur</div>
+      </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="btn-m3-primary w-full">
-          <Camera className="h-5 w-5" /> {preparing ? 'Preparing…' : t.takePhoto}
+          <Camera className="h-5 w-5" /> {preparing ? 'Preparing...' : 'Take photo'}
         </button>
         <button type="button" disabled={disabled || preparing} onClick={() => galleryInputRef.current?.click()} className="btn-m3-secondary w-full">
-          {preparing ? <Upload className="h-5 w-5 animate-pulse" /> : <ImagePlus className="h-5 w-5" />} {t.chooseGallery}
+          {preparing ? <Upload className="h-5 w-5 animate-pulse" /> : <ImagePlus className="h-5 w-5" />} Upload photo
         </button>
       </div>
 
       <button type="button" onClick={openDeviceCamera} disabled={disabled || preparing} className="mt-3 w-full rounded-2xl border border-[#C9AE7B]/40 bg-[#FBF6EC] px-4 py-3 text-sm font-extrabold text-[#5B4B32] shadow-sm">
-        <Camera className="mr-2 inline h-4 w-4" /> फोन कैमरा खोलें / Open phone camera
+        <Camera className="mr-2 inline h-4 w-4" /> Open phone camera
       </button>
 
-      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">On phones, Take Photo uses the device camera for reliable capture</p>
+      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">The diagnosis is guidance only. Confirm severe cases with a local agronomist.</p>
       {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm">{error}</div>}
     </div>
   );
