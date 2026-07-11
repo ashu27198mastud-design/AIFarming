@@ -1,0 +1,10 @@
+# Ignore Next.js dependencies, builds, and local secret files
+aether-ag/node_modules/
+aether-ag/.next/
+aether-ag/.env*.local
+aether-ag/.env.local
+aether-ag/.env
+.env.local
+node_modules/
+.next/
+*.log
