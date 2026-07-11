@@ -12,6 +12,19 @@ type Inputs = {
   budget: 'low' | 'medium' | 'high';
 };
 
+type SoilAnalysis = {
+  soilType: Inputs['soilType'];
+  ph: number | null;
+  nitrogen: string;
+  phosphorus: string;
+  potassium: string;
+  organicCarbon: string;
+  summary: string;
+  warnings: string[];
+  recommendations: string[];
+  confidence: number;
+};
+
 const CROPS = [
   { name: 'Soyabean', season: 'kharif', soils: ['black', 'alluvial'], water: 'medium', budget: 'low' },
   { name: 'Cotton', season: 'kharif', soils: ['black', 'red'], water: 'medium', budget: 'medium' },
@@ -105,6 +118,9 @@ export default function FieldPlanner() {
   });
   const [landPhoto, setLandPhoto] = useState<File | null>(null);
   const [soilReport, setSoilReport] = useState<File | null>(null);
+  const [soilAnalysis, setSoilAnalysis] = useState<SoilAnalysis | null>(null);
+  const [soilLoading, setSoilLoading] = useState(false);
+  const [soilError, setSoilError] = useState('');
   const [showResults, setShowResults] = useState(false);
   const photoUrl = useMemo(() => landPhoto ? URL.createObjectURL(landPhoto) : '', [landPhoto]);
   const ranked = useMemo(() => CROPS.map((crop) => scoreCrop(crop, inputs)).sort((a, b) => b.score - a.score), [inputs]);
@@ -113,10 +129,35 @@ export default function FieldPlanner() {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
   }, [photoUrl]);
 
+  const analyzeSoilReport = async (file: File) => {
+    setSoilReport(file);
+    setSoilLoading(true);
+    setSoilError('');
+    setSoilAnalysis(null);
+    try {
+      const body = new FormData();
+      body.append('report', file);
+      const response = await fetch('/api/ai/soil-report', { method: 'POST', body });
+      const payload = await response.json();
+      if (!response.ok || payload.error) throw new Error(payload.error || 'Unable to read soil report');
+      const analysis = payload as SoilAnalysis;
+      setSoilAnalysis(analysis);
+      setInputs((current) => ({
+        ...current,
+        soilType: analysis.soilType !== 'unknown' ? analysis.soilType : current.soilType,
+        ph: analysis.ph !== null ? String(analysis.ph) : current.ph,
+      }));
+    } catch (error) {
+      setSoilError(error instanceof Error ? error.message : 'Unable to read soil report');
+    } finally {
+      setSoilLoading(false);
+    }
+  };
+
   const confidence = Math.min(94, 48 + (inputs.soilType !== 'unknown' ? 12 : 0) + (inputs.ph ? 10 : 0) + (landPhoto ? 10 : 0) + (soilReport ? 14 : 0));
 
   return (
-    <section className="m3-card space-y-4">
+    <section className="m3-card field-planner space-y-5">
       <div>
         <span className="section-kicker"><Leaf className="h-3.5 w-3.5 text-[#65776E]" /> Field crop planner</span>
         <h2 className="mt-2 text-xl font-black text-[#242824]">What should I plant on this land?</h2>
@@ -171,7 +212,16 @@ export default function FieldPlanner() {
         <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#CDBA94] bg-[#FCF8EF] p-3 text-center">
           <Upload className="mb-2 h-5 w-5 text-[#8A7655]" />
           <span className="text-xs font-black text-[#6F5D3E]">{soilReport ? 'Change soil report' : 'Upload soil report'}</span>
-          <input type="file" accept="image/*,.pdf" className="hidden" onChange={(event) => setSoilReport(event.target.files?.[0] ?? null)} />
+          <input
+            type="file"
+            accept="image/*,.pdf,application/pdf"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void analyzeSoilReport(file);
+              event.currentTarget.value = '';
+            }}
+          />
         </label>
       </div>
 
@@ -182,6 +232,32 @@ export default function FieldPlanner() {
             {landPhoto && <p className="truncate">Land: {landPhoto.name}</p>}
             {soilReport && <p className="truncate">Soil report: {soilReport.name}</p>}
           </div>
+        </div>
+      )}
+
+      {(soilLoading || soilAnalysis || soilError) && (
+        <div className="soil-analysis-panel">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <span className="section-kicker"><FileText className="h-3.5 w-3.5" /> Soil intelligence</span>
+              <h3 className="mt-2 text-lg font-black text-[#202723]">{soilLoading ? 'Reading laboratory report...' : soilAnalysis ? 'Report understood' : 'Report needs attention'}</h3>
+            </div>
+            {soilAnalysis && <span className="metric-pill">{soilAnalysis.confidence}% confidence</span>}
+          </div>
+          {soilLoading && <div className="soil-loading-bar"><span /></div>}
+          {soilError && <p className="mt-3 text-sm font-bold text-rose-700">{soilError}</p>}
+          {soilAnalysis && (
+            <>
+              <p className="mt-3 text-sm font-semibold leading-relaxed text-zinc-700">{soilAnalysis.summary}</p>
+              <div className="soil-metrics">
+                <div><span>pH</span><strong>{soilAnalysis.ph ?? 'Not found'}</strong></div>
+                <div><span>Nitrogen</span><strong>{soilAnalysis.nitrogen}</strong></div>
+                <div><span>Phosphorus</span><strong>{soilAnalysis.phosphorus}</strong></div>
+                <div><span>Potassium</span><strong>{soilAnalysis.potassium}</strong></div>
+              </div>
+              {soilAnalysis.recommendations[0] && <p className="mt-3 rounded-xl bg-white/70 p-3 text-xs font-bold text-[#46554D]">Next: {soilAnalysis.recommendations[0]}</p>}
+            </>
+          )}
         </div>
       )}
 
