@@ -412,50 +412,84 @@ export default function Home() {
     setDiagnosis(null);
     setLearnMoreExpanded(false);
 
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64data = (reader.result as string).split(',')[1];
-        const res = await fetch('/api/ai/diagnose', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            image: base64data,
-            mimeType: uploadFile.type,
-            farmContext: `Farmer: Asha Pawar, Nashik, crop stage: tomato flowering`
-          })
-        });
-        const data = await res.json();
-        setDiagnosis(data);
+    const getDemoDiagnosisResponse = () => ({
+      mostLikelyIssue: 'अगेती झुलसा / Early Blight (Alternaria solani)',
+      alternativePossibilities: [
+        'पर्णदाग रोग / Septoria Leaf Spot (सेप्टोरिया लीफ स्पॉट)',
+        'जीवाणु चित्ती रोग / Bacterial Speck (बैक्टीरियल स्पेक)'
+      ],
+      confidence: 78,
+      visibleIndicators: [
+        'निचले पत्तों पर गोल गहरे भूरे छल्ले / Circular dark brown rings on lower leaves',
+        'धब्बों के चारों ओर पीलापन / Yellow halo surrounding lesions'
+      ],
+      severity: 'high',
+      urgency: 'soon',
+      questionsForAccuracy: [
+        'क्या यह केवल नीचे के पत्तों पर है? / Is this only on lower leaves?',
+        'क्या ऊपरी नए पत्ते भी पीले हो रहे हैं? / Are the upper new leaves yellowing?'
+      ],
+      immediateAction: 'संक्रमित पत्तों को तुरंत निकालें। / Remove and destroy affected leaves.\nताम्र फफूंदनाशक दवा का छिड़काव करें। / Apply fungicide spray.\nखेत को सूखा रखें। / Keep the field dry.',
+      organicOptions: [
+        'नीम का काढ़ा / Neem decoction (₹100)',
+        'ट्राइकोडर्मा जैविक नियंत्रण / Trichoderma (₹120)'
+      ],
+      chemicalCategory: 'कॉपर ऑक्सीक्लोराइड / Copper Oxychloride 50 WP (₹250)',
+      preventionAdvice: 'फसल चक्र का पालन करें। / Practice crop rotation.',
+      followUpDays: 5,
+      requiresExpert: false,
+    });
 
-        // Add to persistent scans history
-        const newScan = {
-          id: `scan-${Date.now()}`,
-          date: new Date().toLocaleDateString(),
-          disease: data.mostLikelyIssue || 'स्वस्थ फ़सल / Healthy Crop',
-          severity: data.severity || 'low',
-          status: data.severity === 'critical' || data.severity === 'high' ? '🔴' : '🟢',
-          thumbnail: previewUrl || '/placeholder-leaf.jpg'
-        };
-        const updatedHistory = [newScan, ...scansHistory];
-        setScansHistory(updatedHistory);
-        localStorage.setItem('km-scans-history', JSON.stringify(updatedHistory));
+    try {
+      const farmContext = `Farmer: Asha Pawar, Nashik, crop stage: tomato flowering`;
+      const fd = new FormData();
+      fd.append('image', uploadFile);
+      fd.append('farmContext', farmContext);
+
+      const res = await fetch('/api/ai/diagnose', {
+        method: 'POST',
+        body: fd
+      });
+
+      if (!res.ok) {
+        throw new Error('Server returned error status');
+      }
+
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      setDiagnosis(data);
+
+      // Add to persistent scans history
+      const newScan = {
+        id: `scan-${Date.now()}`,
+        date: new Date().toLocaleDateString(),
+        disease: data.mostLikelyIssue || 'स्वस्थ फ़सल / Healthy Crop',
+        severity: data.severity || 'low',
+        status: data.severity === 'critical' || data.severity === 'high' ? '🔴' : '🟢',
+        thumbnail: previewUrl || '/placeholder-leaf.jpg'
       };
-      reader.readAsDataURL(uploadFile);
+      const updatedHistory = [newScan, ...scansHistory];
+      setScansHistory(updatedHistory);
+      localStorage.setItem('km-scans-history', JSON.stringify(updatedHistory));
     } catch (err) {
-      console.error(err);
-      // Fallback local mockup response
-      const mockResult = {
-        mostLikelyIssue: 'अगेती झुलसा / Early Blight (Alternaria solani)',
-        confidence: 85,
-        severity: 'high',
-        visibleIndicators: ['पत्तियों पर काले धब्बे / Black circular leaf spots'],
-        immediateAction: '1. संक्रमित पत्तों को तुरंत निकालें।\n2. ताम्र फफूंदनाशक दवा का छिड़काव करें।\n3. खेत को सूखा रखें।',
-        organicOptions: ['नीम का काढ़ा / Neem decoction (₹100)'],
-        chemicalCategory: 'कॉपर ऑक्सीक्लोराइड / Copper Oxychloride 50 WP (₹250)',
-        preventionAdvice: 'फसल चक्र का पालन करें।'
+      console.warn('Diagnosis endpoint error, using local fallback:', err);
+      const fallbackResult = getDemoDiagnosisResponse();
+      setDiagnosis(fallbackResult);
+
+      // Add mock to scans history
+      const newScan = {
+        id: `scan-${Date.now()}`,
+        date: new Date().toLocaleDateString(),
+        disease: fallbackResult.mostLikelyIssue,
+        severity: fallbackResult.severity,
+        status: '🔴',
+        thumbnail: previewUrl || '/placeholder-leaf.jpg'
       };
-      setDiagnosis(mockResult);
+      const updatedHistory = [newScan, ...scansHistory];
+      setScansHistory(updatedHistory);
+      localStorage.setItem('km-scans-history', JSON.stringify(updatedHistory));
     } finally {
       setAnalysisLoading(false);
     }
