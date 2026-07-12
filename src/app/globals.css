@@ -1255,3 +1255,45 @@ body {
     min-height: 0;
   }
 }
+
+
+.hero-market-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.hero-market-row > div {
+  min-width: 130px;
+  border-right: 1px solid rgba(23,63,49,0.12);
+  padding-right: 14px;
+  text-align: right;
+}
+
+.hero-market-row span {
+  display: block;
+  color: #7b857f;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hero-market-row strong {
+  display: block;
+  color: var(--km-green);
+  font-size: 14px;
+}
+
+@media (max-width: 560px) {
+  .hero-market-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .hero-market-row > div {
+    display: none;
+  }
+  .hero-market-row .btn-m3-secondary {
+    width: 100%;
+  }
+}

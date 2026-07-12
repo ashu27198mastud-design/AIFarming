@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   BookOpen,
   BrainCircuit,
-  Camera,
   CheckCircle2,
   ChevronDown,
   FlaskConical,
@@ -20,10 +19,7 @@ import {
 } from 'lucide-react';
 import BottomNav, { type TabId } from '@/components/BottomNav';
 import FieldPlanner from '@/components/FieldPlanner';
-import HomeTab, {
-  type HomeTabHandle,
-  type ScanHistoryItem,
-} from '@/components/tabs/HomeTab';
+import HomeTab, { type ScanHistoryItem } from '@/components/tabs/HomeTab';
 import WeatherTab from '@/components/tabs/WeatherTab';
 import MandiTab from '@/components/tabs/MandiTab';
 import FarmTab from '@/components/tabs/FarmTab';
@@ -38,8 +34,6 @@ const LANGUAGE_STORAGE_KEY = 'km-lang';
 
 export default function Home() {
   const { farmTwin } = useFarmStore();
-  const homeTabRef = useRef<HomeTabHandle>(null);
-  const scannerSectionRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [lang, setLang] = useState<LanguageCode>('hi');
   const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -143,13 +137,6 @@ export default function Home() {
     });
   };
 
-  const openCamera = () => {
-    setActiveTab('home');
-    window.requestAnimationFrame(() => {
-      scannerSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  };
-
   return (
     <div className="app-canvas flex min-h-screen flex-col items-center">
       <div className="app-shell flex min-h-screen w-full max-w-[1440px] flex-col">
@@ -218,18 +205,19 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button type="button" onClick={openCamera} className="btn-m3-primary min-h-14 px-3 text-sm">
-                    <Camera className="h-5 w-5" /> Scan crop
-                  </button>
-                  <button type="button" onClick={() => setActiveTab('mandi')} className="btn-m3-secondary min-h-14 px-3 text-sm">
-                    <TrendingUp className="h-5 w-5" /> Market signal
+                <div className="hero-market-row">
+                  <div>
+                    <span>Nearest mandi</span>
+                    <strong>{market.district}</strong>
+                  </div>
+                  <button type="button" onClick={() => setActiveTab('mandi')} className="btn-m3-secondary min-h-14 px-5 text-sm">
+                    <TrendingUp className="h-5 w-5" /> View mandi prices
                   </button>
                 </div>
               </section>
 
-              <div ref={scannerSectionRef} className="scan-zone">
-                <HomeTab ref={homeTabRef} t={t} lang={lang} coords={coords} onAddScan={addScan} />
+              <div className="scan-zone">
+                <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} />
               </div>
 
               <FieldPlanner coords={coords} market={market} />
@@ -325,10 +313,6 @@ export default function Home() {
           </section>
         </main>
 
-        <button type="button" onClick={openCamera} aria-label={t.takePhoto} className="m3-fab">
-          <Camera className="h-6 w-6 text-[#373D39]" />
-          <span className="mt-0.5 text-[9px] font-black leading-none text-[#4B514D]">{lang === 'en' ? 'Photo' : 'फोटो'}</span>
-        </button>
         <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} />
       </div>
     </div>
