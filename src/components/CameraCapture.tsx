@@ -30,6 +30,10 @@ type Props = {
   captureToken?: number;
 };
 
+const API_UPLOAD_MAX_BYTES = 4 * 1024 * 1024;
+const IMAGE_MAX_DIMENSION = 1200;
+const IMAGE_QUALITY_STEPS = [0.86, 0.78, 0.7, 0.62];
+
 function canvasToBlob(canvas: HTMLCanvasElement, quality = 0.86): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -42,6 +46,37 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality = 0.86): Promise<Blob> 
 
 function canvasToDataUrl(canvas: HTMLCanvasElement, quality = 0.82): string {
   return canvas.toDataURL('image/jpeg', quality);
+}
+
+function scaledCanvasSize(width: number, height: number) {
+  const scale = Math.min(1, IMAGE_MAX_DIMENSION / Math.max(width || 1, height || 1));
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+async function prepareCanvasImage(
+  canvas: HTMLCanvasElement,
+  fileName: string,
+  previewDataUrl = canvasToDataUrl(canvas),
+): Promise<PreparedMedia> {
+  let blob: Blob | null = null;
+
+  for (const quality of IMAGE_QUALITY_STEPS) {
+    blob = await canvasToBlob(canvas, quality);
+    if (blob.size <= API_UPLOAD_MAX_BYTES) break;
+  }
+
+  if (!blob || blob.size > API_UPLOAD_MAX_BYTES) {
+    throw new Error('Image is too large after compression. Please retry with a closer crop.');
+  }
+
+  return {
+    file: new File([blob], fileName, { type: 'image/jpeg' }),
+    previewUrl: previewDataUrl,
+    previewDataUrl,
+  };
 }
 
 function sharpnessScore(canvas: HTMLCanvasElement): number {
@@ -114,14 +149,13 @@ async function extractVideoFrames(file: File): Promise<PreparedMedia> {
 
   const times = [Math.max(0.1, video.duration * 0.08), video.duration * 0.5, video.duration * 0.92];
   const frames: { canvas: HTMLCanvasElement; score: number }[] = [];
-  const maxDimension = 1200;
 
   for (const time of times) {
     await seek(video, time);
-    const scale = Math.min(1, maxDimension / Math.max(video.videoWidth || 1, video.videoHeight || 1));
+    const size = scaledCanvasSize(video.videoWidth, video.videoHeight);
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    canvas.width = size.width;
+    canvas.height = size.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) continue;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -133,12 +167,7 @@ async function extractVideoFrames(file: File): Promise<PreparedMedia> {
 
   const middlePreview = canvasToDataUrl(frames[1].canvas);
   const sharpest = [...frames].sort((a, b) => b.score - a.score)[0];
-  const blob = await canvasToBlob(sharpest.canvas);
-  return {
-    file: new File([blob], `${file.name.replace(/\.[^.]+$/, '')}-sharpest.jpg`, { type: 'image/jpeg' }),
-    previewUrl: middlePreview,
-    previewDataUrl: middlePreview,
-  };
+  return prepareCanvasImage(sharpest.canvas, `${file.name.replace(/\.[^.]+$/, '')}-sharpest.jpg`, middlePreview);
 }
 
 async function prepareImage(file: File): Promise<PreparedMedia> {
@@ -146,11 +175,10 @@ async function prepareImage(file: File): Promise<PreparedMedia> {
   const image = new Image();
   image.src = src;
   await image.decode();
-  const maxDimension = 1200;
-  const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+  const size = scaledCanvasSize(image.width, image.height);
   const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(image.width * scale));
-  canvas.height = Math.max(1, Math.round(image.height * scale));
+  canvas.width = size.width;
+  canvas.height = size.height;
   const context = canvas.getContext('2d');
   if (!context) {
     URL.revokeObjectURL(src);
@@ -158,13 +186,7 @@ async function prepareImage(file: File): Promise<PreparedMedia> {
   }
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
   URL.revokeObjectURL(src);
-  const blob = await canvasToBlob(canvas);
-  const previewDataUrl = canvasToDataUrl(canvas);
-  return {
-    file: new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' }),
-    previewUrl: previewDataUrl,
-    previewDataUrl,
-  };
+  return prepareCanvasImage(canvas, `${file.name.replace(/\.[^.]+$/, '')}.jpg`);
 }
 
 async function waitForLiveFrame(video: HTMLVideoElement, timeoutMs = 3500): Promise<void> {
@@ -348,23 +370,20 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       await waitForLiveFrame(video);
       video.pause();
 
-      const maxDimension = 1600;
-      const scale = Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight));
+      const size = scaledCanvasSize(video.videoWidth, video.videoHeight);
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      canvas.width = size.width;
+      canvas.height = size.height;
       const context = canvas.getContext('2d', { alpha: false });
       if (!context) throw new Error('Photo capture is not supported by this browser.');
 
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const previewDataUrl = canvasToDataUrl(canvas, 0.9);
-      const blob = await canvasToBlob(canvas, 0.9);
-      const file = new File([blob], `kisanmitra-camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const media = await prepareCanvasImage(canvas, `kisanmitra-camera-${Date.now()}.jpg`);
 
       setCaptureComplete(true);
       await new Promise<void>((resolve) => window.setTimeout(resolve, 120));
       stopCamera();
-      onChange({ file, previewUrl: previewDataUrl, previewDataUrl });
+      onChange(media);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to capture this photo.');
       setShowDeviceFallback(true);
