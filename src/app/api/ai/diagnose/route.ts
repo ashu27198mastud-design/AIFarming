@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
       organicOptions: raw.organicOptions || [],
       chemicalCategory:
         raw.chemicalCategory || raw.chemicalOptions?.[0] || '',
+      fertilizerAdvice:
+        raw.fertilizerAdvice || raw.nutrientAdvice || 'Use soil-test based nutrition only; avoid extra nitrogen during disease pressure.',
       preventionAdvice: raw.preventionAdvice || '',
       followUpDays:
         raw.followUpDays ??

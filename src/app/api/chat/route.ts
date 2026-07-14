@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       dataSource: process.env.GEMINI_API_KEY ? 'live' : 'simulated',
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Chat failed' }, { status: 500 });
   }
 }

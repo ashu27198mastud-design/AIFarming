@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kisanmitra-cache-v6';
+const CACHE_NAME = 'kisanmitra-cache-v8';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
@@ -39,5 +39,32 @@ self.addEventListener('fetch', (event) => {
       if (response && response.status === 200 && response.type === 'basic') caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
       return response;
     }))
+  );
+});
+
+self.addEventListener('message', (event) => {
+  const data = event.data || {};
+  if (data.type !== 'KM_WEATHER_ALERT' || !self.registration?.showNotification) return;
+  event.waitUntil(self.registration.showNotification(data.title || 'KisanMitra weather alert', {
+    body: data.body || 'Weather risk is changing for your field.',
+    tag: data.tag || 'kisanmitra-weather-alert',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    renotify: true,
+    data: { url: data.url || '/' }
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+      return undefined;
+    })
   );
 });

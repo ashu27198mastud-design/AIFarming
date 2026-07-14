@@ -48,6 +48,17 @@ function decision(direction: MandiResponse['trend']['direction']): string {
   return 'Stable';
 }
 
+function cropAdvice(response: MandiResponse, distanceKm: number): string {
+  if (response.trend.direction === 'rising') return `Price trend is rising. If crop is mature, compare nearby markets and sell in smaller lots within ${distanceKm} km.`;
+  if (response.trend.direction === 'falling') return 'Price trend is falling. Compare another market, grade the crop, or wait only if shelf life is safe.';
+  return 'Price is stable. Sell based on harvest maturity, transport cost, and weather risk.';
+}
+
+function sourceDetail(response: MandiResponse): string {
+  if (response.dataSource === 'live') return 'Live Agmarknet data via data.gov.in, refreshed every 6 hours.';
+  return 'Fallback prices shown. Add DATA_GOV_API_KEY in deployment for live Agmarknet prices.';
+}
+
 export default function MandiTab({ t, market }: Props) {
   const [selected, setSelected] = useState('Tomato');
   const [prices, setPrices] = useState<Record<string, MandiResponse>>({});
@@ -55,19 +66,30 @@ export default function MandiTab({ t, market }: Props) {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
+    let active = true;
+    const loadingTimer = window.setTimeout(() => {
+      if (active) setLoading(true);
+    }, 0);
     Promise.all(CROPS.map(async (crop) => {
       const url = `/api/mandi?state=${encodeURIComponent(market.state)}&district=${encodeURIComponent(market.district)}&commodity=${encodeURIComponent(crop.key)}`;
       const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) throw new Error('Mandi request failed');
       return [crop.key, await response.json() as MandiResponse] as const;
     }))
-      .then((entries) => setPrices(Object.fromEntries(entries)))
+      .then((entries) => {
+        if (active) setPrices(Object.fromEntries(entries));
+      })
       .catch((error) => {
         if ((error as Error).name !== 'AbortError') console.error('Mandi data failed:', error);
       })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+      window.clearTimeout(loadingTimer);
+      controller.abort();
+    };
   }, [market.district, market.state]);
 
   const current = prices[selected];
@@ -99,6 +121,12 @@ export default function MandiTab({ t, market }: Props) {
 
       {loading && <div className="m3-card text-center text-sm font-medium text-[#5F6368]">{t.loading}</div>}
 
+      {current?.dataSource === 'fallback' && (
+        <div className="rounded-2xl bg-[#FEF7E0] p-4 text-sm font-bold leading-relaxed text-[#B06000]">
+          Live market key is not configured for this environment. The app is using safe fallback prices until DATA_GOV_API_KEY is set.
+        </div>
+      )}
+
       {current && record && (
         <>
           <section className="m3-card">
@@ -122,6 +150,12 @@ export default function MandiTab({ t, market }: Props) {
               <span className={`text-xs font-semibold ${current.dataSource === 'live' ? 'text-[#137333]' : 'text-[#B06000]'}`}>
                 {current.dataSource === 'live' ? t.livePrice : `${t.lastKnown} · ${record.arrivalDate}`}
               </span>
+            </div>
+
+            <div className="mt-3 rounded-2xl border border-[#DCE8DE] bg-[#F3FAF5] p-4">
+              <span className="section-kicker">Crop advice</span>
+              <p className="mt-2 text-sm font-bold leading-relaxed text-[#2F4B3A]">{cropAdvice(current, market.distanceKm)}</p>
+              <p className="mt-2 text-xs font-semibold leading-relaxed text-[#66736C]">{sourceDetail(current)}</p>
             </div>
           </section>
 

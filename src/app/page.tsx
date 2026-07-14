@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  CloudSun,
   Leaf,
   MapPin,
   Navigation,
@@ -27,6 +26,20 @@ import type { WeatherForecast } from '@/types';
 const DEFAULT_COORDS = { lat: 20.014, lng: 73.785 };
 const SCAN_STORAGE_KEY = 'km-scans-history-v2';
 const LANGUAGE_STORAGE_KEY = 'km-lang';
+function readSavedLanguage(): LanguageCode {
+  if (typeof window === 'undefined') return 'hi';
+  const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
+  return savedLang && TRANSLATIONS[savedLang] ? savedLang : 'hi';
+}
+function readSavedScans(): ScanHistoryItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const savedScans = JSON.parse(window.localStorage.getItem(SCAN_STORAGE_KEY) || '[]') as ScanHistoryItem[];
+    return Array.isArray(savedScans) ? savedScans.slice(0, 20) : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function Home() {
   const { farmTwin } = useFarmStore();
@@ -56,14 +69,11 @@ export default function Home() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(console.error);
-    const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
-    if (savedLang && TRANSLATIONS[savedLang]) setLang(savedLang);
-    try {
-      const savedScans = JSON.parse(localStorage.getItem(SCAN_STORAGE_KEY) || '[]') as ScanHistoryItem[];
-      setScans(Array.isArray(savedScans) ? savedScans.slice(0, 20) : []);
-    } catch {
-      setScans([]);
-    }
+    const storageTimer = window.setTimeout(() => {
+      setLang(readSavedLanguage());
+      setScans(readSavedScans());
+    }, 0);
+    return () => window.clearTimeout(storageTimer);
   }, []);
 
   useEffect(() => {
@@ -191,6 +201,22 @@ export default function Home() {
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
+
+              <section className="m3-card fertiliser-card">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <span className="section-kicker">Fertiliser plan</span>
+                    <h3 className="mt-2 text-lg font-black text-[#202124]">{intelligence.fertilizerPlan.crop}</h3>
+                    <p className="mt-2 text-sm font-semibold leading-relaxed text-[#4F5B54]">{intelligence.fertilizerPlan.priority}</p>
+                  </div>
+                  <span className="google-icon google-icon-green"><Leaf className="h-5 w-5" /></span>
+                </div>
+                <div className="mt-3 grid gap-2 text-xs font-bold text-[#526058] sm:grid-cols-2">
+                  <p className="rounded-2xl bg-[#F4FAF6] p-3">Mineral: {intelligence.fertilizerPlan.mineralCategory}</p>
+                  <p className="rounded-2xl bg-[#FFF8EA] p-3">Timing: {intelligence.fertilizerPlan.timing}</p>
+                </div>
+                <p className="mt-3 text-[11px] font-bold leading-relaxed text-[#6A756F]">{intelligence.fertilizerPlan.safety}</p>
+              </section>
 
               <div className="scan-zone">
                 <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} />

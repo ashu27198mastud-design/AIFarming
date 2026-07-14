@@ -25,6 +25,7 @@ export type CropDiagnosisResult = {
   immediateAction: string;
   organicOptions: string[];
   chemicalCategory: string;
+  fertilizerAdvice: string;
   preventionAdvice: string;
   followUpDays: number;
   requiresExpert: boolean;
@@ -48,6 +49,7 @@ function unavailableDiagnosis(): CropDiagnosisResult {
     immediateAction: 'इस स्कैन के आधार पर कोई उपचार न करें। कृपया दोबारा प्रयास करें। / Do not apply treatment based on this scan. Please retry.',
     organicOptions: [],
     chemicalCategory: '',
+    fertilizerAdvice: 'मिट्टी की जांच के बिना उर्वरक की मात्रा तय न करें। / Do not choose fertilizer dosage without a soil test.',
     preventionAdvice: 'स्पष्ट पहचान के बिना रसायन का उपयोग न करें। / Avoid chemical use without a clear diagnosis.',
     followUpDays: 0,
     requiresExpert: false,
@@ -99,7 +101,8 @@ Rules:
   "questionsForAccuracy": ["Hindi + English questions"],
   "immediateAction": "Maximum 3 short bilingual steps separated by newline",
   "organicOptions": ["Bilingual safe options"],
-  "chemicalCategory": "General category only, no dosage",
+  "chemicalCategory": "General treatment category only, no dosage",
+  "fertilizerAdvice": "Bilingual fertiliser or nutrient guidance, no dosage; say soil test needed if not visible",
   "preventionAdvice": "Bilingual prevention advice",
   "followUpDays": 0,
   "requiresExpert": false,
@@ -128,6 +131,7 @@ Rules:
       urgency: parsed.urgency || 'review',
       immediateAction: parsed.immediateAction || 'कृपया स्पष्ट फोटो के साथ पुनः प्रयास करें। / Please retry with a clearer image.',
       chemicalCategory: parsed.chemicalCategory || '',
+      fertilizerAdvice: parsed.fertilizerAdvice || 'Use soil-test based nutrition only; avoid extra nitrogen during disease pressure.',
       preventionAdvice: parsed.preventionAdvice || '',
       followUpDays: Number.isFinite(parsed.followUpDays) ? parsed.followUpDays : 0,
       requiresExpert: Boolean(parsed.requiresExpert),

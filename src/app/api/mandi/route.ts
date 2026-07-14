@@ -71,6 +71,12 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get('state')?.trim() || 'Maharashtra';
   const district = searchParams.get('district')?.trim() || 'Nashik';
   const commodity = searchParams.get('commodity')?.trim() || 'Tomato';
+  const market = searchParams.get('market')?.trim() || '';
+  const variety = searchParams.get('variety')?.trim() || '';
+  const grade = searchParams.get('grade')?.trim() || '';
+  const offset = Math.max(0, Number.parseInt(searchParams.get('offset') || '0', 10) || 0);
+  const requestedLimit = Number.parseInt(searchParams.get('limit') || '10', 10) || 10;
+  const limit = Math.min(10, Math.max(1, requestedLimit));
   const apiKey = process.env.DATA_GOV_API_KEY;
 
   if (!apiKey) {
@@ -85,10 +91,14 @@ export async function GET(request: NextRequest) {
     const url = new URL(`https://api.data.gov.in/resource/${RESOURCE_ID}`);
     url.searchParams.set('api-key', apiKey);
     url.searchParams.set('format', 'json');
-    url.searchParams.set('limit', '100');
-    url.searchParams.set('filters[state]', state);
+    url.searchParams.set('offset', String(offset));
+    url.searchParams.set('limit', String(limit));
+    url.searchParams.set('filters[state.keyword]', state);
     url.searchParams.set('filters[district]', district);
     url.searchParams.set('filters[commodity]', commodity);
+    if (market) url.searchParams.set('filters[market]', market);
+    if (variety) url.searchParams.set('filters[variety]', variety);
+    if (grade) url.searchParams.set('filters[grade]', grade);
 
     const response = await fetch(url.toString(), { next: { revalidate: 21600 } });
     if (!response.ok) throw new Error(`Agmarknet returned ${response.status}`);
