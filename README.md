@@ -34,7 +34,7 @@ The hackathon pitch:
 - TypeScript
 - Tailwind CSS
 - Gemini API for crop image analysis
-- Open-Meteo for weather
+- AccuWeather for weather when configured, with Open-Meteo fallback
 - data.gov.in Agmarknet API for mandi prices
 - Zustand for local farm state
 - PWA service worker and manifest
@@ -46,6 +46,7 @@ Create `.env.local` for live services:
 ```bash
 GEMINI_API_KEY=your_gemini_api_key
 DATA_GOV_API_KEY=your_data_gov_api_key
+ACCUWEATHER_API_KEY=optional_accuweather_api_key
 
 NEXT_PUBLIC_FIREBASE_API_KEY=optional
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=optional
