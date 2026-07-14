@@ -2,6 +2,30 @@
 import type { WeatherForecast, HourlyWeather, DailyWeather } from '@/types';
 
 const DEMO_LOCATION = { lat: 20.014, lng: 73.785 }; // Nashik, Maharashtra
+type OpenMeteoResponse = {
+  hourly?: {
+    time?: string[];
+    temperature_2m?: number[];
+    relative_humidity_2m?: number[];
+    precipitation_probability?: number[];
+    precipitation?: number[];
+    wind_speed_10m?: number[];
+    soil_moisture_0_to_1cm?: number[];
+    et0_fao_evapotranspiration?: number[];
+  };
+  daily?: {
+    time?: string[];
+    temperature_2m_max?: number[];
+    temperature_2m_min?: number[];
+    precipitation_sum?: number[];
+    precipitation_probability_max?: number[];
+    wind_speed_10m_max?: number[];
+    relative_humidity_2m_mean?: number[];
+    uv_index_max?: number[];
+    sunrise?: string[];
+    sunset?: string[];
+  };
+};
 
 export async function fetchWeatherForecast(lat: number = DEMO_LOCATION.lat, lng: number = DEMO_LOCATION.lng): Promise<WeatherForecast> {
   try {
@@ -16,28 +40,30 @@ export async function fetchWeatherForecast(lat: number = DEMO_LOCATION.lat, lng:
   }
 }
 
-function parseOpenMeteoResponse(data: any, lat: number, lng: number): WeatherForecast {
-  const hourly: HourlyWeather[] = (data.hourly?.time ?? []).slice(0, 48).map((time: string, i: number) => ({
+function parseOpenMeteoResponse(data: OpenMeteoResponse, lat: number, lng: number): WeatherForecast {
+  const hourlyData = data.hourly ?? {};
+  const dailyData = data.daily ?? {};
+  const hourly: HourlyWeather[] = (hourlyData.time ?? []).slice(0, 48).map((time: string, i: number) => ({
     time,
-    temperatureC: data.hourly.temperature_2m?.[i] ?? 28,
-    humidity: data.hourly.relative_humidity_2m?.[i] ?? 75,
-    precipMm: data.hourly.precipitation?.[i] ?? 0,
-    precipProbability: data.hourly.precipitation_probability?.[i] ?? 0,
-    windSpeedKmh: data.hourly.wind_speed_10m?.[i] ?? 10,
-    soilMoisture: (data.hourly.soil_moisture_0_to_1cm?.[i] ?? 0.3) * 100,
-    evapotranspirationMm: data.hourly.et0_fao_evapotranspiration?.[i] ?? 3.5,
+    temperatureC: hourlyData.temperature_2m?.[i] ?? 28,
+    humidity: hourlyData.relative_humidity_2m?.[i] ?? 75,
+    precipMm: hourlyData.precipitation?.[i] ?? 0,
+    precipProbability: hourlyData.precipitation_probability?.[i] ?? 0,
+    windSpeedKmh: hourlyData.wind_speed_10m?.[i] ?? 10,
+    soilMoisture: (hourlyData.soil_moisture_0_to_1cm?.[i] ?? 0.3) * 100,
+    evapotranspirationMm: hourlyData.et0_fao_evapotranspiration?.[i] ?? 3.5,
   }));
-  const daily: DailyWeather[] = (data.daily?.time ?? []).map((date: string, i: number) => ({
+  const daily: DailyWeather[] = (dailyData.time ?? []).map((date: string, i: number) => ({
     date,
-    maxTempC: data.daily.temperature_2m_max?.[i] ?? 34,
-    minTempC: data.daily.temperature_2m_min?.[i] ?? 24,
-    precipMm: data.daily.precipitation_sum?.[i] ?? 0,
-    precipProbability: data.daily.precipitation_probability_max?.[i] ?? 0,
-    windSpeedKmh: data.daily.wind_speed_10m_max?.[i] ?? 15,
-    humidityMean: data.daily.relative_humidity_2m_mean?.[i] ?? 75,
-    uvIndex: data.daily.uv_index_max?.[i] ?? 8,
-    sunrise: data.daily.sunrise?.[i] ?? '06:15',
-    sunset: data.daily.sunset?.[i] ?? '19:20',
+    maxTempC: dailyData.temperature_2m_max?.[i] ?? 34,
+    minTempC: dailyData.temperature_2m_min?.[i] ?? 24,
+    precipMm: dailyData.precipitation_sum?.[i] ?? 0,
+    precipProbability: dailyData.precipitation_probability_max?.[i] ?? 0,
+    windSpeedKmh: dailyData.wind_speed_10m_max?.[i] ?? 15,
+    humidityMean: dailyData.relative_humidity_2m_mean?.[i] ?? 75,
+    uvIndex: dailyData.uv_index_max?.[i] ?? 8,
+    sunrise: dailyData.sunrise?.[i] ?? '06:15',
+    sunset: dailyData.sunset?.[i] ?? '19:20',
   }));
   return { fieldId: 'field-north', location: { lat, lng }, fetchedAt: new Date().toISOString(), dataSource: 'live', hourly, daily, alerts: [] };
 }

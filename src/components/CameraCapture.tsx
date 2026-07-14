@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Camera, Check, ImagePlus, RefreshCcw, RotateCcw, Upload, X } from 'lucide-react';
+import { Camera, Check, ImagePlus, RefreshCcw, RotateCcw, X } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 export type PreparedMedia = {
@@ -230,7 +230,7 @@ async function waitForLiveFrame(video: HTMLVideoElement, timeoutMs = 3500): Prom
 }
 
 const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapture(
-  { t, value, onChange, disabled, captureToken = 0 },
+  { value, onChange, disabled, captureToken = 0 },
   ref,
 ) {
   const cameraInputRef = useRef<HTMLInputElement>(null);

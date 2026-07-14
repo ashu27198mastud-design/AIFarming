@@ -16,6 +16,14 @@ type NotificationState = NotificationPermission | 'unsupported';
 const WEATHER_PUSH_ENABLED_KEY = 'km-weather-push-enabled';
 const WEATHER_PUSH_SENT_KEY = 'km-weather-push-sent-v1';
 const WEATHER_PUSH_REPEAT_MS = 12 * 60 * 60 * 1000;
+function readNotificationState(): NotificationState {
+  if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+  return Notification.permission;
+}
+function readPushEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(WEATHER_PUSH_ENABLED_KEY) === 'true';
+}
 
 function weatherIcon(day: DailyWeather): string {
   if (day.precipProbability > 70) return 'Rain';
@@ -71,23 +79,24 @@ export default function WeatherTab({ t, coords }: Props) {
   const [notificationState, setNotificationState] = useState<NotificationState>('unsupported');
 
   useEffect(() => {
-    if (!('Notification' in window)) {
-      setNotificationState('unsupported');
-      return;
-    }
-    setNotificationState(Notification.permission);
-    setPushEnabled(localStorage.getItem(WEATHER_PUSH_ENABLED_KEY) === 'true');
+    const storageTimer = window.setTimeout(() => {
+      setNotificationState(readNotificationState());
+      setPushEnabled(readPushEnabled());
+    }, 0);
+    return () => window.clearTimeout(storageTimer);
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
-    setError(false);
     fetch(`/api/weather?lat=${coords.lat}&lng=${coords.lng}`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error('Weather request failed');
         return response.json();
       })
-      .then((payload: WeatherForecast) => setForecast(payload))
+      .then((payload: WeatherForecast) => {
+        setForecast(payload);
+        setError(false);
+      })
       .catch((caught) => {
         if ((caught as Error).name !== 'AbortError') setError(true);
       });
@@ -121,13 +130,15 @@ export default function WeatherTab({ t, coords }: Props) {
   }, []);
 
   const enablePushAlerts = async () => {
-    localStorage.setItem(WEATHER_PUSH_ENABLED_KEY, 'true');
+    window.localStorage.setItem(WEATHER_PUSH_ENABLED_KEY, 'true');
     setPushEnabled(true);
     await notifyAlerts(alerts, true);
   };
 
   useEffect(() => {
-    if (pushEnabled && notificationState === 'granted' && alerts.length) void notifyAlerts(alerts);
+    if (!pushEnabled || notificationState !== 'granted' || !alerts.length) return undefined;
+    const timer = window.setTimeout(() => void notifyAlerts(alerts), 0);
+    return () => window.clearTimeout(timer);
   }, [alerts, notificationState, notifyAlerts, pushEnabled]);
 
   if (!forecast && !error) return <div className="m3-card text-center text-sm font-medium text-[#5F6368]">{t.loading}</div>;

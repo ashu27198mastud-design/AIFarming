@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  CloudSun,
   Leaf,
   MapPin,
   Navigation,
@@ -27,6 +26,20 @@ import type { WeatherForecast } from '@/types';
 const DEFAULT_COORDS = { lat: 20.014, lng: 73.785 };
 const SCAN_STORAGE_KEY = 'km-scans-history-v2';
 const LANGUAGE_STORAGE_KEY = 'km-lang';
+function readSavedLanguage(): LanguageCode {
+  if (typeof window === 'undefined') return 'hi';
+  const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
+  return savedLang && TRANSLATIONS[savedLang] ? savedLang : 'hi';
+}
+function readSavedScans(): ScanHistoryItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const savedScans = JSON.parse(window.localStorage.getItem(SCAN_STORAGE_KEY) || '[]') as ScanHistoryItem[];
+    return Array.isArray(savedScans) ? savedScans.slice(0, 20) : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function Home() {
   const { farmTwin } = useFarmStore();
@@ -56,14 +69,11 @@ export default function Home() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(console.error);
-    const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
-    if (savedLang && TRANSLATIONS[savedLang]) setLang(savedLang);
-    try {
-      const savedScans = JSON.parse(localStorage.getItem(SCAN_STORAGE_KEY) || '[]') as ScanHistoryItem[];
-      setScans(Array.isArray(savedScans) ? savedScans.slice(0, 20) : []);
-    } catch {
-      setScans([]);
-    }
+    const storageTimer = window.setTimeout(() => {
+      setLang(readSavedLanguage());
+      setScans(readSavedScans());
+    }, 0);
+    return () => window.clearTimeout(storageTimer);
   }, []);
 
   useEffect(() => {

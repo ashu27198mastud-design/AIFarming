@@ -66,19 +66,30 @@ export default function MandiTab({ t, market }: Props) {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
+    let active = true;
+    const loadingTimer = window.setTimeout(() => {
+      if (active) setLoading(true);
+    }, 0);
     Promise.all(CROPS.map(async (crop) => {
       const url = `/api/mandi?state=${encodeURIComponent(market.state)}&district=${encodeURIComponent(market.district)}&commodity=${encodeURIComponent(crop.key)}`;
       const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) throw new Error('Mandi request failed');
       return [crop.key, await response.json() as MandiResponse] as const;
     }))
-      .then((entries) => setPrices(Object.fromEntries(entries)))
+      .then((entries) => {
+        if (active) setPrices(Object.fromEntries(entries));
+      })
       .catch((error) => {
         if ((error as Error).name !== 'AbortError') console.error('Mandi data failed:', error);
       })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+      window.clearTimeout(loadingTimer);
+      controller.abort();
+    };
   }, [market.district, market.state]);
 
   const current = prices[selected];
