@@ -48,6 +48,17 @@ function decision(direction: MandiResponse['trend']['direction']): string {
   return 'Stable';
 }
 
+function cropAdvice(response: MandiResponse, distanceKm: number): string {
+  if (response.trend.direction === 'rising') return `Price trend is rising. If crop is mature, compare nearby markets and sell in smaller lots within ${distanceKm} km.`;
+  if (response.trend.direction === 'falling') return 'Price trend is falling. Compare another market, grade the crop, or wait only if shelf life is safe.';
+  return 'Price is stable. Sell based on harvest maturity, transport cost, and weather risk.';
+}
+
+function sourceDetail(response: MandiResponse): string {
+  if (response.dataSource === 'live') return 'Live Agmarknet data via data.gov.in, refreshed every 6 hours.';
+  return 'Fallback prices shown. Add DATA_GOV_API_KEY in deployment for live Agmarknet prices.';
+}
+
 export default function MandiTab({ t, market }: Props) {
   const [selected, setSelected] = useState('Tomato');
   const [prices, setPrices] = useState<Record<string, MandiResponse>>({});
@@ -99,6 +110,12 @@ export default function MandiTab({ t, market }: Props) {
 
       {loading && <div className="m3-card text-center text-sm font-medium text-[#5F6368]">{t.loading}</div>}
 
+      {current?.dataSource === 'fallback' && (
+        <div className="rounded-2xl bg-[#FEF7E0] p-4 text-sm font-bold leading-relaxed text-[#B06000]">
+          Live market key is not configured for this environment. The app is using safe fallback prices until DATA_GOV_API_KEY is set.
+        </div>
+      )}
+
       {current && record && (
         <>
           <section className="m3-card">
@@ -122,6 +139,12 @@ export default function MandiTab({ t, market }: Props) {
               <span className={`text-xs font-semibold ${current.dataSource === 'live' ? 'text-[#137333]' : 'text-[#B06000]'}`}>
                 {current.dataSource === 'live' ? t.livePrice : `${t.lastKnown} · ${record.arrivalDate}`}
               </span>
+            </div>
+
+            <div className="mt-3 rounded-2xl border border-[#DCE8DE] bg-[#F3FAF5] p-4">
+              <span className="section-kicker">Crop advice</span>
+              <p className="mt-2 text-sm font-bold leading-relaxed text-[#2F4B3A]">{cropAdvice(current, market.distanceKm)}</p>
+              <p className="mt-2 text-xs font-semibold leading-relaxed text-[#66736C]">{sourceDetail(current)}</p>
             </div>
           </section>
 

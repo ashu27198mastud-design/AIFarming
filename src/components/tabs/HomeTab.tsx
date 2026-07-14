@@ -43,6 +43,7 @@ function unavailableDiagnosis(): DiagnosisView {
     immediateAction: 'इस स्कैन के आधार पर कोई उपचार न करें। कृपया दोबारा प्रयास करें। / Do not apply treatment based on this scan. Please retry.',
     organicOptions: [],
     chemicalCategory: '',
+    fertilizerAdvice: 'मिट्टी की जांच के बिना उर्वरक की मात्रा तय न करें। / Do not choose fertilizer dosage without a soil test.',
     preventionAdvice: 'स्पष्ट पहचान के बिना रसायन का उपयोग न करें। / Avoid chemical use without a clear diagnosis.',
     followUpDays: 0,
     requiresExpert: false,
