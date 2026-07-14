@@ -1,10 +1,14 @@
-const CACHE_NAME = 'kisanmitra-cache-v8';
+const CACHE_NAME = 'kisanmitra-cache-v9';
 const ASSETS_TO_CACHE = [
-  '/',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
+
+function shouldBypassCache(request) {
+  const url = new URL(request.url);
+  return url.pathname.startsWith('/_next/') || url.pathname.startsWith('/api/');
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)));
@@ -20,17 +24,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  if (shouldBypassCache(event.request)) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   const isHtml = event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html');
 
   if (isHtml) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response.status === 200) caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
-          return response;
-        })
-        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/')))
-    );
+    event.respondWith(fetch(event.request));
     return;
   }
 
