@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './google-clean.css';
+import './google-compact.css';
 
 export const metadata: Metadata = {
   title: 'KisanMitra — आपकी फसल का साथी | Your Crop\'s Companion',
