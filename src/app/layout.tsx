@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import './google-clean.css';
+import './google-compact.css';
 
 export const metadata: Metadata = {
   title: 'KisanMitra — आपकी फसल का साथी | Your Crop\'s Companion',
@@ -25,13 +27,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#FAFDF7',
+  themeColor: '#F7F9FC',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="hi">
-      <body className="min-h-screen bg-[#FAFDF7] antialiased">{children}</body>
+      <body className="min-h-screen antialiased">{children}</body>
     </html>
   );
 }

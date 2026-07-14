@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 const CROPS = [
@@ -32,13 +32,20 @@ type MandiResponse = {
 
 type Props = {
   t: TranslationSet;
-  market: { state: string; district: string };
+  market: { state: string; district: string; distanceKm: number; village?: string };
 };
 
-function hint(direction: MandiResponse['trend']['direction']): string {
-  if (direction === 'rising') return 'भाव बढ़ रहे हैं — गुणवत्ता और कटाई की तैयारी सही हो तो बिक्री पर विचार करें / Prices are rising — consider selling if crop quality and harvest readiness are suitable.';
-  if (direction === 'falling') return 'भाव नीचे जा रहे हैं — भंडारण लागत और खराब होने के जोखिम की तुलना करें / Prices are falling — compare storage cost against spoilage risk before waiting.';
-  return 'भाव स्थिर हैं — निकटतम मंडी, परिवहन लागत और फसल की परिपक्वता की तुलना करें / Prices are stable — compare nearby markets, transport cost and crop maturity.';
+function parseArrivalDate(value: string): number {
+  const direct = new Date(value).getTime();
+  if (Number.isFinite(direct)) return direct;
+  const [day, month, year] = value.split(/[/-]/).map(Number);
+  return day && month && year ? new Date(year, month - 1, day).getTime() : 0;
+}
+
+function decision(direction: MandiResponse['trend']['direction']): string {
+  if (direction === 'rising') return 'Sell-ready';
+  if (direction === 'falling') return 'Compare or wait';
+  return 'Stable';
 }
 
 export default function MandiTab({ t, market }: Props) {
@@ -53,8 +60,7 @@ export default function MandiTab({ t, market }: Props) {
       const url = `/api/mandi?state=${encodeURIComponent(market.state)}&district=${encodeURIComponent(market.district)}&commodity=${encodeURIComponent(crop.key)}`;
       const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) throw new Error('Mandi request failed');
-      const payload = await response.json() as MandiResponse;
-      return [crop.key, payload] as const;
+      return [crop.key, await response.json() as MandiResponse] as const;
     }))
       .then((entries) => setPrices(Object.fromEntries(entries)))
       .catch((error) => {
@@ -67,73 +73,69 @@ export default function MandiTab({ t, market }: Props) {
   const current = prices[selected];
   const record = useMemo(() => {
     if (!current?.records.length) return null;
-    return [...current.records].sort((a, b) => new Date(b.arrivalDate).getTime() - new Date(a.arrivalDate).getTime())[0];
+    return [...current.records].sort((a, b) => parseArrivalDate(b.arrivalDate) - parseArrivalDate(a.arrivalDate))[0];
   }, [current]);
 
   const TrendIcon = current?.trend.direction === 'rising' ? TrendingUp : current?.trend.direction === 'falling' ? TrendingDown : Minus;
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      <section className="m3-card flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span className="section-kicker">Nearest market</span>
+          <h2 className="mt-1 truncate text-xl font-bold text-[#202124]">{market.district}</h2>
+          <p className="mt-1 text-xs font-medium text-[#5F6368]">{market.village || market.district} · {market.distanceKm} km</p>
+        </div>
+        <span className="google-icon google-icon-blue"><MapPin className="h-5 w-5" /></span>
+      </section>
+
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {CROPS.map((crop) => (
-          <button
-            key={crop.key}
-            type="button"
-            onClick={() => setSelected(crop.key)}
-            className={`rounded-full border px-4 py-2 text-sm font-black shadow-sm transition ${selected === crop.key ? 'border-[#3D4541] bg-[#303733] text-white' : 'border-zinc-200 bg-white text-[#555D58] hover:border-[#CDBA94]'}`}
-          >
-            {crop.label} / {crop.key}
+          <button key={crop.key} type="button" onClick={() => setSelected(crop.key)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold ${selected === crop.key ? 'bg-[#1A73E8] text-white' : 'border border-[#DADCE0] bg-white text-[#3C4043]'}`}>
+            {crop.label}
           </button>
         ))}
       </div>
 
-      {loading && <div className="m3-card text-center text-sm font-semibold text-zinc-500">{t.loading}</div>}
+      {loading && <div className="m3-card text-center text-sm font-medium text-[#5F6368]">{t.loading}</div>}
 
       {current && record && (
         <>
-          <div className={`rounded-3xl border p-4 ${current.trend.direction === 'falling' ? 'border-amber-200 bg-amber-50 text-amber-900' : current.trend.direction === 'rising' ? 'border-[#D9E0DB] bg-[#F5F7F5] text-[#4B5750]' : 'border-zinc-200 bg-zinc-50 text-zinc-700'}`}>
-            <div className="flex items-start gap-3"><TrendIcon className="mt-0.5 h-5 w-5 flex-shrink-0" /><p className="text-sm font-black">{hint(current.trend.direction)}</p></div>
-          </div>
-
-          <div className="m3-card">
-            <div className="mb-4 flex items-start justify-between gap-3">
+          <section className="m3-card">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <span className="mb-1 block text-xs font-bold uppercase text-zinc-400">{record.market}, {record.district}, {record.state}</span>
-                <h2 className="text-2xl font-black text-[#242824]">{record.commodity}</h2>
-                <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-black ${current.dataSource === 'live' ? 'bg-[#EEF3F0] text-[#53655B]' : 'bg-amber-50 text-amber-800'}`}>
-                  {current.dataSource === 'live' ? t.livePrice : `${t.lastKnown}: ${record.arrivalDate}`}
-                </span>
+                <span className="section-kicker">{record.commodity}</span>
+                <div className="mt-2 flex items-end gap-2">
+                  <strong className="text-3xl font-bold text-[#202124]">₹{Math.round(record.modalPrice).toLocaleString('en-IN')}</strong>
+                  <span className="pb-1 text-xs font-medium text-[#5F6368]">/ quintal</span>
+                </div>
+                <p className="mt-2 text-xs font-medium text-[#5F6368]">₹{Math.round(record.minPrice).toLocaleString('en-IN')} – ₹{Math.round(record.maxPrice).toLocaleString('en-IN')}</p>
               </div>
-              <TrendIcon className={`h-8 w-8 ${current.trend.direction === 'falling' ? 'text-[#A84450]' : current.trend.direction === 'rising' ? 'text-[#65776E]' : 'text-zinc-500'}`} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-zinc-100 bg-[#FAFAF8] p-4 text-center">
-                <span className="block text-xs font-bold text-zinc-500">Modal price</span>
-                <span className="block text-2xl font-black text-[#2F3632]">₹{Math.round(record.modalPrice).toLocaleString('en-IN')}</span>
-                <span className="block text-xs font-bold text-zinc-500">per quintal</span>
-              </div>
-              <div className="rounded-2xl border border-zinc-100 bg-[#FAFAF8] p-4 text-center">
-                <span className="block text-xs font-bold text-zinc-500">7-day trend</span>
-                <span className={`block text-2xl font-black ${current.trend.direction === 'falling' ? 'text-[#A84450]' : current.trend.direction === 'rising' ? 'text-[#65776E]' : 'text-zinc-600'}`}>{current.trend.percent > 0 ? '↑' : current.trend.percent < 0 ? '↓' : '→'} {Math.abs(current.trend.percent)}%</span>
-                <span className="block text-xs font-bold capitalize text-zinc-500">{current.trend.direction}</span>
+              <div className={`rounded-2xl px-3 py-2 text-right ${current.trend.direction === 'rising' ? 'bg-[#E6F4EA] text-[#137333]' : current.trend.direction === 'falling' ? 'bg-[#FCE8E6] text-[#C5221F]' : 'bg-[#F1F3F4] text-[#5F6368]'}`}>
+                <TrendIcon className="ml-auto h-5 w-5" />
+                <strong className="mt-1 block text-sm">{current.trend.percent > 0 ? '+' : ''}{current.trend.percent}%</strong>
               </div>
             </div>
 
-            <div className="mt-3 rounded-2xl border border-[#E4DCCB] bg-[#FCFAF5] p-3 text-sm font-bold text-zinc-700">
-              Min–Max: ₹{Math.round(record.minPrice).toLocaleString('en-IN')} – ₹{Math.round(record.maxPrice).toLocaleString('en-IN')} / quintal
+            <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#F8F9FA] px-4 py-3">
+              <span className="text-sm font-semibold text-[#3C4043]">{decision(current.trend.direction)}</span>
+              <span className={`text-xs font-semibold ${current.dataSource === 'live' ? 'text-[#137333]' : 'text-[#B06000]'}`}>
+                {current.dataSource === 'live' ? t.livePrice : `${t.lastKnown} · ${record.arrivalDate}`}
+              </span>
             </div>
-          </div>
+          </section>
 
-          <div className="m3-card space-y-3">
-            <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Nearby / recent markets</span>
-            {current.records.slice(0, 5).map((item, index) => (
-              <div key={`${item.market}-${item.arrivalDate}-${index}`} className="flex items-center justify-between border-b border-zinc-100 py-2.5 text-sm font-bold text-zinc-700 last:border-0">
-                <span>{item.market}</span>
-                <span>₹{Math.round(item.modalPrice).toLocaleString('en-IN')} <span className="text-xs text-zinc-400">{item.arrivalDate}</span></span>
-              </div>
-            ))}
-          </div>
+          <section className="m3-card">
+            <span className="section-kicker">Nearby</span>
+            <div className="mt-3 divide-y divide-[#EEF0EF]">
+              {current.records.slice(0, 5).map((item, index) => (
+                <div key={`${item.market}-${item.arrivalDate}-${index}`} className="flex items-center justify-between gap-3 py-3 text-sm">
+                  <span className="truncate font-medium text-[#3C4043]">{item.market}</span>
+                  <strong className="whitespace-nowrap text-[#202124]">₹{Math.round(item.modalPrice).toLocaleString('en-IN')}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
         </>
       )}
     </div>

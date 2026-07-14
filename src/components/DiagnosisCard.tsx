@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AlertCircle, Clock, Volume2, VolumeX } from 'lucide-react';
+import { ChevronDown, Clock, Volume2, VolumeX } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 import type { HourlyWeather } from '@/types';
 
@@ -51,11 +51,17 @@ function findSprayWindow(hourly: HourlyWeather[]): string {
       const from = new Date(sequence[0].time);
       const to = new Date(sequence[5].time);
       to.setHours(to.getHours() + 1);
-      return `${from.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })}, ${formatHour(from)}–${formatHour(to)} · dry, daylight, low wind`;
+      return `${from.toLocaleDateString('en-IN', { weekday: 'short' })} · ${formatHour(from)}–${formatHour(to)}`;
     }
   }
+  return 'No safe window';
+}
 
-  return 'No safe 6-hour daylight spray window found in the latest forecast. Review again later.';
+function severityLabel(severity: string): string {
+  if (severity === 'critical' || severity === 'high') return 'High risk';
+  if (severity === 'medium') return 'Needs attention';
+  if (severity === 'healthy' || severity === 'low') return 'Low risk';
+  return 'Unclear';
 }
 
 export default function DiagnosisCard({ diagnosis, t, lang, hourlyWeather }: Props) {
@@ -63,22 +69,7 @@ export default function DiagnosisCard({ diagnosis, t, lang, hourlyWeather }: Pro
   const [speaking, setSpeaking] = useState(false);
   const isLive = diagnosis.dataSource === 'live';
   const sprayWindow = useMemo(() => findSprayWindow(hourlyWeather), [hourlyWeather]);
-
-  const healthStyle = diagnosis.severity === 'critical' || diagnosis.severity === 'high'
-    ? 'border-rose-200 bg-rose-50 text-rose-700'
-    : diagnosis.severity === 'medium'
-      ? 'border-amber-200 bg-amber-50 text-amber-700'
-      : diagnosis.severity === 'unknown'
-        ? 'border-zinc-200 bg-zinc-100 text-zinc-700'
-        : 'border-[#C9D7CF] bg-[#F1F5F2] text-[#52665B]';
-
-  const healthLabel = diagnosis.severity === 'critical' || diagnosis.severity === 'high'
-    ? t.diseased
-    : diagnosis.severity === 'medium'
-      ? t.alert
-      : diagnosis.severity === 'unknown'
-        ? t.unavailable
-        : t.healthy;
+  const actions = (diagnosis.immediateAction || '').split('\n').filter(Boolean).slice(0, 2);
 
   const speak = () => {
     if (!window.speechSynthesis) return;
@@ -95,72 +86,62 @@ export default function DiagnosisCard({ diagnosis, t, lang, hourlyWeather }: Pro
     window.speechSynthesis.speak(utterance);
   };
 
-  return (
-    <div className="space-y-4 border-t border-zinc-100 pt-4">
-      {!isLive && (
-        <div className="sticky top-16 z-20 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black text-amber-900 shadow-sm">
-          {t.demoBanner}
-        </div>
-      )}
+  const tone = diagnosis.severity === 'critical' || diagnosis.severity === 'high'
+    ? 'bg-[#FCE8E6] text-[#C5221F]'
+    : diagnosis.severity === 'medium'
+      ? 'bg-[#FEF7E0] text-[#B06000]'
+      : diagnosis.severity === 'unknown'
+        ? 'bg-[#F1F3F4] text-[#5F6368]'
+        : 'bg-[#E6F4EA] text-[#137333]';
 
-      <div className="flex items-center justify-between">
-        <span className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-bold ${healthStyle}`}>{healthLabel}</span>
-        <button type="button" onClick={speak} className="flex min-h-12 min-w-12 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#555D58] shadow-sm" aria-label={speaking ? t.stopSpeech : t.readAloud}>
-          {speaking ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+  return (
+    <div className="space-y-3 border-t border-[#EEF0EF] pt-4">
+      {!isLive && <div className="rounded-2xl bg-[#FEF7E0] px-4 py-3 text-sm font-semibold text-[#B06000]">{t.demoBanner}</div>}
+
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${tone}`}>{severityLabel(diagnosis.severity)}</span>
+          <h3 className="mt-3 text-xl font-bold text-[#202124]">{diagnosis.mostLikelyIssue}</h3>
+        </div>
+        <button type="button" onClick={speak} className="glass-icon-button flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full" aria-label={speaking ? t.stopSpeech : t.readAloud}>
+          {speaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         </button>
       </div>
 
-      <div>
-        <h3 className="mb-1 text-lg font-black text-[#242824]">{diagnosis.mostLikelyIssue}</h3>
-        {isLive && (
-          <div className="flex items-center gap-2">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-100">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#6D7C74] to-[#B69A6A]" style={{ width: `${Math.max(0, Math.min(100, diagnosis.confidence))}%` }} />
-            </div>
-            <span className="text-xs font-mono font-bold text-[#4E5953]">{diagnosis.confidence}%</span>
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl border border-zinc-100 bg-[#FAFAF8] p-3.5">
-        <div className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-zinc-500">
-          <AlertCircle className="h-4 w-4 text-[#69756F]" /> {t.whatToDo}
+      {isLive && (
+        <div className="flex items-center gap-3 rounded-2xl bg-[#F8F9FA] px-4 py-3">
+          <span className="text-xs font-medium text-[#5F6368]">Confidence</span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#E0E3E7]"><div className="h-full rounded-full bg-[#1A73E8]" style={{ width: `${Math.max(0, Math.min(100, diagnosis.confidence))}%` }} /></div>
+          <strong className="text-xs text-[#3C4043]">{Math.round(diagnosis.confidence)}%</strong>
         </div>
-        <ul className="space-y-2 text-sm font-semibold leading-relaxed text-zinc-700">
-          {(diagnosis.immediateAction || '').split('\n').filter(Boolean).slice(0, 3).map((step, index) => (
-            <li key={`${step}-${index}`} className="flex items-start gap-2"><span className="font-extrabold text-[#8C7652]">•</span><span>{step}</span></li>
-          ))}
-        </ul>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div className="rounded-2xl border border-[#DCE3DE] bg-[#F6F8F6] p-3">
-          <span className="mb-1 block text-[11px] font-black tracking-wider text-[#5D6B63]">{t.organicOption}</span>
-          {diagnosis.organicOptions?.length ? diagnosis.organicOptions.map((option) => <div key={option} className="text-sm font-bold text-[#4F5D55]">{option}</div>) : <div className="text-sm font-semibold text-zinc-500">—</div>}
-        </div>
-        <div className="rounded-2xl border border-rose-100 bg-[#FFF8F8] p-3">
-          <span className="mb-1 block text-[11px] font-black tracking-wider text-rose-700">{t.chemicalOption}</span>
-          <div className="text-sm font-bold text-[#A84450]">{diagnosis.chemicalCategory || '—'}</div>
+      <div className="rounded-2xl bg-[#F8F9FA] p-4">
+        <span className="section-kicker">{t.whatToDo}</span>
+        <div className="mt-2 space-y-2">
+          {actions.length ? actions.map((step, index) => <p key={`${step}-${index}`} className="text-sm font-medium leading-relaxed text-[#3C4043]">{index + 1}. {step}</p>) : <p className="text-sm text-[#5F6368]">Retake a clear photo</p>}
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-2xl border border-[#E4D4B4] bg-[#FBF6EC] p-3">
+      <div className="flex items-center justify-between rounded-2xl bg-[#E8F0FE] px-4 py-3">
         <div>
-          <span className="mb-1 block text-[11px] font-black uppercase tracking-wider text-[#8A6B3D]">{t.bestSpray}</span>
-          <span className="text-sm font-bold text-zinc-700">{sprayWindow}</span>
+          <span className="text-[10px] font-semibold uppercase text-[#1967D2]">{t.bestSpray}</span>
+          <p className="mt-1 text-sm font-semibold text-[#174EA6]">{sprayWindow}</p>
         </div>
-        <Clock className="h-5 w-5 flex-shrink-0 text-[#A4824F]" />
+        <Clock className="h-5 w-5 text-[#1A73E8]" />
       </div>
 
-      <button type="button" onClick={() => setExpanded((value) => !value)} className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 text-sm font-bold text-[#4E5752] shadow-sm">
-        {t.learnMore} {expanded ? '▲' : '▼'}
+      <button type="button" onClick={() => setExpanded((value) => !value)} className="flex w-full items-center justify-between rounded-2xl border border-[#DADCE0] bg-white px-4 py-3 text-sm font-semibold text-[#3C4043]">
+        Details<ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
+
       {expanded && (
-        <div className="space-y-2 rounded-xl border border-zinc-100 bg-[#FAFAF8] p-3 text-sm font-semibold text-zinc-600">
-          <p>{diagnosis.preventionAdvice}</p>
-          {diagnosis.visibleIndicators?.map((item) => <p key={item}>• {item}</p>)}
-          {diagnosis.questionsForAccuracy?.map((item) => <p key={item}>? {item}</p>)}
-          {diagnosis.disclaimer && <p className="border-t border-zinc-200 pt-2 text-xs">{diagnosis.disclaimer}</p>}
+        <div className="space-y-3 rounded-2xl border border-[#E4E7E5] bg-white p-4 text-sm text-[#5F6368]">
+          {diagnosis.visibleIndicators?.slice(0, 3).map((item) => <p key={item}>• {item}</p>)}
+          {diagnosis.organicOptions?.[0] && <p><strong className="text-[#3C4043]">Organic:</strong> {diagnosis.organicOptions[0]}</p>}
+          {diagnosis.chemicalCategory && <p><strong className="text-[#3C4043]">Chemical:</strong> {diagnosis.chemicalCategory}</p>}
+          {diagnosis.preventionAdvice && <p>{diagnosis.preventionAdvice}</p>}
+          {diagnosis.disclaimer && <p className="border-t border-[#EEF0EF] pt-3 text-xs">{diagnosis.disclaimer}</p>}
         </div>
       )}
     </div>

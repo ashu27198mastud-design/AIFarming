@@ -1,0 +1,108 @@
+/* Compact content layer */
+.google-metric {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border-radius: 16px;
+  background: #f8f9fa;
+  padding: 12px 8px;
+  color: #5f6368;
+  text-align: center;
+}
+
+.google-metric strong {
+  color: #202124;
+  font-size: 15px;
+}
+
+.google-metric span {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.clean-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 14px;
+  background: #fef7e0;
+  padding: 12px 14px;
+  color: #b06000;
+  font-size: 13px;
+}
+
+.clean-alert span { color: #7a5a18; font-size: 12px; }
+.clean-alert-red { background: #fce8e6; color: #c5221f; }
+.clean-alert-red span { color: #8c342e; }
+.clean-alert-blue { background: #e8f0fe; color: #1967d2; }
+.clean-alert-blue span { color: #3f5f91; }
+
+.scan-zone .m3-card {
+  text-align: center !important;
+}
+
+.scan-zone .m3-card > p,
+.scan-zone .m3-card > .mb-5.grid {
+  display: none !important;
+}
+
+.scan-zone .camera-launch-orb {
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+
+.scan-zone .capture-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 18px;
+}
+
+.scan-zone .capture-action {
+  min-height: 50px !important;
+  border: 1px solid #dadce0 !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  color: #3c4043 !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.scan-zone .capture-action-primary {
+  border-color: #1a73e8 !important;
+  background: #1a73e8 !important;
+  color: #fff !important;
+}
+
+.scan-zone .m3-card > .section-kicker {
+  margin-bottom: 4px !important;
+}
+
+.scan-zone .m3-card > h2 {
+  margin-bottom: 0 !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+}
+
+.scan-zone .m3-card > p:last-of-type {
+  display: none !important;
+}
+
+.scan-zone img + div:not(.pointer-events-none) {
+  padding: 8px 12px !important;
+  font-size: 11px !important;
+}
+
+@media (max-width: 760px) {
+  .scan-zone .capture-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .scan-zone [data-testid='start-live-camera'] {
+    display: none !important;
+  }
+}

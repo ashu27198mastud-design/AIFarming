@@ -30,10 +30,6 @@ type Props = {
   captureToken?: number;
 };
 
-const API_UPLOAD_MAX_BYTES = 4 * 1024 * 1024;
-const IMAGE_MAX_DIMENSION = 1200;
-const IMAGE_QUALITY_STEPS = [0.86, 0.78, 0.7, 0.62];
-
 function canvasToBlob(canvas: HTMLCanvasElement, quality = 0.86): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -47,6 +43,10 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality = 0.86): Promise<Blob> 
 function canvasToDataUrl(canvas: HTMLCanvasElement, quality = 0.82): string {
   return canvas.toDataURL('image/jpeg', quality);
 }
+
+const API_UPLOAD_MAX_BYTES = 4 * 1024 * 1024;
+const IMAGE_MAX_DIMENSION = 1200;
+const IMAGE_QUALITY_STEPS = [0.86, 0.78, 0.7, 0.62];
 
 function scaledCanvasSize(width: number, height: number) {
   const scale = Math.min(1, IMAGE_MAX_DIMENSION / Math.max(width || 1, height || 1));
@@ -77,6 +77,15 @@ async function prepareCanvasImage(
     previewUrl: previewDataUrl,
     previewDataUrl,
   };
+}
+
+function shouldUseNativeCamera(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const userAgent = navigator.userAgent || '';
+  const mobileUserAgent = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+  const iPadDesktopMode = /Macintosh/i.test(userAgent) && navigator.maxTouchPoints > 1;
+  const coarseTouch = window.matchMedia?.('(pointer: coarse)').matches && navigator.maxTouchPoints > 0;
+  return mobileUserAgent || iPadDesktopMode || coarseTouch;
 }
 
 function sharpnessScore(canvas: HTMLCanvasElement): number {
@@ -250,7 +259,20 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   const openDeviceCamera = useCallback(() => {
     setError(null);
     setShowDeviceFallback(false);
-    cameraInputRef.current?.click();
+    const input = cameraInputRef.current;
+    if (!input) {
+      setError('Device camera control is unavailable. Please reload and try again.');
+      return;
+    }
+
+    input.value = '';
+    const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+    try {
+      if (typeof pickerInput.showPicker === 'function') pickerInput.showPicker();
+      else input.click();
+    } catch {
+      input.click();
+    }
   }, []);
 
   const handleFile = useCallback(async (file: File) => {
@@ -279,6 +301,14 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
     setError(null);
     setShowDeviceFallback(false);
     setCaptureComplete(false);
+
+    // Mobile browsers are much more reliable when the operating system camera
+    // handles capture through an input with capture="environment".
+    if (shouldUseNativeCamera()) {
+      stopCamera();
+      openDeviceCamera();
+      return;
+    }
 
     if (!window.isSecureContext) {
       setError('Live camera requires a secure HTTPS connection. Use the device camera button below.');
@@ -415,17 +445,27 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         type="file"
         accept="image/*"
         capture="environment"
-        className="hidden"
+        className="fixed left-[-10000px] top-0 h-px w-px opacity-0"
+        aria-hidden="true"
+        tabIndex={-1}
         onClick={(event) => { event.currentTarget.value = ''; }}
-        onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void handleFile(file);
+        }}
       />
       <input
         ref={galleryInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
-        className="hidden"
+        className="fixed left-[-10000px] top-0 h-px w-px opacity-0"
+        aria-hidden="true"
+        tabIndex={-1}
         onClick={(event) => { event.currentTarget.value = ''; }}
-        onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void handleFile(file);
+        }}
       />
     </>
   );
@@ -449,14 +489,14 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {!cameraReady && !captureInProgress && (
           <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center bg-[#101311]/75 px-8 text-center text-white backdrop-blur-sm">
             <RefreshCcw className="mb-3 h-8 w-8 animate-spin" />
-            <p className="text-sm font-bold">Starting camera…</p>
+            <p className="text-sm font-bold">Starting camera...</p>
           </div>
         )}
 
         {captureInProgress && (
           <div className="absolute inset-0 z-[12] flex flex-col items-center justify-center bg-white/16 text-white backdrop-blur-[2px]">
             {captureComplete ? <Check className="mb-2 h-12 w-12" /> : <RefreshCcw className="mb-2 h-10 w-10 animate-spin" />}
-            <p className="text-sm font-extrabold">{captureComplete ? 'Photo captured' : 'Capturing photo…'}</p>
+            <p className="text-sm font-extrabold">{captureComplete ? 'Photo captured' : 'Capturing photo...'}</p>
           </div>
         )}
 
@@ -494,7 +534,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {showDeviceFallback && (
           <button
             type="button"
-            onClick={() => { stopCamera(); window.setTimeout(openDeviceCamera, 80); }}
+            onClick={() => { stopCamera(); openDeviceCamera(); }}
             className="absolute bottom-24 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/30 bg-black/62 px-4 py-2.5 text-xs font-extrabold text-white shadow-lg backdrop-blur-md"
           >
             Open device camera
@@ -510,6 +550,9 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {hiddenInputs}
         <img src={value.previewUrl} alt="Crop preview" className="h-full w-full object-cover" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/24 via-transparent to-white/10" />
+        <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-black/58 px-4 py-3 text-left text-xs font-bold text-white backdrop-blur-md">
+          Photo ready. Tap Analyze to understand disease, severity, visible signs, and next action.
+        </div>
         <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-md" aria-label="Remove image">
           <X className="h-5 w-5" />
         </button>
@@ -520,29 +563,58 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   return (
     <div className="m3-card border-dashed p-7 text-center">
       {hiddenInputs}
-      <button type="button" onClick={() => void startCamera()} disabled={disabled || preparing} className="camera-launch-orb animate-camera-pulse mx-auto mb-5" aria-label={t.takePhoto}>
+      <div className="camera-launch-orb mx-auto mb-5" aria-hidden="true">
         <Camera className="relative z-10 h-11 w-11" />
-      </button>
-      <span className="section-kicker mb-2">AI Crop Vision</span>
-      <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">{t.takePhoto}</h2>
-      <p className="mx-auto mb-6 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">स्पष्ट पत्ती, तना किंवा संपूर्ण पौधा दिखाएं / Capture a clear leaf, stem or whole plant.</p>
+      </div>
+      <span className="section-kicker mb-2">Crop disease scan</span>
+      <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">Capture or upload crop photo</h2>
+      <p className="mx-auto mb-5 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">Take a close, clear photo of the affected leaf, stem, fruit, or whole plant. The app will explain the likely disease, visible signs, severity, and next steps.</p>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <button type="button" disabled={disabled || preparing} onClick={() => void startCamera()} className="btn-m3-primary w-full">
-          <Camera className="h-5 w-5" /> {preparing ? 'Preparing…' : t.takePhoto}
-        </button>
-        <button type="button" disabled={disabled || preparing} onClick={() => galleryInputRef.current?.click()} className="btn-m3-secondary w-full">
-          {preparing ? <Upload className="h-5 w-5 animate-pulse" /> : <ImagePlus className="h-5 w-5" />} {t.chooseGallery}
-        </button>
+      <div className="mb-5 grid grid-cols-3 gap-2 text-left">
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">1. Close-up symptom</div>
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">2. Full plant if possible</div>
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">3. Good light, no blur</div>
       </div>
 
-      {showDeviceFallback && (
-        <button type="button" onClick={openDeviceCamera} className="mt-3 w-full rounded-2xl border border-[#C9AE7B]/40 bg-[#FBF6EC] px-4 py-3 text-sm font-extrabold text-[#5B4B32] shadow-sm">
-          <Camera className="mr-2 inline h-4 w-4" /> Open device camera
+      <div className="capture-actions">
+        <button type="button" data-testid="start-live-camera" disabled={disabled || preparing} onClick={() => void startCamera()} className="capture-action capture-action-primary">
+          <Camera className="h-5 w-5" />
+          <span>Start live camera</span>
         </button>
-      )}
+        <label className={`capture-action ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
+          <Camera className="h-5 w-5" />
+          <span>Take phone photo</span>
+          <input
+            data-testid="take-phone-photo"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            disabled={disabled || preparing}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void handleFile(file);
+              event.currentTarget.value = '';
+            }}
+          />
+        </label>
+        <label className={`capture-action ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
+          <ImagePlus className="h-5 w-5" />
+          <span>Upload photo</span>
+          <input
+            data-testid="upload-crop-photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={disabled || preparing}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void handleFile(file);
+              event.currentTarget.value = '';
+            }}
+          />
+        </label>
+      </div>
 
-      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">Live camera, device camera, gallery image or video up to 30 seconds</p>
+      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">The diagnosis is guidance only. Confirm severe cases with a local agronomist.</p>
       {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm">{error}</div>}
     </div>
   );
