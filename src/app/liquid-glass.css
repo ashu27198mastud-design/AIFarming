@@ -1272,7 +1272,7 @@ body {
 
 @keyframes authWordEnter {
   from {
-    opacity: 0;
+    opacity: 1;
     transform: translateY(18px);
   }
   to {
@@ -1305,7 +1305,7 @@ body {
 
 @keyframes authCardRise {
   from {
-    opacity: 0;
+    opacity: 1;
     transform: translateY(12px);
   }
   to {
@@ -1553,4 +1553,13 @@ body {
   .auth-login-form {
     gap: 8px;
   }
+}
+
+
+/* Keep critical login content visible during the first paint. */
+.auth-cycle-word-enter,
+.auth-login-card {
+  animation: none;
+  opacity: 1;
+  transform: none;
 }

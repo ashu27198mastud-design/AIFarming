@@ -84,6 +84,19 @@ export type TranslationSet = {
   quintal: string;
   flowering: string;
   hectareShort: string;
+  langAutoSwitched: string;
+  profileSetupTitle: string;
+  profileSetupDesc: string;
+  fullNameLabel: string;
+  villageNameLabel: string;
+  detectLocationBtn: string;
+  detectingLocation: string;
+  privacyConsent: string;
+  completeSetupBtn: string;
+  setupRequiredFields: string;
+  authCompleting: string;
+  authFailed: string;
+  returnToLogin: string;
 };
 
 export const LANGUAGES: { code: LanguageCode; name: string }[] = [
@@ -177,6 +190,19 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     quintal: 'क्विंटल',
     flowering: 'फूल अवस्था',
     hectareShort: 'हे.',
+    langAutoSwitched: 'स्थान के अनुसार भाषा बदलकर मराठी की गई।',
+    profileSetupTitle: 'प्रोफाइल सेटअप',
+    profileSetupDesc: 'मौसम और फसल की सटीक जानकारी के लिए अपना नाम और गाँव दर्ज करें।',
+    fullNameLabel: 'पूरा नाम',
+    villageNameLabel: 'गाँव का नाम',
+    detectLocationBtn: 'स्थान खोजें',
+    detectingLocation: 'खोज रहे हैं...',
+    privacyConsent: 'मैं अपना स्थान और प्रोफाइल जानकारी साझा करने के लिए सहमत हूँ।',
+    completeSetupBtn: 'सेटअप पूरा करें',
+    setupRequiredFields: 'नाम और गाँव दोनों आवश्यक हैं।',
+    authCompleting: 'Google \u0932\u0949\u0917\u093f\u0928 \u092a\u0942\u0930\u093e \u0915\u0930 \u0930\u0939\u0947 \u0939\u0948\u0902...',
+    authFailed: 'Google \u0932\u0949\u0917\u093f\u0928 \u092a\u0942\u0930\u093e \u0928\u0939\u0940\u0902 \u0939\u0941\u0906\u0964 \u092b\u093f\u0930 \u0915\u094b\u0936\u093f\u0936 \u0915\u0930\u0947\u0902\u0964',
+    returnToLogin: '\u0932\u0949\u0917\u093f\u0928 \u092a\u0930 \u0932\u094c\u091f\u0947\u0902',
   },
   en: {
     title: 'KisanMitra',
@@ -262,6 +288,19 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     quintal: 'quintal',
     flowering: 'Flowering',
     hectareShort: 'ha',
+    langAutoSwitched: 'Language auto-switched to Marathi based on location.',
+    profileSetupTitle: 'Profile Setup',
+    profileSetupDesc: 'Enter your name and village to get personalized weather and crop advisory.',
+    fullNameLabel: 'Full Name',
+    villageNameLabel: 'Village Name',
+    detectLocationBtn: 'Detect Location',
+    detectingLocation: 'Detecting...',
+    privacyConsent: 'I consent to sharing my location and profile details.',
+    completeSetupBtn: 'Complete Setup',
+    setupRequiredFields: 'Both name and village are required.',
+    authCompleting: 'Completing Google login...',
+    authFailed: 'Google login could not be completed. Please try again.',
+    returnToLogin: 'Return to login',
   },
   mr: {
     title: 'किसानमित्र',
@@ -347,6 +386,19 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     quintal: 'क्विंटल',
     flowering: 'फुलोरा अवस्था',
     hectareShort: 'हे.',
+    langAutoSwitched: 'स्थानानुसार भाषा मराठी करण्यात आली आहे.',
+    profileSetupTitle: 'प्रोफाइल सेटअप',
+    profileSetupDesc: 'अचूक हवामान आणि पीक सल्ला मिळवण्यासाठी तुमचे नाव आणि गाव प्रविष्ट करा.',
+    fullNameLabel: 'पूर्ण नाव',
+    villageNameLabel: 'गावाचे नाव',
+    detectLocationBtn: 'स्थान शोधा',
+    detectingLocation: 'शोधत आहे...',
+    privacyConsent: 'मी माझे स्थान आणि प्रोफाइल तपशील सामायिक करण्यास सहमती देतो.',
+    completeSetupBtn: 'सेटअप पूर्ण करा',
+    setupRequiredFields: 'नाव आणि गाव दोन्ही आवश्यक आहेत.',
+    authCompleting: 'Google \u0932\u0949\u0917\u093f\u0928 \u092a\u0942\u0930\u094d\u0923 \u0915\u0930\u0924 \u0906\u0939\u094b\u0924...',
+    authFailed: 'Google \u0932\u0949\u0917\u093f\u0928 \u092a\u0942\u0930\u094d\u0923 \u091d\u093e\u0932\u0947 \u0928\u093e\u0939\u0940. \u092a\u0941\u0928\u094d\u0939\u093e \u092a\u094d\u0930\u092f\u0924\u094d\u0928 \u0915\u0930\u093e.',
+    returnToLogin: '\u0932\u0949\u0917\u093f\u0928\u0935\u0930 \u092a\u0930\u0924 \u092f\u093e',
   },
 };
 

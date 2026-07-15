@@ -25,3 +25,9 @@ Conventions
 - Commit after each completed task list item with conventional-commit messages.
 - Test command: npm run lint && npm run typecheck && npm run build. Run it before declaring any task complete.
 - Dev server: npm run dev on http://localhost:3000 (browser allowlist: localhost only).
+
+Verification standard (applies to every task)
+
+- After implementation, launch the dev server and use the browser agent to click through the task's VERIFY flows at 390x844 (mobile primary) and 1440x900 (desktop).
+- Capture screenshots of every named state and a recording of the primary flow for the Walkthrough artifact.
+- A task is not complete until its VERIFY block passes visually and npm run build is green.
