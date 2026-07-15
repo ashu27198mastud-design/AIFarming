@@ -27,7 +27,7 @@ export default function FarmTab({ t, lang, scans, farm }: Props) {
           <h2 className="truncate text-xl font-bold text-[#202124]">{t.farmerName}</h2>
           <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-[#5F6368]"><MapPin className="h-3.5 w-3.5" />{farm.region}</p>
         </div>
-        <span className="metric-pill">{farm.farmSizeHectares} {lang === 'en' ? 'ha' : 'हे.'}</span>
+        <span className="metric-pill">{farm.farmSizeHectares} {t.hectareShort}</span>
       </section>
 
       <section className="m3-card flex items-center justify-between gap-3">
@@ -35,10 +35,10 @@ export default function FarmTab({ t, lang, scans, farm }: Props) {
           <div className="icon-tile text-[#188038]"><Leaf className="h-5 w-5" /></div>
           <div className="min-w-0">
             <span className="section-kicker">{t.activeCrop}</span>
-            <h3 className="mt-1 truncate text-base font-bold text-[#202124]">टमाटर / Tomato</h3>
+            <h3 className="mt-1 truncate text-base font-bold text-[#202124]">{lang === 'en' ? 'Tomato' : lang === 'mr' ? 'टोमॅटो' : 'टमाटर'}</h3>
           </div>
         </div>
-        <span className="text-xs font-semibold text-[#5F6368]">Flowering</span>
+        <span className="text-xs font-semibold text-[#5F6368]">{t.flowering}</span>
       </section>
 
       <section className="m3-card">

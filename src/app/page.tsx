@@ -60,8 +60,9 @@ export default function Home() {
       forecast,
       scans,
       farm: { region: farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares },
+      lang,
     }),
-    [coords, farmTwin.farmSizeHectares, farmTwin.region, forecast, scans],
+    [coords, farmTwin.farmSizeHectares, farmTwin.region, forecast, lang, scans],
   );
 
   const topAlert = intelligence.preventiveAlerts[0];
@@ -167,8 +168,8 @@ export default function Home() {
           </div>
         </header>
 
-        {gpsStatus === 'success' && <div className="status-strip">Location updated</div>}
-        {gpsStatus === 'error' && <div className="status-strip status-strip-error">Location unavailable</div>}
+        {gpsStatus === 'success' && <div className="status-strip">{t.locationUpdated}</div>}
+        {gpsStatus === 'error' && <div className="status-strip status-strip-error">{t.locationUnavailable}</div>}
 
         <main className="premium-main flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
           <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
@@ -176,28 +177,28 @@ export default function Home() {
               <section className="m3-card google-hero">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <span className="section-kicker">Today</span>
+                    <span className="section-kicker">{t.today}</span>
                     <h2 className="mt-2 text-[24px] font-bold text-[#202124]">{intelligence.todayAction}</h2>
                     <p className="mt-2 line-clamp-2 text-sm font-medium text-[#5F6368]">{intelligence.actionReason}</p>
                   </div>
-                  <div className="score-chip"><strong>{intelligence.readinessScore}</strong><span>Score</span></div>
+                  <div className="score-chip"><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
                 </div>
               </section>
 
               <div className="google-action-grid">
                 <button type="button" onClick={() => setActiveTab('weather')} className="google-action-card">
                   <span className="google-icon google-icon-amber"><AlertTriangle className="h-5 w-5" /></span>
-                  <span><small>Alert</small><strong>{topAlert?.title || 'No major risk'}</strong></span>
+                  <span><small>{t.alerts}</small><strong>{topAlert?.title || t.noMajorRisk}</strong></span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
                 <button type="button" onClick={() => setActiveTab('mandi')} className="google-action-card">
                   <span className="google-icon google-icon-blue"><TrendingUp className="h-5 w-5" /></span>
-                  <span><small>Mandi</small><strong>{market.district}</strong></span>
+                  <span><small>{t.mandi}</small><strong>{market.district}</strong></span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
                 <button type="button" onClick={() => setActiveTab('farm')} className="google-action-card">
                   <span className="google-icon google-icon-green"><Leaf className="h-5 w-5" /></span>
-                  <span><small>Best crop</small><strong>{topCrop?.localName || 'Add farm data'}</strong></span>
+                  <span><small>{t.bestCrop}</small><strong>{topCrop?.localName || t.addFarmData}</strong></span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
@@ -205,15 +206,15 @@ export default function Home() {
               <section className="m3-card fertiliser-card">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <span className="section-kicker">Fertiliser plan</span>
+                    <span className="section-kicker">{t.fertilizerPlan}</span>
                     <h3 className="mt-2 text-lg font-black text-[#202124]">{intelligence.fertilizerPlan.crop}</h3>
                     <p className="mt-2 text-sm font-semibold leading-relaxed text-[#4F5B54]">{intelligence.fertilizerPlan.priority}</p>
                   </div>
                   <span className="google-icon google-icon-green"><Leaf className="h-5 w-5" /></span>
                 </div>
                 <div className="mt-3 grid gap-2 text-xs font-bold text-[#526058] sm:grid-cols-2">
-                  <p className="rounded-2xl bg-[#F4FAF6] p-3">Mineral: {intelligence.fertilizerPlan.mineralCategory}</p>
-                  <p className="rounded-2xl bg-[#FFF8EA] p-3">Timing: {intelligence.fertilizerPlan.timing}</p>
+                  <p className="rounded-2xl bg-[#F4FAF6] p-3">{t.mineral}: {intelligence.fertilizerPlan.mineralCategory}</p>
+                  <p className="rounded-2xl bg-[#FFF8EA] p-3">{t.timing}: {intelligence.fertilizerPlan.timing}</p>
                 </div>
                 <p className="mt-3 text-[11px] font-bold leading-relaxed text-[#6A756F]">{intelligence.fertilizerPlan.safety}</p>
               </section>
@@ -223,14 +224,14 @@ export default function Home() {
               </div>
 
               <details className="m3-card clean-details">
-                <summary><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Farm plan</span><ChevronDown className="h-4 w-4" /></summary>
+                <summary><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {t.farmPlan}</span><ChevronDown className="h-4 w-4" /></summary>
                 <div className="mt-4"><FieldPlanner coords={coords} market={market} /></div>
               </details>
             </div>
           </section>
 
-          <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}><WeatherTab t={t} coords={coords} /></section>
-          <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} market={{ ...market, village: place.village }} /></section>
+          <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}><WeatherTab t={t} lang={lang} coords={coords} /></section>
+          <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} lang={lang} market={{ ...market, village: place.village }} /></section>
           <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
         </main>
 

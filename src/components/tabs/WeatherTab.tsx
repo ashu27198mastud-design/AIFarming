@@ -7,6 +7,7 @@ import type { DailyWeather, WeatherForecast } from '@/types';
 
 type Props = {
   t: TranslationSet;
+  lang: string;
   coords: { lat: number; lng: number };
 };
 
@@ -25,21 +26,21 @@ function readPushEnabled(): boolean {
   return window.localStorage.getItem(WEATHER_PUSH_ENABLED_KEY) === 'true';
 }
 
-function weatherIcon(day: DailyWeather): string {
-  if (day.precipProbability > 70) return 'Rain';
-  if (day.precipProbability > 35) return 'Cloud';
-  if (day.maxTempC > 38) return 'Heat';
-  return 'Clear';
+function weatherLocale(lang: string): string {
+  if (lang === 'mr') return 'mr-IN';
+  if (lang === 'hi') return 'hi-IN';
+  return 'en-IN';
 }
 
-function buildAlerts(days: DailyWeather[]): AlertItem[] {
+function buildAlerts(days: DailyWeather[], t: TranslationSet, lang: string): AlertItem[] {
   const alerts: AlertItem[] = [];
+  const locale = weatherLocale(lang);
   for (const day of days) {
-    const label = new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' });
-    if (day.precipProbability > 70) alerts.push({ key: `${day.date}-rain`, title: 'Spray warning', detail: `${label} - ${Math.round(day.precipProbability)}% rain`, tone: 'amber', body: 'Rain is likely soon. Avoid spraying and protect open inputs.' });
-    if (day.windSpeedKmh > 30) alerts.push({ key: `${day.date}-wind`, title: 'High wind', detail: `${label} - ${Math.round(day.windSpeedKmh)} km/h`, tone: 'amber', body: 'Wind can waste spray and damage young plants. Shift spraying to a calmer window.' });
-    if (day.maxTempC > 40) alerts.push({ key: `${day.date}-heat`, title: 'Heat alert', detail: `${label} - ${Math.round(day.maxTempC)} C`, tone: 'red', body: 'High heat is forecast. Irrigate early or late and watch young plants.' });
-    if (day.minTempC < 5) alerts.push({ key: `${day.date}-frost`, title: 'Frost alert', detail: `${label} - ${Math.round(day.minTempC)} C`, tone: 'blue', body: 'Cold conditions are possible. Protect seedlings and delay sensitive sprays.' });
+    const label = new Date(day.date).toLocaleDateString(locale, { weekday: 'short' });
+    if (day.precipProbability > 70) alerts.push({ key: `${day.date}-rain`, title: t.alert, detail: `${label} - ${Math.round(day.precipProbability)}% ${t.rain}`, tone: 'amber', body: t.weatherRisksNotify });
+    if (day.windSpeedKmh > 30) alerts.push({ key: `${day.date}-wind`, title: t.alert, detail: `${label} - ${Math.round(day.windSpeedKmh)} km/h`, tone: 'amber', body: t.weatherRisksNotify });
+    if (day.maxTempC > 40) alerts.push({ key: `${day.date}-heat`, title: t.alert, detail: `${label} - ${Math.round(day.maxTempC)} C`, tone: 'red', body: t.weatherRisksNotify });
+    if (day.minTempC < 5) alerts.push({ key: `${day.date}-frost`, title: t.alert, detail: `${label} - ${Math.round(day.minTempC)} C`, tone: 'blue', body: t.weatherRisksNotify });
   }
   return alerts.slice(0, 3);
 }
@@ -72,7 +73,7 @@ async function showBrowserAlert(alert: AlertItem): Promise<void> {
   new Notification(`KisanMitra: ${alert.title}`, options);
 }
 
-export default function WeatherTab({ t, coords }: Props) {
+export default function WeatherTab({ t, lang, coords }: Props) {
   const [forecast, setForecast] = useState<WeatherForecast | null>(null);
   const [error, setError] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -103,7 +104,7 @@ export default function WeatherTab({ t, coords }: Props) {
     return () => controller.abort();
   }, [coords.lat, coords.lng]);
 
-  const alerts = useMemo(() => buildAlerts(forecast?.daily ?? []), [forecast]);
+  const alerts = useMemo(() => buildAlerts(forecast?.daily ?? [], t, lang), [forecast, lang, t]);
   const current = forecast?.hourly?.[0];
 
   const notifyAlerts = useCallback(async (items: AlertItem[], force = false) => {
@@ -144,22 +145,22 @@ export default function WeatherTab({ t, coords }: Props) {
   if (!forecast && !error) return <div className="m3-card text-center text-sm font-medium text-[#5F6368]">{t.loading}</div>;
 
   const pushCopy = notificationState === 'unsupported'
-    ? 'Browser alerts unavailable'
+    ? t.browserAlertsUnavailable
     : notificationState === 'denied'
-      ? 'Notifications blocked'
+      ? t.notificationsBlocked
       : pushEnabled && notificationState === 'granted'
-        ? 'Push alerts on'
-        : 'Enable push alerts';
+        ? t.pushAlertsOn
+        : t.enablePushAlerts;
 
   return (
     <div className="space-y-4">
-      {error && <div className="rounded-2xl bg-[#FCE8E6] p-4 text-sm font-semibold text-[#C5221F]">Weather unavailable</div>}
+      {error && <div className="rounded-2xl bg-[#FCE8E6] p-4 text-sm font-semibold text-[#C5221F]">{t.weatherUnavailable}</div>}
 
       {current && (
         <section className="m3-card">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <span className="section-kicker">Now</span>
+              <span className="section-kicker">{t.now}</span>
               <div className="mt-2 flex items-end gap-2">
                 <strong className="text-4xl font-bold text-[#202124]">{Math.round(current.temperatureC)} C</strong>
                 <span className="pb-1 text-sm font-medium text-[#5F6368]">{forecast.dataSource}</span>
@@ -169,15 +170,15 @@ export default function WeatherTab({ t, coords }: Props) {
           </div>
           <div className="mt-5 grid grid-cols-3 gap-2">
             <div className="google-metric"><Wind className="h-4 w-4" /><strong>{Math.round(current.windSpeedKmh)}</strong><span>km/h</span></div>
-            <div className="google-metric"><Droplets className="h-4 w-4" /><strong>{Math.round(current.humidity)}%</strong><span>humidity</span></div>
-            <div className="google-metric"><CloudRain className="h-4 w-4" /><strong>{Math.round(current.precipProbability)}%</strong><span>rain</span></div>
+            <div className="google-metric"><Droplets className="h-4 w-4" /><strong>{Math.round(current.humidity)}%</strong><span>{t.humidity}</span></div>
+            <div className="google-metric"><CloudRain className="h-4 w-4" /><strong>{Math.round(current.precipProbability)}%</strong><span>{t.rain}</span></div>
           </div>
         </section>
       )}
 
       <section className="m3-card">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <span className="section-kicker">Alerts</span>
+          <span className="section-kicker">{t.alerts}</span>
           <button
             type="button"
             onClick={() => void enablePushAlerts()}
@@ -196,19 +197,19 @@ export default function WeatherTab({ t, coords }: Props) {
               </div>
             ))}
           </div>
-        ) : <p className="text-sm font-medium text-[#5F6368]">No major weather risk</p>}
+        ) : <p className="text-sm font-medium text-[#5F6368]">{t.noMajorWeatherRisk}</p>}
         {pushEnabled && notificationState === 'granted' && (
-          <p className="mt-3 flex items-center gap-2 rounded-2xl bg-[#E6F4EA] px-4 py-3 text-xs font-bold text-[#137333]"><CheckCircle2 className="h-4 w-4" /> Weather risks will notify this browser when new forecast data is loaded.</p>
+          <p className="mt-3 flex items-center gap-2 rounded-2xl bg-[#E6F4EA] px-4 py-3 text-xs font-bold text-[#137333]"><CheckCircle2 className="h-4 w-4" /> {t.weatherRisksNotify}</p>
         )}
       </section>
 
       <section className="m3-card">
-        <span className="section-kicker">7 days</span>
+        <span className="section-kicker">{t.sevenDays}</span>
         <div className="mt-3 divide-y divide-[#EEF0EF]">
           {forecast?.daily.map((day) => (
             <div key={day.date} className="flex items-center justify-between gap-3 py-3 text-sm">
-              <span className="w-12 font-semibold text-[#3C4043]">{new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}</span>
-              <span className="flex items-center gap-2 text-[#5F6368]"><Sun className="h-4 w-4" />{weatherIcon(day)} - {Math.round(day.precipProbability)}%</span>
+              <span className="w-12 font-semibold text-[#3C4043]">{new Date(day.date).toLocaleDateString(weatherLocale(lang), { weekday: 'short' })}</span>
+              <span className="flex items-center gap-2 text-[#5F6368]"><Sun className="h-4 w-4" />{Math.round(day.precipProbability)}% {t.rain}</span>
               <span className="font-semibold text-[#202124]">{Math.round(day.maxTempC)} / {Math.round(day.minTempC)} C</span>
             </div>
           ))}

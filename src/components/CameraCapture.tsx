@@ -230,7 +230,7 @@ async function waitForLiveFrame(video: HTMLVideoElement, timeoutMs = 3500): Prom
 }
 
 const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapture(
-  { value, onChange, disabled, captureToken = 0 },
+  { t, value, onChange, disabled, captureToken = 0 },
   ref,
 ) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -242,6 +242,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   const [preparing, setPreparing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const openDeviceCameraLabel = t.openDeviceCamera;
   const [captureInProgress, setCaptureInProgress] = useState(false);
   const [captureComplete, setCaptureComplete] = useState(false);
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
@@ -340,7 +341,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       stopCamera();
       setShowDeviceFallback(true);
       if (cameraError?.name === 'NotAllowedError' || cameraError?.name === 'SecurityError') {
-        setError('Camera permission was blocked. Allow camera access in browser settings, or use Open device camera.');
+        setError(`Camera permission was blocked. Allow camera access in browser settings, or use ${openDeviceCameraLabel}.`);
       } else if (cameraError?.name === 'NotFoundError') {
         setError('No camera was detected. Use gallery upload or another device.');
       } else if (cameraError?.name === 'NotReadableError') {
@@ -349,7 +350,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         setError('Live camera could not start. Use the device camera option below.');
       }
     }
-  }, [captureInProgress, disabled, openDeviceCamera, preparing, stopCamera]);
+  }, [captureInProgress, disabled, openDeviceCamera, openDeviceCameraLabel, preparing, stopCamera]);
 
   useEffect(() => {
     if (!cameraOpen || !activeStream || !videoRef.current) return undefined;
@@ -537,7 +538,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
             onClick={() => { stopCamera(); openDeviceCamera(); }}
             className="absolute bottom-24 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/30 bg-black/62 px-4 py-2.5 text-xs font-extrabold text-white shadow-lg backdrop-blur-md"
           >
-            Open device camera
+            {t.openDeviceCamera}
           </button>
         )}
       </div>
@@ -551,9 +552,9 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         <img src={value.previewUrl} alt="Crop preview" className="h-full w-full object-cover" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/24 via-transparent to-white/10" />
         <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-black/58 px-4 py-3 text-left text-xs font-bold text-white backdrop-blur-md">
-          Photo ready. Tap Analyze to understand disease, severity, visible signs, and next action.
+          {t.photoReady}
         </div>
-        <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-md" aria-label="Remove image">
+        <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-md" aria-label={t.removeImage}>
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -566,24 +567,24 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       <div className="camera-launch-orb mx-auto mb-5" aria-hidden="true">
         <Camera className="relative z-10 h-11 w-11" />
       </div>
-      <span className="section-kicker mb-2">Crop disease scan</span>
-      <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">Capture or upload crop photo</h2>
-      <p className="mx-auto mb-5 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">Take a close, clear photo of the affected leaf, stem, fruit, or whole plant. The app will explain the likely disease, visible signs, severity, and next steps.</p>
+      <span className="section-kicker mb-2">{t.cropDiseaseScan}</span>
+      <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">{t.captureOrUploadCropPhoto}</h2>
+      <p className="mx-auto mb-5 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">{t.photoGuidance}</p>
 
       <div className="mb-5 grid grid-cols-3 gap-2 text-left">
-        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">1. Close-up symptom</div>
-        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">2. Full plant if possible</div>
-        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">3. Good light, no blur</div>
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">{t.symptomStep}</div>
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">{t.plantStep}</div>
+        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">{t.lightStep}</div>
       </div>
 
       <div className="capture-actions">
         <button type="button" data-testid="start-live-camera" disabled={disabled || preparing} onClick={() => void startCamera()} className="capture-action capture-action-primary">
           <Camera className="h-5 w-5" />
-          <span>Start live camera</span>
+          <span>{t.startLiveCamera}</span>
         </button>
         <label className={`capture-action ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
           <Camera className="h-5 w-5" />
-          <span>Take phone photo</span>
+          <span>{t.takePhonePhoto}</span>
           <input
             data-testid="take-phone-photo"
             type="file"
@@ -599,7 +600,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         </label>
         <label className={`capture-action ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
           <ImagePlus className="h-5 w-5" />
-          <span>Upload photo</span>
+          <span>{t.uploadPhoto}</span>
           <input
             data-testid="upload-crop-photo"
             type="file"
@@ -614,7 +615,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         </label>
       </div>
 
-      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">The diagnosis is guidance only. Confirm severe cases with a local agronomist.</p>
+      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">{t.diagnosisDisclaimer}</p>
       {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm">{error}</div>}
     </div>
   );

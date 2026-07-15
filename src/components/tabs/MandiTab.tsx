@@ -5,11 +5,11 @@ import { MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 const CROPS = [
-  { key: 'Tomato', label: 'टमाटर' },
-  { key: 'Onion', label: 'प्याज़' },
-  { key: 'Wheat', label: 'गेहूं' },
-  { key: 'Soyabean', label: 'सोयाबीन' },
-  { key: 'Cotton', label: 'कपास' },
+  { key: 'Tomato', label: { en: 'Tomato', hi: 'टमाटर', mr: 'टोमॅटो' } },
+  { key: 'Onion', label: { en: 'Onion', hi: 'प्याज', mr: 'कांदा' } },
+  { key: 'Wheat', label: { en: 'Wheat', hi: 'गेहूं', mr: 'गहू' } },
+  { key: 'Soyabean', label: { en: 'Soyabean', hi: 'सोयाबीन', mr: 'सोयाबीन' } },
+  { key: 'Cotton', label: { en: 'Cotton', hi: 'कपास', mr: 'कापूस' } },
 ];
 
 type MandiRecord = {
@@ -32,6 +32,7 @@ type MandiResponse = {
 
 type Props = {
   t: TranslationSet;
+  lang: string;
   market: { state: string; district: string; distanceKm: number; village?: string };
 };
 
@@ -42,24 +43,28 @@ function parseArrivalDate(value: string): number {
   return day && month && year ? new Date(year, month - 1, day).getTime() : 0;
 }
 
-function decision(direction: MandiResponse['trend']['direction']): string {
-  if (direction === 'rising') return 'Sell-ready';
-  if (direction === 'falling') return 'Compare or wait';
-  return 'Stable';
+function cropLabel(crop: typeof CROPS[number], lang: string): string {
+  if (lang === 'hi' || lang === 'mr' || lang === 'en') return crop.label[lang];
+  return crop.label.en;
 }
 
-function cropAdvice(response: MandiResponse, distanceKm: number): string {
-  if (response.trend.direction === 'rising') return `Price trend is rising. If crop is mature, compare nearby markets and sell in smaller lots within ${distanceKm} km.`;
-  if (response.trend.direction === 'falling') return 'Price trend is falling. Compare another market, grade the crop, or wait only if shelf life is safe.';
-  return 'Price is stable. Sell based on harvest maturity, transport cost, and weather risk.';
+function decision(direction: MandiResponse['trend']['direction'], t: TranslationSet): string {
+  if (direction === 'rising') return t.sellReady;
+  if (direction === 'falling') return t.compareOrWait;
+  return t.stable;
 }
 
-function sourceDetail(response: MandiResponse): string {
-  if (response.dataSource === 'live') return 'Live Agmarknet data via data.gov.in, refreshed every 6 hours.';
-  return 'Fallback prices shown. Add DATA_GOV_API_KEY in deployment for live Agmarknet prices.';
+function cropAdvice(response: MandiResponse, distanceKm: number, t: TranslationSet): string {
+  if (response.trend.direction === 'rising') return t.priceRisingAdvice + ' ' + distanceKm + ' km.';
+  if (response.trend.direction === 'falling') return t.priceFallingAdvice;
+  return t.priceStableAdvice;
 }
 
-export default function MandiTab({ t, market }: Props) {
+function sourceDetail(response: MandiResponse, t: TranslationSet): string {
+  if (response.dataSource === 'live') return t.liveSource;
+  return t.fallbackSource;
+}
+export default function MandiTab({ t, lang, market }: Props) {
   const [selected, setSelected] = useState('Tomato');
   const [prices, setPrices] = useState<Record<string, MandiResponse>>({});
   const [loading, setLoading] = useState(true);
@@ -104,7 +109,7 @@ export default function MandiTab({ t, market }: Props) {
     <div className="space-y-4">
       <section className="m3-card flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <span className="section-kicker">Nearest market</span>
+          <span className="section-kicker">{t.nearestMarket}</span>
           <h2 className="mt-1 truncate text-xl font-bold text-[#202124]">{market.district}</h2>
           <p className="mt-1 text-xs font-medium text-[#5F6368]">{market.village || market.district} · {market.distanceKm} km</p>
         </div>
@@ -114,7 +119,7 @@ export default function MandiTab({ t, market }: Props) {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {CROPS.map((crop) => (
           <button key={crop.key} type="button" onClick={() => setSelected(crop.key)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold ${selected === crop.key ? 'bg-[#1A73E8] text-white' : 'border border-[#DADCE0] bg-white text-[#3C4043]'}`}>
-            {crop.label}
+            {cropLabel(crop, lang)}
           </button>
         ))}
       </div>
@@ -123,7 +128,7 @@ export default function MandiTab({ t, market }: Props) {
 
       {current?.dataSource === 'fallback' && (
         <div className="rounded-2xl bg-[#FEF7E0] p-4 text-sm font-bold leading-relaxed text-[#B06000]">
-          Live market key is not configured for this environment. The app is using safe fallback prices until DATA_GOV_API_KEY is set.
+          {t.liveMarketKeyMissing}
         </div>
       )}
 
@@ -135,7 +140,7 @@ export default function MandiTab({ t, market }: Props) {
                 <span className="section-kicker">{record.commodity}</span>
                 <div className="mt-2 flex items-end gap-2">
                   <strong className="text-3xl font-bold text-[#202124]">₹{Math.round(record.modalPrice).toLocaleString('en-IN')}</strong>
-                  <span className="pb-1 text-xs font-medium text-[#5F6368]">/ quintal</span>
+                  <span className="pb-1 text-xs font-medium text-[#5F6368]">/ {t.quintal}</span>
                 </div>
                 <p className="mt-2 text-xs font-medium text-[#5F6368]">₹{Math.round(record.minPrice).toLocaleString('en-IN')} – ₹{Math.round(record.maxPrice).toLocaleString('en-IN')}</p>
               </div>
@@ -146,21 +151,21 @@ export default function MandiTab({ t, market }: Props) {
             </div>
 
             <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#F8F9FA] px-4 py-3">
-              <span className="text-sm font-semibold text-[#3C4043]">{decision(current.trend.direction)}</span>
+              <span className="text-sm font-semibold text-[#3C4043]">{decision(current.trend.direction, t)}</span>
               <span className={`text-xs font-semibold ${current.dataSource === 'live' ? 'text-[#137333]' : 'text-[#B06000]'}`}>
                 {current.dataSource === 'live' ? t.livePrice : `${t.lastKnown} · ${record.arrivalDate}`}
               </span>
             </div>
 
             <div className="mt-3 rounded-2xl border border-[#DCE8DE] bg-[#F3FAF5] p-4">
-              <span className="section-kicker">Crop advice</span>
-              <p className="mt-2 text-sm font-bold leading-relaxed text-[#2F4B3A]">{cropAdvice(current, market.distanceKm)}</p>
-              <p className="mt-2 text-xs font-semibold leading-relaxed text-[#66736C]">{sourceDetail(current)}</p>
+              <span className="section-kicker">{t.cropAdvice}</span>
+              <p className="mt-2 text-sm font-bold leading-relaxed text-[#2F4B3A]">{cropAdvice(current, market.distanceKm, t)}</p>
+              <p className="mt-2 text-xs font-semibold leading-relaxed text-[#66736C]">{sourceDetail(current, t)}</p>
             </div>
           </section>
 
           <section className="m3-card">
-            <span className="section-kicker">Nearby</span>
+            <span className="section-kicker">{t.nearby}</span>
             <div className="mt-3 divide-y divide-[#EEF0EF]">
               {current.records.slice(0, 5).map((item, index) => (
                 <div key={`${item.market}-${item.arrivalDate}-${index}`} className="flex items-center justify-between gap-3 py-3 text-sm">
