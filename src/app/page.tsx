@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Globe2, Leaf, Lock, Mail, Sprout } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { LANGUAGES, TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
+import { buildSupabaseGoogleOAuthUrl } from '@/lib/supabase-auth';
 import {
   createSession,
   readAuthSession,
@@ -137,7 +138,6 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const copy = LOGIN_COPY[lang];
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   useEffect(() => {
     const startupTimer = window.setTimeout(() => {
@@ -201,12 +201,11 @@ export default function LoginPage() {
 
   const continueWithGoogle = () => {
     setMessage(null);
-    if (!supabaseUrl) {
+    try {
+      window.location.href = buildSupabaseGoogleOAuthUrl(window.location.origin);
+    } catch {
       setMessage({ tone: 'info', text: copy.googleUnavailable });
-      return;
     }
-    const redirectTo = `${window.location.origin}/dashboard`;
-    window.location.href = `${supabaseUrl.replace(/\/$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
   };
 
   const continueAsDemo = () => finishLogin({ mode: 'demo', identifier: 'demo@kisanmitra.local', name: 'Asha Pawar' });
