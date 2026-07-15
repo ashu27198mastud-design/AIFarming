@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CloudRain, Eye, EyeOff, Globe2, Leaf, LineChart, Lock, Mail, ShieldCheck, Sprout } from 'lucide-react';
-import { FormEvent, useEffect, useState } from 'react';
-import { LANGUAGES, TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
+import { Eye, EyeOff, Leaf, Lock, Mail, Wheat } from 'lucide-react';
+import { Fragment, FormEvent, useEffect, useState } from 'react';
+import { TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
 import { buildSupabaseGoogleOAuthUrl } from '@/lib/supabase-auth';
 import {
   createSession,
@@ -16,17 +16,10 @@ import {
 } from '@/lib/auth-session';
 
 const LANGUAGE_STORAGE_KEY = 'km-lang';
+const WORDMARK_INTERVAL_MS = 2500;
 
 type LoginCopy = {
-  appName: string;
-  productName: string;
-  productSuffix: string;
-  eyebrow: string;
   tagline: string;
-  problemLead: string;
-  problemDetail: string;
-  signInTitle: string;
-  signInSubtext: string;
   identifier: string;
   password: string;
   login: string;
@@ -45,20 +38,56 @@ type LoginCopy = {
   accountCreated: string;
   forgotMessage: string;
   googleUnavailable: string;
-  signals: Array<{ label: string; value: string; tone: 'blue' | 'green' | 'amber' }>;
 };
+
+type Wordmark = {
+  code: string;
+  label: string;
+  lang: string;
+  dir?: 'ltr' | 'rtl';
+};
+
+type WordmarkState = {
+  current: number;
+  previous: number | null;
+  tick: number;
+};
+
+const UI_LANGUAGES: Array<{ code: LanguageCode; label: string; aria: string }> = [
+  { code: 'hi', label: 'हिं', aria: 'Hindi' },
+  { code: 'mr', label: 'मराठी', aria: 'Marathi' },
+  { code: 'en', label: 'EN', aria: 'English' },
+];
+
+const WORDMARKS: Wordmark[] = [
+  { code: 'hi', label: 'किसानमित्र', lang: 'hi' },
+  { code: 'bn', label: 'কিষাণমিত্র', lang: 'bn' },
+  { code: 'te', label: 'కిసాన్‌మిత్ర', lang: 'te' },
+  { code: 'mr', label: 'किसानमित्र', lang: 'mr' },
+  { code: 'ta', label: 'கிசான்மித்ரா', lang: 'ta' },
+  { code: 'ur', label: 'کسان متر', lang: 'ur', dir: 'rtl' },
+  { code: 'gu', label: 'કિસાનમિત્ર', lang: 'gu' },
+  { code: 'kn', label: 'ಕಿಸಾನ್‌ಮಿತ್ರ', lang: 'kn' },
+  { code: 'ml', label: 'കിസാൻമിത്ര', lang: 'ml' },
+  { code: 'or', label: 'କିଷାଣମିତ୍ର', lang: 'or' },
+  { code: 'pa', label: 'ਕਿਸਾਨਮਿੱਤਰ', lang: 'pa' },
+  { code: 'as', label: 'কিষাণমিত্ৰ', lang: 'as' },
+  { code: 'mai', label: 'किसानमित्र', lang: 'mai' },
+  { code: 'sat', label: 'ᱠᱤᱥᱟᱱᱢᱤᱛᱨᱚ', lang: 'sat' },
+  { code: 'ks', label: 'کِسان مِتر', lang: 'ks', dir: 'rtl' },
+  { code: 'ne', label: 'किसानमित्र', lang: 'ne' },
+  { code: 'sd', label: 'ڪسان متر', lang: 'sd', dir: 'rtl' },
+  { code: 'doi', label: 'किसानमित्र', lang: 'doi' },
+  { code: 'kok', label: 'किसानमित्र', lang: 'kok' },
+  { code: 'mni', label: 'ꯀꯤꯁꯥꯟꯃꯤꯇ꯭ꯔ', lang: 'mni' },
+  { code: 'brx', label: 'किसानमित्र', lang: 'brx' },
+  { code: 'sa', label: 'कृषकमित्रम्', lang: 'sa' },
+  { code: 'en', label: 'KisanMitra', lang: 'en' },
+];
 
 const LOGIN_COPY: Record<LanguageCode, LoginCopy> = {
   hi: {
-    appName: 'किसानमित्र Predict',
-    productName: 'किसानमित्र',
-    productSuffix: 'Predict',
-    eyebrow: 'आपकी खेती का निर्णय साथी',
     tagline: 'नुकसान से पहले, सही फैसला।',
-    problemLead: 'हर साल किसान अपनी फसल का 30% तक खो देता है।',
-    problemDetail: 'बीमारी देर से पकड़ में आती है, मौसम की चेतावनी देर से मिलती है, और बाजार का फैसला गलत समय पर होता है।',
-    signInTitle: 'अपने खेत का डैशबोर्ड खोलें',
-    signInSubtext: 'फसल, मौसम और मंडी सलाह एक जगह।',
     identifier: 'मोबाइल नंबर या ईमेल',
     password: 'पासवर्ड',
     login: 'लॉगिन करें',
@@ -77,22 +106,9 @@ const LOGIN_COPY: Record<LanguageCode, LoginCopy> = {
     accountCreated: 'खाता बन गया। अब डैशबोर्ड खोल रहे हैं।',
     forgotMessage: 'पासवर्ड रीसेट जल्द आएगा। अभी नया खाता बनाएं या डेमो देखें।',
     googleUnavailable: 'Google लॉगिन अभी पूरा नहीं हुआ। डेमो देखें या फिर कोशिश करें।',
-    signals: [
-      { label: 'मौसम', value: 'बारिश 6 बजे', tone: 'blue' },
-      { label: 'फसल', value: 'रोग जोखिम कम', tone: 'green' },
-      { label: 'मंडी', value: 'टमाटर ऊपर', tone: 'amber' },
-    ],
   },
   mr: {
-    appName: 'किसानमित्र Predict',
-    productName: 'किसानमित्र',
-    productSuffix: 'Predict',
-    eyebrow: 'तुमच्या शेतीचा निर्णय साथी',
     tagline: 'नुकसान होण्यापूर्वी, योग्य निर्णय.',
-    problemLead: 'दरवर्षी शेतकरी पिकाचे 30% पर्यंत नुकसान सहन करतो.',
-    problemDetail: 'रोग उशिरा समजतो, हवामानाचा इशारा उशिरा मिळतो, आणि बाजाराचा निर्णय चुकीच्या वेळी होतो.',
-    signInTitle: 'तुमचा शेती डॅशबोर्ड उघडा',
-    signInSubtext: 'पीक, हवामान आणि मंडी सल्ला एका ठिकाणी.',
     identifier: 'मोबाइल नंबर किंवा ईमेल',
     password: 'पासवर्ड',
     login: 'लॉगिन करा',
@@ -111,22 +127,9 @@ const LOGIN_COPY: Record<LanguageCode, LoginCopy> = {
     accountCreated: 'खाते तयार झाले. आता डॅशबोर्ड उघडत आहे.',
     forgotMessage: 'पासवर्ड रीसेट लवकरच येईल. आत्ता नवे खाते तयार करा किंवा डेमो पाहा.',
     googleUnavailable: 'Google लॉगिन अजून पूर्ण झाले नाही. डेमो पाहा किंवा पुन्हा प्रयत्न करा.',
-    signals: [
-      { label: 'हवामान', value: 'पाऊस 6 वाजता', tone: 'blue' },
-      { label: 'पीक', value: 'रोग धोका कमी', tone: 'green' },
-      { label: 'मंडी', value: 'टोमॅटो वर', tone: 'amber' },
-    ],
   },
   en: {
-    appName: 'KisanMitra Predict',
-    productName: 'KisanMitra',
-    productSuffix: 'Predict',
-    eyebrow: 'Decision support for every farm',
     tagline: 'Before the loss, the right decision.',
-    problemLead: 'Farmers lose up to 30% of a crop every year.',
-    problemDetail: 'Disease is found late, weather warnings arrive late, and market decisions happen at the wrong time.',
-    signInTitle: 'Open your farm dashboard',
-    signInSubtext: 'Crop, weather, and mandi advice in one place.',
     identifier: 'Mobile number or email',
     password: 'Password',
     login: 'Log in',
@@ -145,18 +148,7 @@ const LOGIN_COPY: Record<LanguageCode, LoginCopy> = {
     accountCreated: 'Account created. Opening your dashboard.',
     forgotMessage: 'Password reset is coming soon. Create a new account or view the demo for now.',
     googleUnavailable: 'Google login could not be completed yet. View the demo or try again.',
-    signals: [
-      { label: 'Weather', value: 'Rain at 6 PM', tone: 'blue' },
-      { label: 'Crop', value: 'Disease risk low', tone: 'green' },
-      { label: 'Mandi', value: 'Tomato rising', tone: 'amber' },
-    ],
   },
-};
-
-const SIGNAL_ICONS = {
-  blue: CloudRain,
-  green: ShieldCheck,
-  amber: LineChart,
 };
 
 function readSavedLanguage(): LanguageCode {
@@ -173,6 +165,17 @@ function normalizeIdentifier(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function GoogleGIcon() {
+  return (
+    <svg aria-hidden="true" className="auth-google-g" viewBox="0 0 24 24" focusable="false">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9C6.71 7.31 9.14 5.38 12 5.38z" />
+    </svg>
+  );
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [lang, setLang] = useState<LanguageCode>('hi');
@@ -182,8 +185,11 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [message, setMessage] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [wordmarkState, setWordmarkState] = useState<WordmarkState>({ current: 0, previous: null, tick: 0 });
 
   const copy = LOGIN_COPY[lang];
+  const wordmark = WORDMARKS[wordmarkState.current];
+  const previousWordmark = wordmarkState.previous === null ? null : WORDMARKS[wordmarkState.previous];
 
   useEffect(() => {
     const startupTimer = window.setTimeout(() => {
@@ -198,6 +204,37 @@ export default function LoginPage() {
     document.documentElement.lang = lang;
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
   }, [lang]);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let intervalId: number | undefined;
+    let startupTimer: number | undefined;
+
+    const startCycle = () => {
+      if (intervalId) window.clearInterval(intervalId);
+      if (startupTimer) window.clearTimeout(startupTimer);
+
+      if (motionQuery.matches) {
+        startupTimer = window.setTimeout(() => setWordmarkState({ current: 0, previous: null, tick: 0 }), 0);
+        return;
+      }
+
+      intervalId = window.setInterval(() => {
+        setWordmarkState((current) => {
+          const next = (current.current + 1) % WORDMARKS.length;
+          return { current: next, previous: current.current, tick: current.tick + 1 };
+        });
+      }, WORDMARK_INTERVAL_MS);
+    };
+
+    startCycle();
+    motionQuery.addEventListener('change', startCycle);
+    return () => {
+      if (intervalId) window.clearInterval(intervalId);
+      if (startupTimer) window.clearTimeout(startupTimer);
+      motionQuery.removeEventListener('change', startCycle);
+    };
+  }, []);
 
   const finishLogin = (options: { mode: 'user' | 'demo'; identifier: string; name?: string }) => {
     const session = createSession({ ...options, language: lang });
@@ -255,97 +292,79 @@ export default function LoginPage() {
   const continueAsDemo = () => finishLogin({ mode: 'demo', identifier: 'demo@kisanmitra.local', name: 'Asha Pawar' });
 
   return (
-    <main className="auth-canvas auth-page relative flex h-[100svh] items-center justify-center overflow-hidden px-4 py-4 text-[#202124] sm:px-6">
-      <div className="auth-language-switch absolute right-4 top-4 z-20 flex items-center gap-1 border border-[#DADCE0] bg-white p-1 shadow-sm sm:right-6 sm:top-6">
-        {LANGUAGES.map((item) => (
-          <button
-            key={item.code}
-            type="button"
-            onClick={() => setLang(item.code)}
-            aria-pressed={lang === item.code}
-            className={`min-h-10 px-4 text-sm font-bold transition ${lang === item.code ? 'bg-[#1A73E8] text-white shadow-sm' : 'text-[#3C4043] hover:bg-[#F8F9FA]'}`}
-          >
-            {item.name}
-          </button>
-        ))}
+    <main className="auth-minimal">
+      <div className="auth-aurora" aria-hidden="true" />
+      <div className="auth-glass-field" aria-hidden="true">
+        <span className="auth-glass-piece auth-glass-piece-1" />
+        <span className="auth-glass-piece auth-glass-piece-2"><Wheat /></span>
+        <span className="auth-glass-piece auth-glass-piece-3" />
+        <span className="auth-glass-piece auth-glass-piece-4"><Leaf /></span>
+        <span className="auth-glass-piece auth-glass-piece-5" />
+        <span className="auth-glass-piece auth-glass-piece-6" />
       </div>
 
-      <section className="auth-stage grid max-h-[calc(100svh-32px)] w-full max-w-[1120px] overflow-hidden border border-[#E6EAEE] bg-white shadow-[0_24px_80px_rgba(60,64,67,0.14)] md:grid-cols-[minmax(0,1.12fr)_420px]">
-        <section className="auth-hero-panel hidden min-h-0 flex-col justify-between overflow-hidden p-10 md:flex lg:p-12">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="auth-mark flex h-12 w-12 items-center justify-center border border-[#DADCE0] bg-white text-[#188038] shadow-sm">
-                <Sprout className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-[#5F6368]">{copy.eyebrow}</p>
-                <p className="text-xs font-bold uppercase text-[#188038]">KisanMitra AI</p>
-              </div>
-            </div>
+      <nav className="auth-language-links" aria-label="Choose language">
+        {UI_LANGUAGES.map((item, index) => (
+          <Fragment key={item.code}>
+            {index > 0 && <span aria-hidden="true">|</span>}
+            <button
+              type="button"
+              onClick={() => setLang(item.code)}
+              aria-label={item.aria}
+              aria-pressed={lang === item.code}
+              className={lang === item.code ? 'auth-language-active' : undefined}
+            >
+              {item.label}
+            </button>
+          </Fragment>
+        ))}
+      </nav>
 
-            <div className="mt-12">
-              <h1 className="auth-wordmark text-7xl font-black leading-none text-[#202124] lg:text-8xl">{copy.productName}</h1>
-              <p className="mt-3 inline-flex items-center gap-2 border border-[#DADCE0] bg-white px-3 py-2 text-lg font-black text-[#1A73E8] shadow-sm">
-                <Leaf className="h-5 w-5 text-[#188038]" /> {copy.productSuffix}
-              </p>
-              <p className="mt-6 max-w-xl text-2xl font-black leading-snug text-[#202124]">{copy.tagline}</p>
-            </div>
+      <section className="auth-minimal-column" aria-label="KisanMitra login">
+        <header className="auth-wordmark-block">
+          <div className="auth-wordmark-viewport" aria-live="polite">
+            {previousWordmark && (
+              <span
+                key={`previous-${wordmarkState.tick}`}
+                aria-hidden="true"
+                className="auth-cycle-word auth-cycle-word-exit"
+                dir={previousWordmark.dir || 'ltr'}
+                lang={previousWordmark.lang}
+              >
+                {previousWordmark.label}
+              </span>
+            )}
+            <h1
+              key={`current-${wordmarkState.tick}`}
+              className="auth-cycle-word auth-cycle-word-enter"
+              dir={wordmark.dir || 'ltr'}
+              lang={wordmark.lang}
+            >
+              {wordmark.label}
+            </h1>
           </div>
+          <span key={`rule-${wordmarkState.tick}`} className="auth-tricolor-rule" aria-hidden="true" />
+          <p className="auth-tagline">{copy.tagline}</p>
+        </header>
 
-          <div className="grid gap-4">
-            <div className="auth-problem-card border border-[#DADCE0] bg-white p-5 shadow-sm">
-              <p className="text-lg font-black leading-6 text-[#202124]">{copy.problemLead}</p>
-              <p className="mt-2 text-sm font-bold leading-6 text-[#5F6368]">{copy.problemDetail}</p>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {copy.signals.map((signal) => {
-                const Icon = SIGNAL_ICONS[signal.tone];
-                return (
-                  <div key={`${signal.label}-${signal.value}`} className={`auth-signal auth-signal-${signal.tone} border bg-white p-4 shadow-sm`}>
-                    <Icon className="h-5 w-5" />
-                    <p className="mt-3 text-xs font-black uppercase text-[#5F6368]">{signal.label}</p>
-                    <p className="mt-1 text-sm font-black text-[#202124]">{signal.value}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section className="auth-card auth-login-panel flex min-h-0 flex-col justify-center overflow-hidden bg-white p-5 sm:p-7 md:border-l md:border-[#E6EAEE]">
-          <header className="mb-5 text-left md:mb-7">
-            <div className="mb-4 flex items-center gap-3 md:hidden">
-              <div className="auth-mark flex h-11 w-11 items-center justify-center border border-[#DADCE0] bg-white text-[#188038] shadow-sm">
-                <Sprout className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black leading-tight text-[#202124]">{copy.productName}</h1>
-                <p className="text-sm font-black text-[#1A73E8]">{copy.productSuffix}</p>
-              </div>
-            </div>
-            <p className="text-2xl font-black leading-tight text-[#202124] md:text-3xl">{copy.signInTitle}</p>
-            <p className="mt-2 text-sm font-bold leading-5 text-[#5F6368]">{copy.signInSubtext}</p>
-          </header>
-
-          <form onSubmit={submit} className="flex min-h-0 flex-col gap-3">
-            <label className="auth-field relative block">
-              <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#188038]" />
+        <section className="auth-login-card" aria-label="Login form">
+          <form onSubmit={submit} className="auth-login-form">
+            <label className="auth-input-wrap">
+              <Mail aria-hidden="true" className="auth-input-icon" />
               <input
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
-                className="min-h-14 w-full border border-[#DADCE0] bg-white pl-12 pr-4 text-lg font-bold text-[#202124] outline-none transition placeholder:text-[#80868B] focus:border-[#1A73E8] focus:ring-4 focus:ring-[#E8F0FE]"
                 placeholder={copy.identifier}
                 inputMode="email"
                 autoComplete="username"
               />
             </label>
 
-            <label className="auth-field relative block">
-              <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#188038]" />
+            <label className="auth-input-wrap">
+              <Lock aria-hidden="true" className="auth-input-icon" />
               <input
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="min-h-14 w-full border border-[#DADCE0] bg-white pl-12 pr-14 text-lg font-bold text-[#202124] outline-none transition placeholder:text-[#80868B] focus:border-[#1A73E8] focus:ring-4 focus:ring-[#E8F0FE]"
                 placeholder={copy.password}
                 type={showPassword ? 'text' : 'password'}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -353,55 +372,46 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
-                className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-[#3C4043] hover:bg-[#F1F3F4]"
+                className="auth-eye-button"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                {showPassword ? <EyeOff /> : <Eye />}
               </button>
             </label>
 
-            {message && (
-              <p className={`border px-4 py-3 text-sm font-black ${message.tone === 'error' ? 'border-[#F4AEA7] bg-[#FCE8E6] text-[#B3261E]' : 'border-[#C2D7FF] bg-[#E8F0FE] text-[#174EA6]'}`}>{message.text}</p>
-            )}
+            {message && <p className={`auth-message auth-message-${message.tone}`}>{message.text}</p>}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex min-h-14 w-full items-center justify-center gap-2 bg-[#1E8E3E] text-lg font-black text-white shadow-[0_12px_26px_rgba(30,142,62,0.22)] transition hover:bg-[#188038] disabled:opacity-70"
-            >
-              <Leaf className="h-5 w-5" /> {mode === 'signup' ? copy.signupButton : copy.login}
+            <button type="submit" disabled={submitting} className="auth-primary-button">
+              {mode === 'signup' ? copy.signupButton : copy.login}
             </button>
 
-            <div className="flex items-center gap-3 text-xs font-black text-[#6B756E]">
-              <span className="h-px flex-1 bg-[#DADCE0]" />
-              {copy.or}
-              <span className="h-px flex-1 bg-[#DADCE0]" />
+            <div className="auth-divider">
+              <span />
+              <strong>{copy.or}</strong>
+              <span />
             </div>
 
-            <button
-              type="button"
-              onClick={continueWithGoogle}
-              className="flex min-h-14 w-full items-center justify-center gap-2 border border-[#DADCE0] bg-white text-base font-black text-[#202124] transition hover:bg-[#F8F9FA]"
-            >
-              <Globe2 className="h-5 w-5 text-[#1A73E8]" /> {copy.google}
+            <button type="button" onClick={continueWithGoogle} className="auth-google-button">
+              <GoogleGIcon />
+              {copy.google}
             </button>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 text-[13px] font-black">
-              <button type="button" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage(null); }} className="text-[#188038] hover:underline">
+            <div className="auth-form-links">
+              <button type="button" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage(null); }}>
                 {mode === 'login' ? copy.signup : copy.loginLink}
               </button>
-              <span className="text-[#DADCE0]">|</span>
-              <button type="button" onClick={() => setMessage({ tone: 'info', text: copy.forgotMessage })} className="text-[#5F6368] hover:underline">
+              <span aria-hidden="true">·</span>
+              <button type="button" onClick={() => setMessage({ tone: 'info', text: copy.forgotMessage })}>
                 {copy.forgot}
               </button>
             </div>
 
-            <p className="text-center text-[11px] font-bold leading-4 text-[#6A756F]">
+            <p className="auth-consent">
               {copy.consentPrefix}{' '}
-              <Link href="/privacy" className="text-[#188038] underline underline-offset-2">{copy.consentLink}</Link>
+              <Link href="/privacy">{copy.consentLink}</Link>
             </p>
 
-            <button type="button" onClick={continueAsDemo} className="mx-auto text-sm font-black text-[#1A73E8] hover:underline">
+            <button type="button" onClick={continueAsDemo} className="auth-demo-link">
               {copy.demo}
             </button>
           </form>
