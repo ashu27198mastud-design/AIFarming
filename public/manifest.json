@@ -1,7 +1,7 @@
 {
-  "name": "KisanMitra — आपकी फसल का साथी",
+  "name": "KisanMitra Predict",
   "short_name": "KisanMitra",
-  "description": "किसानमित्र — भारतीय किसानों के लिए एक सरल और सुगम कृषि सहायक ऐप। फ़ोटो लें और बीमारी की तुरंत जांच करें। | KisanMitra — Your Crop's Companion",
+  "description": "A farmer-first crop intelligence app for disease detection, weather alerts, market prices, and crop advice.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

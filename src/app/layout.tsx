@@ -5,15 +5,15 @@ import './google-compact.css';
 import './liquid-glass.css';
 
 export const metadata: Metadata = {
-  title: 'KisanMitra — आपकी फसल का साथी | Your Crop\'s Companion',
-  description: 'किसानमित्र — भारतीय किसानों के लिए एक सरल और सुगम कृषि सहायक ऐप। फ़ोटो लें और बीमारी की तुरंत जांच करें। | KisanMitra — A simple and direct farmer-first crop assistant.',
-  keywords: ['KisanMitra', 'किसानमित्र', 'smart farming India', 'crop disease diagnosis', 'AI farmer assistant', 'mandi prices'],
+  title: 'KisanMitra Predict',
+  description: 'A farmer-first crop intelligence app for disease detection, weather warnings, market prices, and practical crop advice.',
+  keywords: ['KisanMitra Predict', 'smart farming India', 'crop disease diagnosis', 'AI farmer assistant', 'mandi prices'],
   authors: [{ name: 'KisanMitra Team' }],
   openGraph: {
-    title: 'KisanMitra — आपकी फसल का साथी',
-    description: 'किसानमित्र — फ़ोटो लें और फसल की बीमारी की तुरंत जांच करें। | KisanMitra — Take a photo to diagnose crop diseases instantly.',
+    title: 'KisanMitra Predict',
+    description: 'Detect crop diseases, plan treatments, follow weather alerts, and compare live market prices.',
     type: 'website',
-    siteName: 'KisanMitra',
+    siteName: 'KisanMitra Predict',
   },
   manifest: '/manifest.json',
   icons: {
