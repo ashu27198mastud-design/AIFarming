@@ -7,6 +7,7 @@ import { Fragment, FormEvent, useEffect, useState } from 'react';
 import { TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
 import { buildSupabaseGoogleOAuthUrl } from '@/lib/supabase-auth';
 import {
+  clearAuthSession,
   createSession,
   readAuthSession,
   readLocalAccounts,
@@ -194,6 +195,13 @@ export default function LoginPage() {
   useEffect(() => {
     const startupTimer = window.setTimeout(() => {
       setLang(readSavedLanguage());
+      const forceLogin = new URLSearchParams(window.location.search).get('login') === '1';
+      if (forceLogin) {
+        clearAuthSession();
+        window.history.replaceState(null, '', '/');
+        return;
+      }
+
       const session = readAuthSession();
       if (session) router.replace('/dashboard');
     }, 0);
@@ -206,6 +214,8 @@ export default function LoginPage() {
   }, [lang]);
 
   useEffect(() => {
+    if (!('matchMedia' in window)) return undefined;
+
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let intervalId: number | undefined;
     let startupTimer: number | undefined;
@@ -227,12 +237,26 @@ export default function LoginPage() {
       }, WORDMARK_INTERVAL_MS);
     };
 
+    const legacyMotionQuery = motionQuery as MediaQueryList & {
+      addListener?: (listener: () => void) => void;
+      removeListener?: (listener: () => void) => void;
+    };
+
     startCycle();
-    motionQuery.addEventListener('change', startCycle);
+    if (typeof motionQuery.addEventListener === 'function') {
+      motionQuery.addEventListener('change', startCycle);
+    } else {
+      legacyMotionQuery.addListener?.(startCycle);
+    }
+
     return () => {
       if (intervalId) window.clearInterval(intervalId);
       if (startupTimer) window.clearTimeout(startupTimer);
-      motionQuery.removeEventListener('change', startCycle);
+      if (typeof motionQuery.removeEventListener === 'function') {
+        motionQuery.removeEventListener('change', startCycle);
+      } else {
+        legacyMotionQuery.removeListener?.(startCycle);
+      }
     };
   }, []);
 
