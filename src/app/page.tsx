@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -7,16 +7,19 @@ import { Fragment, FormEvent, useEffect, useState } from 'react';
 import { TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
 import { buildSupabaseGoogleOAuthUrl } from '@/lib/supabase-auth';
 import {
+  clearAuthSession,
   createSession,
   readAuthSession,
-  readLocalAccounts,
   saveLocalAccount,
   verifyLocalAccount,
   writeAuthSession,
 } from '@/lib/auth-session';
 
 const LANGUAGE_STORAGE_KEY = 'km-lang';
+const LANGUAGE_OVERRIDE_STORAGE_KEY = 'km-lang-override';
 const WORDMARK_INTERVAL_MS = 2500;
+const DEMO_IDENTIFIER = 'asha@kisanmitra.demo';
+const DEMO_PASSWORD = 'Kisan123';
 
 type LoginCopy = {
   tagline: string;
@@ -157,10 +160,6 @@ function readSavedLanguage(): LanguageCode {
   return savedLang && TRANSLATIONS[savedLang] ? savedLang : 'hi';
 }
 
-function isEmail(value: string): boolean {
-  return /^\S+@\S+\.\S+$/.test(value.trim());
-}
-
 function normalizeIdentifier(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -186,16 +185,59 @@ export default function LoginPage() {
   const [message, setMessage] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [wordmarkState, setWordmarkState] = useState<WordmarkState>({ current: 0, previous: null, tick: 0 });
+  const [toast, setToast] = useState<string | null>(null);
 
   const copy = LOGIN_COPY[lang];
   const wordmark = WORDMARKS[wordmarkState.current];
   const previousWordmark = wordmarkState.previous === null ? null : WORDMARKS[wordmarkState.previous];
 
+  const handleLangChange = (code: LanguageCode) => {
+    setLang(code);
+    window.localStorage.setItem(LANGUAGE_OVERRIDE_STORAGE_KEY, 'true');
+  };
+
+  useEffect(() => {
+    const hasOverride = window.localStorage.getItem(LANGUAGE_OVERRIDE_STORAGE_KEY) === 'true';
+    const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    let toastTimer: number | undefined;
+
+    if (!hasOverride && !savedLang && typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          if (latitude >= 15.6 && latitude <= 22.0 && longitude >= 72.6 && longitude <= 80.9) {
+            setLang('mr');
+            setToast(TRANSLATIONS.mr.langAutoSwitched);
+            toastTimer = window.setTimeout(() => setToast(null), 3000);
+          }
+        },
+        undefined,
+        { timeout: 5000 }
+      );
+    }
+    return () => {
+      if (toastTimer) window.clearTimeout(toastTimer);
+    };
+  }, []);
+
   useEffect(() => {
     const startupTimer = window.setTimeout(() => {
       setLang(readSavedLanguage());
+      const forceLogin = new URLSearchParams(window.location.search).get('login') === '1';
+      if (forceLogin) {
+        clearAuthSession();
+        window.history.replaceState(null, '', '/');
+        return;
+      }
+
       const session = readAuthSession();
-      if (session) router.replace('/dashboard');
+      if (session) {
+        if (!session.setupCompleted) {
+          router.replace('/setup');
+        } else {
+          router.replace('/dashboard');
+        }
+      }
     }, 0);
     return () => window.clearTimeout(startupTimer);
   }, [router]);
@@ -206,6 +248,8 @@ export default function LoginPage() {
   }, [lang]);
 
   useEffect(() => {
+    if (!('matchMedia' in window)) return undefined;
+
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let intervalId: number | undefined;
     let startupTimer: number | undefined;
@@ -227,19 +271,37 @@ export default function LoginPage() {
       }, WORDMARK_INTERVAL_MS);
     };
 
+    const legacyMotionQuery = motionQuery as MediaQueryList & {
+      addListener?: (listener: () => void) => void;
+      removeListener?: (listener: () => void) => void;
+    };
+
     startCycle();
-    motionQuery.addEventListener('change', startCycle);
+    if (typeof motionQuery.addEventListener === 'function') {
+      motionQuery.addEventListener('change', startCycle);
+    } else {
+      legacyMotionQuery.addListener?.(startCycle);
+    }
+
     return () => {
       if (intervalId) window.clearInterval(intervalId);
       if (startupTimer) window.clearTimeout(startupTimer);
-      motionQuery.removeEventListener('change', startCycle);
+      if (typeof motionQuery.removeEventListener === 'function') {
+        motionQuery.removeEventListener('change', startCycle);
+      } else {
+        legacyMotionQuery.removeListener?.(startCycle);
+      }
     };
   }, []);
 
   const finishLogin = (options: { mode: 'user' | 'demo'; identifier: string; name?: string }) => {
     const session = createSession({ ...options, language: lang });
     writeAuthSession(session);
-    router.replace('/dashboard');
+    if (!session.setupCompleted) {
+      router.replace('/setup');
+    } else {
+      router.replace('/dashboard');
+    }
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -270,8 +332,8 @@ export default function LoginPage() {
         return;
       }
 
-      if (readLocalAccounts().length === 0) {
-        finishLogin({ mode: 'user', identifier: cleanIdentifier, name: isEmail(cleanIdentifier) ? 'Kisan' : 'Asha Pawar' });
+      if (cleanIdentifier === DEMO_IDENTIFIER && password === DEMO_PASSWORD) {
+        finishLogin({ mode: 'demo', identifier: cleanIdentifier, name: 'Asha Pawar' });
         return;
       }
 
@@ -292,7 +354,13 @@ export default function LoginPage() {
   const continueAsDemo = () => finishLogin({ mode: 'demo', identifier: 'demo@kisanmitra.local', name: 'Asha Pawar' });
 
   return (
-    <main className="auth-minimal">
+    <main className="auth-minimal animate-fade-slide-up">
+      {toast && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-white/90 bg-white/80 px-4 py-3 text-sm font-bold text-[#1F6B4F] shadow-lg backdrop-blur-xl animate-fade-slide-up">
+          <Leaf className="h-4 w-4 animate-pulse-slow" />
+          <span>{toast}</span>
+        </div>
+      )}
       <div className="auth-aurora" aria-hidden="true" />
       <div className="auth-glass-field" aria-hidden="true">
         <span className="auth-glass-piece auth-glass-piece-1" />
@@ -303,13 +371,13 @@ export default function LoginPage() {
         <span className="auth-glass-piece auth-glass-piece-6" />
       </div>
 
-      <nav className="auth-language-links" aria-label="Choose language">
+      <nav className="auth-language-links" aria-label={copy.tagline}>
         {UI_LANGUAGES.map((item, index) => (
           <Fragment key={item.code}>
             {index > 0 && <span aria-hidden="true">|</span>}
             <button
               type="button"
-              onClick={() => setLang(item.code)}
+              onClick={() => handleLangChange(item.code)}
               aria-label={item.aria}
               aria-pressed={lang === item.code}
               className={lang === item.code ? 'auth-language-active' : undefined}
@@ -320,7 +388,7 @@ export default function LoginPage() {
         ))}
       </nav>
 
-      <section className="auth-minimal-column" aria-label="KisanMitra login">
+      <section className="auth-minimal-column" aria-label={copy.login}>
         <header className="auth-wordmark-block">
           <div className="auth-wordmark-viewport" aria-live="polite">
             {previousWordmark && (
@@ -347,7 +415,7 @@ export default function LoginPage() {
           <p className="auth-tagline">{copy.tagline}</p>
         </header>
 
-        <section className="auth-login-card" aria-label="Login form">
+        <section className="auth-login-card" aria-label={copy.login}>
           <form onSubmit={submit} className="auth-login-form">
             <label className="auth-input-wrap">
               <Mail aria-hidden="true" className="auth-input-icon" />
@@ -355,6 +423,7 @@ export default function LoginPage() {
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
                 placeholder={copy.identifier}
+                aria-label={copy.identifier}
                 inputMode="email"
                 autoComplete="username"
               />
@@ -366,6 +435,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder={copy.password}
+                aria-label={copy.password}
                 type={showPassword ? 'text' : 'password'}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
@@ -373,7 +443,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
                 className="auth-eye-button"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={copy.password}
               >
                 {showPassword ? <EyeOff /> : <Eye />}
               </button>

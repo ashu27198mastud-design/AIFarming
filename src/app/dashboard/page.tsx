@@ -78,11 +78,26 @@ export default function Dashboard() {
       router.replace('/');
       return undefined;
     }
+    if (!session.setupCompleted) {
+      router.replace('/setup');
+      return undefined;
+    }
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(console.error);
     const storageTimer = window.setTimeout(() => {
       setLang(session.language && TRANSLATIONS[session.language] ? session.language : readSavedLanguage());
       setScans(readSavedScans());
+      if (session.coords) {
+        setCoords(session.coords);
+      }
+      if (session.village) {
+        setPlace({
+          village: session.village,
+          district: session.village,
+          state: 'Maharashtra',
+          source: 'session',
+        });
+      }
       setAuthReady(true);
     }, 0);
     return () => window.clearTimeout(storageTimer);
@@ -94,22 +109,31 @@ export default function Dashboard() {
   }, [lang]);
 
   useEffect(() => {
+    if (!authReady) return undefined;
     const controller = new AbortController();
     fetch(`/api/weather?lat=${coords.lat}&lng=${coords.lng}`, { signal: controller.signal })
       .then((response) => response.json())
       .then((payload: WeatherForecast) => setForecast(payload))
       .catch(() => setForecast(null));
     return () => controller.abort();
-  }, [coords.lat, coords.lng]);
+  }, [coords.lat, coords.lng, authReady]);
 
   useEffect(() => {
+    if (!authReady) return undefined;
     const controller = new AbortController();
     fetch(`/api/location/reverse?lat=${coords.lat}&lng=${coords.lng}&fallback=${encodeURIComponent(market.district)}`, { signal: controller.signal })
       .then((response) => response.json())
-      .then((payload) => setPlace(payload))
+      .then((payload) => {
+        const session = readAuthSession();
+        if (session?.village && session.coords && Math.abs(coords.lat - session.coords.lat) < 0.0001 && Math.abs(coords.lng - session.coords.lng) < 0.0001) {
+          setPlace({ ...payload, village: session.village });
+        } else {
+          setPlace(payload);
+        }
+      })
       .catch(() => setPlace({ village: market.district, district: market.district, state: market.state, source: 'fallback' }));
     return () => controller.abort();
-  }, [coords.lat, coords.lng, market.district, market.state]);
+  }, [coords.lat, coords.lng, authReady, market.district, market.state]);
 
   const locate = () => {
     if (!navigator.geolocation) return setGpsStatus('error');

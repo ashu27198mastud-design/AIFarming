@@ -26,18 +26,20 @@ function getOAuthParams(): URLSearchParams {
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const [message, setMessage] = useState('Google login complete kar rahe hain...');
+  const [lang, setLang] = useState<LanguageCode>('hi');
   const [failed, setFailed] = useState(false);
+  const copy = TRANSLATIONS[lang];
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      const savedLanguage = readSavedLanguage();
+      setLang(savedLanguage);
       const params = getOAuthParams();
       const error = params.get('error_description') || params.get('error');
-      const hasSuccessSignal = Boolean(params.get('access_token') || params.get('refresh_token') || params.get('provider_token') || params.get('code'));
+      const hasSuccessSignal = Boolean(params.get('access_token'));
 
       if (error || !hasSuccessSignal) {
         setFailed(true);
-        setMessage('Google login complete nahi hua. Dobara try karein.');
         return;
       }
 
@@ -45,11 +47,11 @@ export default function AuthCallbackPage() {
         mode: 'user',
         identifier: `google@${SUPABASE_PROJECT_REF}.supabase`,
         name: 'Google Farmer',
-        language: readSavedLanguage(),
+        language: savedLanguage,
       });
       writeAuthSession(session);
       window.history.replaceState(null, '', '/auth/callback');
-      router.replace('/dashboard');
+      router.replace('/setup');
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -57,15 +59,15 @@ export default function AuthCallbackPage() {
 
   return (
     <main className="auth-canvas flex min-h-screen items-center justify-center px-4 py-8 text-[#202124]">
-      <section className="auth-card w-full max-w-md rounded-[28px] border border-white/90 bg-white/86 p-6 text-center shadow-[0_24px_80px_rgba(60,64,67,0.16)] backdrop-blur-2xl">
+      <section aria-label={failed ? copy.authFailed : copy.authCompleting} className="auth-card w-full max-w-md rounded-[28px] border border-white/90 bg-white/86 p-6 text-center shadow-[0_24px_80px_rgba(60,64,67,0.16)] backdrop-blur-2xl">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white bg-[#E6F4EA] text-[#137333] shadow-sm">
           {failed ? <Leaf className="h-7 w-7" /> : <Loader2 className="h-7 w-7 animate-spin" />}
         </div>
-        <h1 className="mt-4 text-2xl font-black text-[#123524]">KisanMitra Predict</h1>
-        <p className="mt-3 text-base font-bold leading-6 text-[#4F5B54]">{message}</p>
+        <h1 className="mt-4 text-2xl font-black text-[#123524]">{copy.title}</h1>
+        <p className="mt-3 text-base font-bold leading-6 text-[#4F5B54]">{failed ? copy.authFailed : copy.authCompleting}</p>
         {failed && (
-          <Link href="/" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E8E3E] px-5 text-base font-black text-white shadow-[0_12px_26px_rgba(30,142,62,0.24)]">
-            Login par lautain
+          <Link href="/?login=1" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E8E3E] px-5 text-base font-black text-white shadow-[0_12px_26px_rgba(30,142,62,0.24)]">
+            {copy.returnToLogin}
           </Link>
         )}
       </section>

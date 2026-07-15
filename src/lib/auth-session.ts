@@ -1,4 +1,4 @@
-﻿import type { LanguageCode } from '@/lib/i18n';
+import type { LanguageCode } from '@/lib/i18n';
 
 export const AUTH_SESSION_KEY = 'km-auth-session-v1';
 export const AUTH_ACCOUNTS_KEY = 'km-auth-accounts-v1';
@@ -9,6 +9,10 @@ export type AuthSession = {
   name: string;
   language: LanguageCode;
   createdAt: string;
+  consentAt?: string;
+  setupCompleted: boolean;
+  village?: string;
+  coords?: { lat: number; lng: number };
 };
 
 type LocalAccount = {
@@ -28,7 +32,20 @@ export function readAuthSession(): AuthSession | null {
     const raw = window.localStorage.getItem(AUTH_SESSION_KEY);
     if (!raw) return null;
     const session = JSON.parse(raw) as AuthSession;
-    return session?.identifier && session?.mode ? session : null;
+    if (!session?.identifier || !session?.mode) return null;
+
+    if (typeof session.setupCompleted !== 'boolean') {
+      const migrated = {
+        ...session,
+        setupCompleted: true,
+        village: session.village || 'Nashik',
+        coords: session.coords || { lat: 20.014, lng: 73.785 },
+      };
+      writeAuthSession(migrated);
+      return migrated;
+    }
+
+    return session;
   } catch {
     return null;
   }
@@ -67,12 +84,26 @@ export function verifyLocalAccount(identifier: string, password: string): LocalA
   return readLocalAccounts().find((account) => normalizeIdentifier(account.identifier) === normalized && account.password === password) ?? null;
 }
 
-export function createSession(options: { mode: 'user' | 'demo'; identifier: string; name?: string; language: LanguageCode }): AuthSession {
+export function createSession(options: {
+  mode: 'user' | 'demo';
+  identifier: string;
+  name?: string;
+  language: LanguageCode;
+  setupCompleted?: boolean;
+  village?: string;
+  coords?: { lat: number; lng: number };
+  consentAt?: string;
+}): AuthSession {
+  const isDemo = options.mode === 'demo';
   return {
     mode: options.mode,
     identifier: normalizeIdentifier(options.identifier),
-    name: options.name || (options.mode === 'demo' ? 'Asha Pawar' : 'Kisan'),
+    name: options.name || (isDemo ? 'Asha Pawar' : 'Kisan'),
     language: options.language,
     createdAt: new Date().toISOString(),
+    consentAt: options.consentAt,
+    setupCompleted: options.setupCompleted ?? isDemo,
+    village: options.village || (isDemo ? 'Nashik' : undefined),
+    coords: options.coords || (isDemo ? { lat: 20.014, lng: 73.785 } : undefined),
   };
 }
