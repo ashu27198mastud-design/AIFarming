@@ -136,7 +136,7 @@ const HomeTab = forwardRef<HomeTabHandle, Props>(function HomeTab(
         <div className="m3-card space-y-4">
           {!diagnosis && (
             <button type="button" onClick={() => void analyze()} disabled={loading} className="btn-m3-primary w-full">
-              <ShieldCheck className="h-5 w-5" /> {loading ? t.analyzing : lang === 'mr' ? 'तपासा / Analyze' : lang === 'hi' ? 'जांच करें / Analyze' : 'Analyze'}
+              <ShieldCheck className="h-5 w-5" /> {loading ? t.analyzing : t.analyze}
             </button>
           )}
           {loading && <p className="animate-pulse text-center text-sm font-semibold text-[#4E5953]">{t.analyzing}</p>}
