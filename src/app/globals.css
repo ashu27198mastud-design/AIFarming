@@ -1304,8 +1304,8 @@ body {
   --lf-bg-mid: #f7faf9;
   --lf-bg-bot: #fbfbff;
   --lf-sky-glow: transparent;
-  --lf-card-bg: rgba(255, 255, 255, 0.72);
-  --lf-card-border: rgba(255, 255, 255, 0.8);
+  --lf-card-bg: rgba(245, 245, 247, 0.45);
+  --lf-card-border: rgba(255, 255, 255, 0.4);
   --lf-ink: #1f1f1f;
   --lf-field-line: rgba(0, 0, 0, 0.08);
 }
@@ -1315,7 +1315,7 @@ body {
   --lf-bg-mid: #FDE8CC;
   --lf-bg-bot: #FFF7ED;
   --lf-sky-glow: radial-gradient(circle at 50% 80%, rgba(255, 153, 51, 0.08) 0%, transparent 50%);
-  --lf-card-bg: rgba(255, 255, 255, 0.72);
+  --lf-card-bg: rgba(245, 245, 247, 0.45);
   --lf-ink: #1f1f1f;
   --lf-field-line: rgba(0, 0, 0, 0.08);
 }
@@ -1325,7 +1325,7 @@ body {
   --lf-bg-mid: #FAFAF9;
   --lf-bg-bot: #FAFAF9;
   --lf-sky-glow: transparent;
-  --lf-card-bg: rgba(255, 255, 255, 0.72);
+  --lf-card-bg: rgba(245, 245, 247, 0.45);
   --lf-ink: #1f1f1f;
   --lf-field-line: rgba(0, 0, 0, 0.06);
 }
@@ -1335,7 +1335,7 @@ body {
   --lf-bg-mid: #FAFAF9;
   --lf-bg-bot: rgba(232, 132, 44, 0.06);
   --lf-sky-glow: radial-gradient(circle at 50% 100%, rgba(232, 132, 44, 0.1) 0%, transparent 60%);
-  --lf-card-bg: rgba(255, 255, 255, 0.72);
+  --lf-card-bg: rgba(245, 245, 247, 0.45);
   --lf-ink: #1f1f1f;
   --lf-field-line: rgba(0, 0, 0, 0.08);
 }
@@ -1345,7 +1345,7 @@ body {
   --lf-bg-mid: #10141A;
   --lf-bg-bot: #10141A;
   --lf-sky-glow: transparent;
-  --lf-card-bg: rgba(22, 28, 36, 0.7);
+  --lf-card-bg: rgba(22, 28, 36, 0.45);
   --lf-card-border: rgba(255, 255, 255, 0.08);
   --lf-ink: #ECEFEA;
   --lf-field-line: rgba(255, 255, 255, 0.08);

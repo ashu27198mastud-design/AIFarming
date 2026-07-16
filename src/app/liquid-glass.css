@@ -495,6 +495,17 @@ body {
   transition: transform 160ms ease, background 160ms ease, color 160ms ease !important;
 }
 
+.lf-svg-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+  z-index: 1;
+  pointer-events: none;
+  transition: transform 0.1s linear;
+}
+
 .nav-tab-button[aria-current='page']::after {
   position: absolute;
   right: 18%;
@@ -966,14 +977,13 @@ body {
 
 .auth-minimal-column {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   display: flex;
-  width: min(400px, calc(100vw - 20px));
-  max-height: calc(100svh - 64px);
+  width: 100%;
+  max-width: 480px;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
+  gap: 32px;
+  padding: 16px;
 }
 
 .auth-wordmark-block {
@@ -1037,12 +1047,12 @@ body {
   width: 100%;
   max-width: 400px;
   padding: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--lf-card-border, rgba(255, 255, 255, 0.4));
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
-  backdrop-filter: blur(16px) saturate(1.3);
-  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  background: var(--lf-card-bg, rgba(245, 245, 247, 0.45));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
   animation: authCardRise 500ms ease both;
 }
 

@@ -102,7 +102,7 @@ export function createSession(options: {
     language: options.language,
     createdAt: new Date().toISOString(),
     consentAt: options.consentAt,
-    setupCompleted: options.setupCompleted ?? isDemo,
+    setupCompleted: options.setupCompleted ?? false,
     village: options.village || (isDemo ? 'Nashik' : undefined),
     coords: options.coords || (isDemo ? { lat: 20.014, lng: 73.785 } : undefined),
   };
