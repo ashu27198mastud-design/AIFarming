@@ -97,6 +97,11 @@ export type TranslationSet = {
   authCompleting: string;
   authFailed: string;
   returnToLogin: string;
+  gpsDetectedToast: string;
+  setupStep1Title: string;
+  setupStep2Title: string;
+  setupStep3Title: string;
+  nextBtn: string;
 };
 
 export const LANGUAGES: { code: LanguageCode; name: string }[] = [
@@ -203,6 +208,11 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     authCompleting: 'Google \u0932\u0949\u0917\u093f\u0928 \u092a\u0942\u0930\u093e \u0915\u0930 \u0930\u0939\u0947 \u0939\u0948\u0902...',
     authFailed: 'Google \u0932\u0949\u0917\u093f\u0928 \u092a\u0942\u0930\u093e \u0928\u0939\u0940\u0902 \u0939\u0941\u0906\u0964 \u092b\u093f\u0930 \u0915\u094b\u0936\u093f\u0936 \u0915\u0930\u0947\u0902\u0964',
     returnToLogin: '\u0932\u0949\u0917\u093f\u0928 \u092a\u0930 \u0932\u094c\u091f\u0947\u0902',
+    gpsDetectedToast: 'आपके स्थान के आधार पर भाषा सेट की गई।',
+    setupStep1Title: 'आपका नाम?',
+    setupStep2Title: 'आपका गांव / शहर?',
+    setupStep3Title: 'खेत का स्थान सेट करें',
+    nextBtn: 'आगे बढ़ें',
   },
   en: {
     title: 'KisanMitra',
@@ -301,6 +311,11 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     authCompleting: 'Completing Google login...',
     authFailed: 'Google login could not be completed. Please try again.',
     returnToLogin: 'Return to login',
+    gpsDetectedToast: 'Language auto-set based on your location.',
+    setupStep1Title: 'Your name?',
+    setupStep2Title: 'Your village / city?',
+    setupStep3Title: 'Set farm location',
+    nextBtn: 'Next',
   },
   mr: {
     title: 'किसानमित्र',
@@ -387,6 +402,11 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     flowering: 'फुलोरा अवस्था',
     hectareShort: 'हे.',
     langAutoSwitched: 'स्थानानुसार भाषा मराठी करण्यात आली आहे.',
+    gpsDetectedToast: 'स्थानानुसार भाषा मराठी करण्यात आली आहे.',
+    setupStep1Title: 'तुमचं नाव?',
+    setupStep2Title: 'तुमचं गाव / शहर?',
+    setupStep3Title: 'शेताचं स्थान सेट करा',
+    nextBtn: 'पुढे जा',
     profileSetupTitle: 'प्रोफाइल सेटअप',
     profileSetupDesc: 'अचूक हवामान आणि पीक सल्ला मिळवण्यासाठी तुमचे नाव आणि गाव प्रविष्ट करा.',
     fullNameLabel: 'पूर्ण नाव',

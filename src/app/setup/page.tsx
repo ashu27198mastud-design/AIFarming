@@ -2,22 +2,36 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Leaf, MapPin, User, Check } from 'lucide-react';
+import { Leaf, MapPin, User, Check, ArrowRight } from 'lucide-react';
 import { readAuthSession, writeAuthSession, createSession } from '@/lib/auth-session';
 import { TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
 
 export default function SetupPage() {
   const router = useRouter();
   const [lang, setLang] = useState<LanguageCode>('hi');
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [name, setName] = useState('');
   const [village, setVillage] = useState('');
-  const [consent, setConsent] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [detecting, setDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState<'theme-dawn' | 'theme-day' | 'theme-dusk' | 'theme-night'>('theme-day');
 
   const copy = TRANSLATIONS[lang];
+
+  useEffect(() => {
+    const applyTheme = () => {
+      const hour = new Date().getHours();
+      if (hour >= 4 && hour < 7) setTheme('theme-dawn');
+      else if (hour >= 7 && hour < 17) setTheme('theme-day');
+      else if (hour >= 17 && hour < 20) setTheme('theme-dusk');
+      else setTheme('theme-night');
+    };
+    applyTheme();
+    const intervalId = window.setInterval(applyTheme, 60000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const startupTimer = window.setTimeout(() => {
@@ -37,6 +51,18 @@ export default function SetupPage() {
     return () => window.clearTimeout(startupTimer);
   }, [router]);
 
+  const handleNextStep1 = (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setStep(2);
+  };
+
+  const handleNextStep2 = (e: FormEvent) => {
+    e.preventDefault();
+    if (!village.trim()) return;
+    setStep(3);
+  };
+
   const detectLocation = () => {
     if (!navigator.geolocation) return;
     setDetecting(true);
@@ -47,20 +73,7 @@ export default function SetupPage() {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         setCoords({ lat, lng });
-
-        try {
-          const response = await fetch(`/api/location/reverse?lat=${lat}&lng=${lng}&fallback=Nashik`);
-          if (!response.ok) throw new Error();
-          const data = await response.json();
-          if (data.village) {
-            setVillage(data.village);
-          }
-        } catch {
-          // Fallback to default
-          setVillage('Nashik');
-        } finally {
-          setDetecting(false);
-        }
+        setDetecting(false);
       },
       () => {
         setError(copy.locationUnavailable);
@@ -70,18 +83,9 @@ export default function SetupPage() {
     );
   };
 
-  const handleSave = (event: FormEvent<HTMLFormElement>) => {
+  const handleFinish = (event: FormEvent) => {
     event.preventDefault();
     setError(null);
-
-    if (!name.trim() || !village.trim()) {
-      setError(copy.setupRequiredFields);
-      return;
-    }
-
-    if (!consent) {
-      return;
-    }
 
     const session = readAuthSession();
     if (!session) {
@@ -106,8 +110,8 @@ export default function SetupPage() {
 
   if (loading) {
     return (
-      <main className="auth-minimal flex items-center justify-center min-h-screen text-[#202124]">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white bg-[#E6F4EA] text-[#137333] shadow-sm">
+      <main className={`living-field-root ${theme} auth-minimal flex items-center justify-center`}>
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white bg-white/80 text-[#1e8e3e] shadow-sm">
           <Leaf className="h-7 w-7 animate-spin" />
         </div>
       </main>
@@ -115,103 +119,129 @@ export default function SetupPage() {
   }
 
   return (
-    <main className="auth-minimal min-h-screen flex items-center justify-center px-4 py-8">
+    <main className={`living-field-root ${theme} auth-minimal min-h-screen flex items-center justify-center px-4 py-8`}>
+      <div className="living-field-sky-glow" aria-hidden="true" />
       <div className="auth-aurora" aria-hidden="true" />
-      <div className="auth-glass-field" aria-hidden="true">
-        <span className="auth-glass-piece auth-glass-piece-1" />
-        <span className="auth-glass-piece auth-glass-piece-2"><Leaf /></span>
-        <span className="auth-glass-piece auth-glass-piece-3" />
-        <span className="auth-glass-piece auth-glass-piece-4"><Leaf /></span>
-      </div>
-
-      <section className="auth-minimal-column w-full max-w-md" aria-label={copy.profileSetupTitle}>
-        <div className="w-full rounded-[24px] border border-white/90 bg-white/86 p-6 shadow-glass backdrop-blur-glass animate-fade-slide-up">
+      
+      <section className="auth-minimal-column w-full max-w-md animate-fade-slide-up" aria-label={copy.profileSetupTitle}>
+        <div className="auth-login-card w-full rounded-[24px]" style={{ backgroundColor: 'var(--lf-card-bg)', borderColor: 'var(--lf-card-border)', padding: '32px' }}>
+          
           <header className="text-center mb-6">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#E6F4EA] text-[#137333]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#E6F4EA] text-[#1e8e3e] mb-4">
               <Leaf className="h-6 w-6" />
             </div>
-            <h1 className="mt-3 text-2xl font-black text-[#123524]">{copy.profileSetupTitle}</h1>
-            <p className="mt-2 text-sm text-[#4F5B54] font-medium leading-relaxed">
-              {copy.profileSetupDesc}
-            </p>
+            <h1 className="text-2xl font-black text-[#123524]" style={{ color: 'var(--lf-ink)' }}>{copy.profileSetupTitle}</h1>
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <div className={`h-1.5 w-6 rounded-full transition-colors ${step >= 1 ? 'bg-[#1e8e3e]' : 'bg-black/10'}`} />
+              <div className={`h-1.5 w-6 rounded-full transition-colors ${step >= 2 ? 'bg-[#1e8e3e]' : 'bg-black/10'}`} />
+              <div className={`h-1.5 w-6 rounded-full transition-colors ${step >= 3 ? 'bg-[#1e8e3e]' : 'bg-black/10'}`} />
+            </div>
           </header>
 
-          <form onSubmit={handleSave} className="space-y-4">
-            {error && (
-              <div role="alert" className="p-3 text-sm font-semibold rounded-xl bg-red-50 text-red-700 border border-red-100">
-                {error}
-              </div>
+          <div className="relative overflow-hidden min-h-[220px]">
+            {/* STEP 1: NAME */}
+            {step === 1 && (
+              <form onSubmit={handleNextStep1} className="absolute inset-0 flex flex-col justify-center animate-fade-slide-up">
+                <label htmlFor="setup-name" className="text-lg font-bold mb-4 text-center" style={{ color: 'var(--lf-ink)' }}>
+                  {copy.setupStep1Title}
+                </label>
+                <div className="auth-input-wrap">
+                  <User aria-hidden="true" className="auth-input-icon" />
+                  <input
+                    id="setup-name"
+                    type="text"
+                    required
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={copy.fullNameLabel}
+                    className="w-full"
+                    style={{ height: '56px' }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!name.trim()}
+                  className="auth-primary-button mt-6 flex items-center justify-center gap-2"
+                >
+                  {copy.nextBtn} <ArrowRight className="h-4 w-4" />
+                </button>
+              </form>
             )}
 
-            <div className="space-y-1">
-              <label htmlFor="setup-name" className="text-xs font-bold text-[#4F5B54] uppercase tracking-wider block">
-                {copy.fullNameLabel}
-              </label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#80868b] pointer-events-none" />
-                <input
-                  id="setup-name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full h-14 pl-12 pr-4 text-base font-bold text-[#202124] rounded-2xl border border-[#dadce0] bg-white focus:border-[#1e8e3e] focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="setup-village" className="text-xs font-bold text-[#4F5B54] uppercase tracking-wider block">
-                {copy.villageNameLabel}
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#80868b] pointer-events-none" />
-                <input
-                  id="setup-village"
-                  type="text"
-                  required
-                  value={village}
-                  onChange={(e) => setVillage(e.target.value)}
-                  className="w-full h-14 pl-12 pr-4 text-base font-bold text-[#202124] rounded-2xl border border-[#dadce0] bg-white focus:border-[#1e8e3e] focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={detectLocation}
-              disabled={detecting}
-              className="w-full h-12 flex items-center justify-center gap-2 rounded-2xl border border-[#dadce0] bg-white text-sm font-black text-[#3c4043] hover:bg-[#f8f9fa] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-            >
-              <MapPin className="h-4 w-4" />
-              <span>{detecting ? copy.detectingLocation : copy.detectLocationBtn}</span>
-            </button>
-
-            <label className="flex items-start gap-3 pt-2 cursor-pointer select-none">
-              <div className="relative flex items-center pt-0.5">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="h-6 w-6 rounded-lg border-2 border-[#dadce0] bg-white peer-checked:bg-[#1e8e3e] peer-checked:border-[#1e8e3e] transition-all flex items-center justify-center">
-                  <Check className="h-4 w-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+            {/* STEP 2: VILLAGE */}
+            {step === 2 && (
+              <form onSubmit={handleNextStep2} className="absolute inset-0 flex flex-col justify-center animate-fade-slide-up">
+                <label htmlFor="setup-village" className="text-lg font-bold mb-4 text-center" style={{ color: 'var(--lf-ink)' }}>
+                  {copy.setupStep2Title}
+                </label>
+                <div className="auth-input-wrap">
+                  <MapPin aria-hidden="true" className="auth-input-icon" />
+                  <input
+                    id="setup-village"
+                    type="text"
+                    required
+                    autoFocus
+                    value={village}
+                    onChange={(e) => setVillage(e.target.value)}
+                    placeholder={copy.villageNameLabel}
+                    className="w-full"
+                    style={{ height: '56px' }}
+                  />
                 </div>
-              </div>
-              <span className="text-xs font-bold text-[#5f6368] leading-tight pt-0.5">
-                {copy.privacyConsent}
-              </span>
-            </label>
+                <button
+                  type="submit"
+                  disabled={!village.trim()}
+                  className="auth-primary-button mt-6 flex items-center justify-center gap-2"
+                >
+                  {copy.nextBtn} <ArrowRight className="h-4 w-4" />
+                </button>
+              </form>
+            )}
 
-            <button
-              type="submit"
-              disabled={!consent}
-              className="w-full h-14 mt-4 inline-flex items-center justify-center rounded-2xl bg-[#1e8e3e] text-base font-black text-white shadow-md hover:bg-[#137333] disabled:bg-[#f1f3f4] disabled:text-[#9aa0a6] disabled:shadow-none transition-all"
-            >
-              <span>{copy.completeSetupBtn}</span>
-            </button>
-          </form>
+            {/* STEP 3: GPS */}
+            {step === 3 && (
+              <form onSubmit={handleFinish} className="absolute inset-0 flex flex-col justify-center animate-fade-slide-up">
+                <label className="text-lg font-bold mb-4 text-center" style={{ color: 'var(--lf-ink)' }}>
+                  {copy.setupStep3Title}
+                </label>
+
+                {error && (
+                  <div role="alert" className="mb-4 p-3 text-sm font-semibold rounded-xl bg-red-50 text-red-700 border border-red-100">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={detectLocation}
+                  disabled={detecting || !!coords}
+                  className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl border bg-white text-base font-bold text-[#3c4043] shadow-sm mb-4"
+                  style={{ borderColor: 'var(--lf-card-border)' }}
+                >
+                  {coords ? (
+                    <>
+                      <Check className="h-5 w-5 text-[#1e8e3e]" />
+                      <span className="text-[#1e8e3e]">{copy.locationUpdated}</span>
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="h-5 w-5" />
+                      <span>{detecting ? copy.detectingLocation : copy.detectLocationBtn}</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={!coords}
+                  className="auth-primary-button flex items-center justify-center gap-2"
+                >
+                  {copy.completeSetupBtn} <Check className="h-4 w-4" />
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </section>
     </main>

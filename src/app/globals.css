@@ -1297,3 +1297,114 @@ body {
     width: 100%;
   }
 }
+
+/* --- V9 CINEMATIC LOGIN THEMES --- */
+:root {
+  --lf-bg-top: #fbfdff;
+  --lf-bg-mid: #f7faf9;
+  --lf-bg-bot: #fbfbff;
+  --lf-sky-glow: transparent;
+  --lf-card-bg: rgba(255, 255, 255, 0.72);
+  --lf-card-border: rgba(255, 255, 255, 0.8);
+  --lf-ink: #1f1f1f;
+  --lf-field-line: rgba(0, 0, 0, 0.08);
+}
+
+.theme-dawn {
+  --lf-bg-top: #F4F7F3;
+  --lf-bg-mid: #FDE8CC;
+  --lf-bg-bot: #FFF7ED;
+  --lf-sky-glow: radial-gradient(circle at 50% 80%, rgba(255, 153, 51, 0.08) 0%, transparent 50%);
+  --lf-card-bg: rgba(255, 255, 255, 0.72);
+  --lf-ink: #1f1f1f;
+  --lf-field-line: rgba(0, 0, 0, 0.08);
+}
+
+.theme-day {
+  --lf-bg-top: #eef5f9;
+  --lf-bg-mid: #FAFAF9;
+  --lf-bg-bot: #FAFAF9;
+  --lf-sky-glow: transparent;
+  --lf-card-bg: rgba(255, 255, 255, 0.72);
+  --lf-ink: #1f1f1f;
+  --lf-field-line: rgba(0, 0, 0, 0.06);
+}
+
+.theme-dusk {
+  --lf-bg-top: #f4ece6;
+  --lf-bg-mid: #FAFAF9;
+  --lf-bg-bot: rgba(232, 132, 44, 0.06);
+  --lf-sky-glow: radial-gradient(circle at 50% 100%, rgba(232, 132, 44, 0.1) 0%, transparent 60%);
+  --lf-card-bg: rgba(255, 255, 255, 0.72);
+  --lf-ink: #1f1f1f;
+  --lf-field-line: rgba(0, 0, 0, 0.08);
+}
+
+.theme-night {
+  --lf-bg-top: #0a0d11;
+  --lf-bg-mid: #10141A;
+  --lf-bg-bot: #10141A;
+  --lf-sky-glow: transparent;
+  --lf-card-bg: rgba(22, 28, 36, 0.7);
+  --lf-card-border: rgba(255, 255, 255, 0.08);
+  --lf-ink: #ECEFEA;
+  --lf-field-line: rgba(255, 255, 255, 0.08);
+}
+
+.living-field-root {
+  background: linear-gradient(180deg, var(--lf-bg-top) 0%, var(--lf-bg-mid) 40%, var(--lf-bg-bot) 100%) !important;
+  color: var(--lf-ink) !important;
+  transition: background 2s ease, color 2s ease;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.living-field-sky-glow {
+  position: absolute;
+  inset: 0;
+  background: var(--lf-sky-glow);
+  transition: background 2s ease, transform 60s ease-out;
+  pointer-events: none;
+}
+
+.theme-dawn .living-field-sky-glow {
+  transform: translateY(-20px);
+}
+
+.lf-svg-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+  pointer-events: none;
+  transition: transform 0.1s linear;
+}
+
+.lf-path {
+  fill: none;
+  stroke: var(--lf-field-line);
+  stroke-width: 1.5;
+  transition: stroke 2s ease;
+}
+
+.lf-stalk {
+  transform-origin: bottom center;
+}
+
+@keyframes swayBreeze {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.lf-stalk-sway {
+  animation: swayBreeze 12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-stalk-sway {
+    animation: none;
+    transform: none;
+  }
+}
