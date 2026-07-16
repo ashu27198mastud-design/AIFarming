@@ -184,6 +184,65 @@ function normalizeIdentifier(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function getLuminance(r: number, g: number, b: number) {
+  const a = [r, g, b].map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+}
+
+function getContrast(rgb1: [number, number, number], rgb2: [number, number, number]) {
+  const lum1 = getLuminance(rgb1[0], rgb1[1], rgb1[2]);
+  const lum2 = getLuminance(rgb2[0], rgb2[1], rgb2[2]);
+  const brightest = Math.max(lum1, lum2);
+  const darkest = Math.min(lum1, lum2);
+  return (brightest + 0.05) / (darkest + 0.05);
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+  const num = parseInt(c, 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+
+function useContrastChecker(theme: string) {
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    const timer = setTimeout(() => {
+      const root = document.querySelector('.auth-cinema-root');
+      if (!root) return;
+      const styles = getComputedStyle(root);
+      const bgTop = styles.getPropertyValue('--scene-bg-top').trim();
+      const bgBottom = styles.getPropertyValue('--scene-bg-bottom').trim();
+      const ink = styles.getPropertyValue('--scene-ink').trim();
+
+      if (!bgTop || !bgBottom || !ink) return;
+      try {
+        const rgbTop = hexToRgb(bgTop);
+        const rgbBottom = hexToRgb(bgBottom);
+        const rgbInk = hexToRgb(ink);
+
+        const contrastTop = getContrast(rgbTop, rgbInk);
+        const contrastBottom = getContrast(rgbBottom, rgbInk);
+        const lowestContrast = Math.min(contrastTop, contrastBottom);
+        
+        if (lowestContrast < 4.5) {
+          console.error(`[Contrast Checker] ❌ FAIL in ${theme}: Ratio is ${lowestContrast.toFixed(2)}:1 (Required: 7:1 for display, 4.5:1 for body).`);
+        } else if (lowestContrast < 7) {
+          console.warn(`[Contrast Checker] ⚠️ WARN in ${theme}: Ratio is ${lowestContrast.toFixed(2)}:1 (Passes Body 4.5, Fails Display 7.0).`);
+        } else {
+          console.log(`[Contrast Checker] ✅ PASS in ${theme}: Ratio is ${lowestContrast.toFixed(2)}:1.`);
+        }
+      } catch (e) {
+        // ignore non-hex parses
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [theme]);
+}
+
 function GoogleGIcon() {
   return (
     <svg aria-hidden="true" className="auth-google-g" viewBox="0 0 24 24" focusable="false" style={{ width: '20px', height: '20px' }}>
@@ -257,17 +316,35 @@ export default function LoginPage() {
   const [otpCode, setOtpCode] = useState('');
   const [theme, setTheme] = useState<'theme-dawn' | 'theme-day' | 'theme-dusk' | 'theme-night'>('theme-day');
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [parallaxTarget, setParallaxTarget] = useState({ x: 0, y: 0 });
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
+
+  useContrastChecker(theme);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 16;
-      const y = (e.clientY / window.innerHeight - 0.5) * 16;
-      setParallax({ x, y });
+      const x = (e.clientX / window.innerWidth - 0.5) * 60; // Increased amplitude to notice planes
+      const y = (e.clientY / window.innerHeight - 0.5) * 60;
+      setParallaxTarget({ x, y });
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  useEffect(() => {
+    let animationFrameId: number;
+    const lerp = (start: number, end: number, factor: number) => start + (end - start) * factor;
+    
+    const updateParallax = () => {
+      setParallax((current) => ({
+        x: lerp(current.x, parallaxTarget.x, 0.06),
+        y: lerp(current.y, parallaxTarget.y, 0.06)
+      }));
+      animationFrameId = requestAnimationFrame(updateParallax);
+    };
+    animationFrameId = requestAnimationFrame(updateParallax);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [parallaxTarget]);
 
   const handleLangChange = (code: LanguageCode) => {
     setLang(code);
@@ -478,10 +555,8 @@ export default function LoginPage() {
       className={`auth-cinema-root ${theme}`} 
       style={{ '--px': `${parallax.x}px`, '--py': `${parallax.y}px` } as React.CSSProperties}
     >
-      <div className="auth-parallax-bg auth-parallax-l1" aria-hidden="true" />
-      
       {toast && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-[var(--lf-card-border)] bg-[var(--lf-card-bg)] px-4 py-3 text-sm font-bold text-[var(--lf-ink)] shadow-lg backdrop-blur-xl animate-fade-slide-up">
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-[var(--lf-card-border)] bg-[var(--card-bg)] px-4 py-3 text-sm font-bold text-[var(--scene-ink)] shadow-lg backdrop-blur-xl animate-fade-slide-up">
           <Leaf className="h-4 w-4 animate-pulse-slow text-[#188038]" />
           <span>{toast}</span>
         </div>
@@ -490,18 +565,18 @@ export default function LoginPage() {
       <div className="absolute top-6 right-8 z-50">
         <button 
           onClick={() => setShowLangMenu(!showLangMenu)} 
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--lf-card-bg)] border border-[var(--lf-card-border)] shadow-sm backdrop-blur-md text-[var(--lf-ink)] hover:bg-[var(--lf-card-bg)]/80 transition-colors"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--card-bg)] border border-[var(--card-border)] shadow-sm backdrop-blur-md text-[var(--scene-ink)] hover:bg-[var(--card-bg)]/80 transition-colors"
           aria-label="Change Language"
         >
           <Globe className="h-5 w-5" />
         </button>
         {showLangMenu && (
-          <div className="absolute right-0 mt-2 w-32 overflow-hidden rounded-2xl bg-[var(--lf-card-bg)] border border-[var(--lf-card-border)] shadow-xl backdrop-blur-xl animate-fade-slide-up">
+          <div className="absolute right-0 mt-2 w-32 overflow-hidden rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)] shadow-xl backdrop-blur-xl animate-fade-slide-up">
             {UI_LANGUAGES.map((item) => (
               <button
                 key={item.code}
                 onClick={() => { handleLangChange(item.code); setShowLangMenu(false); }}
-                className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--lf-ink)] hover:bg-[#188038]/10 transition-colors ${lang === item.code ? 'bg-[#188038]/5 text-[#188038]' : ''}`}
+                className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--scene-ink)] hover:bg-[#188038]/10 transition-colors ${lang === item.code ? 'bg-[#188038]/5 text-[#188038]' : ''}`}
               >
                 {item.label}
               </button>
@@ -510,25 +585,61 @@ export default function LoginPage() {
         )}
       </div>
 
-      <div className="auth-parallax-l2">
-        <svg viewBox="0 0 1440 200" preserveAspectRatio="none" className="w-full h-full opacity-[0.06] text-current stroke-current fill-none">
-          {/* One continuous SVG line-art field horizon */}
+      <div className="auth-plane-0" aria-hidden="true">
+        {theme === 'theme-dawn' && <div className="dawn-sun" />}
+        {theme === 'theme-day' && <div className="day-sun" />}
+        {theme === 'theme-dusk' && <div className="dusk-sun" />}
+        {theme === 'theme-night' && <div className="night-moon" />}
+      </div>
+
+      <div className="auth-plane-1" aria-hidden="true">
+        {theme === 'theme-dawn' && (
+          <>
+            <div className="dawn-mist" />
+            <svg viewBox="0 0 24 24" className="dawn-bird">
+              <path d="M22.5,12.5 Q18,9 12,12 Q6,9 1.5,12 Q6,14 12,12 Q18,14 22.5,12.5 Z" fill="currentColor" />
+            </svg>
+          </>
+        )}
+        {theme === 'theme-day' && <div className="day-cloud-shadow" />}
+        {theme === 'theme-dusk' && (
+          <svg viewBox="0 0 100 50" className="dusk-birds">
+             <path d="M20,25 Q15,15 10,25 Q15,20 20,25 Z M40,15 Q35,5 30,15 Q35,10 40,15 Z M60,30 Q55,20 50,30 Q55,25 60,30 Z" fill="currentColor" />
+          </svg>
+        )}
+        {theme === 'theme-night' && (
+          <div className="absolute inset-0">
+             {[...Array(16)].map((_, i) => (
+                <div key={i} className={`absolute w-[1px] h-[1px] bg-white rounded-full ${i % 3 === 0 ? 'animate-pulse' : ''}`} style={{ top: `${10 + (i * 13) % 30}%`, left: `${5 + (i * 27) % 90}%`, opacity: 0.3 + (i % 5) * 0.1 }} />
+             ))}
+             <div className="absolute top-[20%] right-[30%] w-[100px] h-[20px] bg-white/5 blur-[30px] rounded-full animate-drift-slow" />
+          </div>
+        )}
+      </div>
+
+      <div className="auth-plane-2" aria-hidden="true">
+        <svg viewBox="0 0 1440 200" preserveAspectRatio="none" className="absolute bottom-0 w-full h-[18%] opacity-40 text-current stroke-current fill-none">
           <path d="M0,150 Q200,140 400,160 T800,150 T1200,170 T1440,140" strokeWidth="1.5" />
-          {/* Furrow lines */}
-          <path d="M200,180 L180,200 M300,175 L290,200 M600,165 L580,200 M900,165 L890,200 M1200,185 L1190,200" strokeWidth="1" strokeDasharray="4 4" />
-          {/* Tree */}
           <path d="M380,155 Q375,130 390,120 Q405,110 415,120 Q425,110 440,120 Q450,135 440,155 Z" strokeWidth="1.5" />
           <line x1="410" y1="155" x2="410" y2="165" strokeWidth="1.5" />
-          {/* Distant Tractor */}
+        </svg>
+      </div>
+
+      <div className="auth-plane-3" aria-hidden="true">
+        <svg viewBox="0 0 1440 200" preserveAspectRatio="none" className={`absolute bottom-0 w-[110%] -left-[5%] h-[20%] text-current fill-none ${theme === 'theme-dawn' ? 'stroke-current opacity-25 drop-shadow-[0_-1px_0_rgba(255,200,140,0.35)]' : theme === 'theme-night' ? 'stroke-current opacity-30 drop-shadow-[0_-1px_0_rgba(190,210,240,0.3)]' : theme === 'theme-day' ? 'stroke-[#188038]/15 opacity-80' : 'stroke-current opacity-60 drop-shadow-[10px_0_10px_rgba(0,0,0,0.2)]'}`}>
+          <path d="M0,150 Q200,140 400,160 T800,150 T1200,170 T1440,140" strokeWidth="1.5" />
+          <path d="M200,180 L180,200 M300,175 L290,200 M600,165 L580,200 M900,165 L890,200 M1200,185 L1190,200" strokeWidth="1" strokeDasharray="4 4" />
+          <path d="M380,155 Q375,130 390,120 Q405,110 415,120 Q425,110 440,120 Q450,135 440,155 Z" strokeWidth="1.5" />
+          <line x1="410" y1="155" x2="410" y2="165" strokeWidth="1.5" />
           <rect x="950" y="145" width="20" height="15" rx="2" strokeWidth="1" />
           <circle cx="955" cy="160" r="4" strokeWidth="1" />
           <circle cx="965" cy="160" r="5" strokeWidth="1" />
           <path d="M960,145 L965,135 L975,135" strokeWidth="1" />
         </svg>
+        {theme === 'theme-night' && <div className="night-moon-pool" />}
       </div>
 
-      <div className="auth-parallax-l3" aria-hidden="true">
-        {/* Swaying Stalks */}
+      <div className="auth-plane-4" aria-hidden="true">
         <svg viewBox="0 0 100 200" className="absolute bottom-0 left-[5%] w-16 h-32 opacity-40 auth-sway-left text-current stroke-current fill-none">
           <path d="M50,200 Q40,100 60,0" strokeWidth="2" strokeLinecap="round" />
           <path d="M50,150 Q30,140 20,120" strokeWidth="1" />
@@ -539,18 +650,22 @@ export default function LoginPage() {
           <path d="M50,140 Q70,130 80,110" strokeWidth="1" />
           <path d="M48,80 Q30,70 20,50" strokeWidth="1" />
         </svg>
-        
-        {/* Frosted glass drifting discs */}
-        <div className="absolute top-[30%] left-[20%] w-32 h-32 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl animate-drift-slow" />
-        <div className="absolute bottom-[20%] right-[30%] w-48 h-48 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl animate-drift-slower" />
+        {theme === 'theme-night' && (
+          <>
+            <div className="night-firefly firefly-1" />
+            <div className="night-firefly firefly-2" />
+            <div className="night-firefly firefly-3" />
+          </>
+        )}
       </div>
 
       <div className="auth-lens-flare" aria-hidden="true" />
       <div className="auth-film-grain" aria-hidden="true" />
 
       <div className="auth-cinema-grid">
-        <section className="auth-cinema-left" aria-label={copy.login}>
-          <header className="auth-wordmark-block">
+        <section className="auth-cinema-left auth-display-text" aria-label={copy.login}>
+          <div className="auth-scrim" />
+          <header className="auth-wordmark-block relative z-10">
             <div className="auth-wordmark-viewport" aria-live="polite">
               {previousWordmark && (
                 <span
@@ -576,7 +691,7 @@ export default function LoginPage() {
             </div>
             <span key={`rule-${wordmarkState.tick}`} className="auth-tricolor-rule" aria-hidden="true" />
             <div className="mt-8 text-center md:text-left">
-              <p className="auth-tagline font-bold text-[var(--lf-ink)]">{copy.tagline}</p>
+              <p className="auth-tagline font-bold text-[var(--scene-ink)]">{copy.tagline}</p>
               <p className="auth-proof-line font-mono text-sm font-semibold text-[#188038] dark:text-[#34A853] mt-2 h-6 flex items-center justify-center md:justify-start">
                 <span className="typing-cursor border-r-2 border-current pr-1 whitespace-nowrap overflow-hidden">
                   {typedProof}
