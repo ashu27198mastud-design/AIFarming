@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Leaf, Lock, Mail, Wheat, Phone } from 'lucide-react';
-import { Fragment, FormEvent, useEffect, useState } from 'react';
+import { Eye, EyeOff, Leaf, Lock, Mail, Wheat, Phone, Globe } from 'lucide-react';
+import { FormEvent, useEffect, useState } from 'react';
 import { TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
 import { buildSupabaseGoogleOAuthUrl } from '@/lib/supabase-auth';
 import {
@@ -184,15 +184,111 @@ function normalizeIdentifier(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function getLuminance(r: number, g: number, b: number) {
+  const a = [r, g, b].map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+}
+
+function getContrast(rgb1: [number, number, number], rgb2: [number, number, number]) {
+  const lum1 = getLuminance(rgb1[0], rgb1[1], rgb1[2]);
+  const lum2 = getLuminance(rgb2[0], rgb2[1], rgb2[2]);
+  const brightest = Math.max(lum1, lum2);
+  const darkest = Math.min(lum1, lum2);
+  return (brightest + 0.05) / (darkest + 0.05);
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+  const num = parseInt(c, 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+
+function useContrastChecker(theme: string) {
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    const timer = setTimeout(() => {
+      const root = document.querySelector('.auth-cinema-root');
+      if (!root) return;
+      const styles = getComputedStyle(root);
+      const bgTop = styles.getPropertyValue('--scene-bg-top').trim();
+      const bgBottom = styles.getPropertyValue('--scene-bg-bottom').trim();
+      const ink = styles.getPropertyValue('--scene-ink').trim();
+
+      if (!bgTop || !bgBottom || !ink) return;
+      try {
+        const rgbTop = hexToRgb(bgTop);
+        const rgbBottom = hexToRgb(bgBottom);
+        const rgbInk = hexToRgb(ink);
+
+        const contrastTop = getContrast(rgbTop, rgbInk);
+        const contrastBottom = getContrast(rgbBottom, rgbInk);
+        const lowestContrast = Math.min(contrastTop, contrastBottom);
+        
+        if (lowestContrast < 4.5) {
+          console.error(`[Contrast Checker] ❌ FAIL in ${theme}: Ratio is ${lowestContrast.toFixed(2)}:1 (Required: 7:1 for display, 4.5:1 for body).`);
+        } else if (lowestContrast < 7) {
+          console.warn(`[Contrast Checker] ⚠️ WARN in ${theme}: Ratio is ${lowestContrast.toFixed(2)}:1 (Passes Body 4.5, Fails Display 7.0).`);
+        } else {
+          console.log(`[Contrast Checker] ✅ PASS in ${theme}: Ratio is ${lowestContrast.toFixed(2)}:1.`);
+        }
+      } catch (e) {
+        // ignore non-hex parses
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [theme]);
+}
+
 function GoogleGIcon() {
   return (
-    <svg aria-hidden="true" className="auth-google-g" viewBox="0 0 24 24" focusable="false">
+    <svg aria-hidden="true" className="auth-google-g" viewBox="0 0 24 24" focusable="false" style={{ width: '20px', height: '20px' }}>
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
       <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" />
       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9C6.71 7.31 9.14 5.38 12 5.38z" />
     </svg>
   );
+}
+
+function useTypewriter(lines: string[]) {
+  const [text, setText] = useState('');
+  const [index, setIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let timer: number;
+    const currentLine = lines[index];
+
+    if (isDeleting) {
+      if (text === '') {
+        timer = window.setTimeout(() => {
+          setIsDeleting(false);
+          setIndex((i) => (i + 1) % lines.length);
+        }, 200);
+      } else {
+        timer = window.setTimeout(() => {
+          setText(text.substring(0, text.length - 1));
+        }, 30);
+      }
+    } else {
+      if (text === currentLine) {
+        timer = window.setTimeout(() => {
+          setIsDeleting(true);
+        }, 4000); // Hold 4s
+      } else {
+        timer = window.setTimeout(() => {
+          setText(currentLine.substring(0, text.length + 1));
+        }, 60); // 60ms/char
+      }
+    }
+    return () => window.clearTimeout(timer);
+  }, [text, isDeleting, index, lines]);
+
+  return text;
 }
 
 export default function LoginPage() {
@@ -208,6 +304,10 @@ export default function LoginPage() {
   const [toast, setToast] = useState<string | null>(null);
 
   const copy = LOGIN_COPY[lang];
+  const t = TRANSLATIONS[lang];
+  const proofLines = t.proofLines;
+  const typedProof = useTypewriter(proofLines);
+
   const wordmark = WORDMARKS[wordmarkState.current];
   const previousWordmark = wordmarkState.previous === null ? null : WORDMARKS[wordmarkState.previous];
 
@@ -215,6 +315,36 @@ export default function LoginPage() {
   const [otpStage, setOtpStage] = useState<'phone' | 'verify'>('phone');
   const [otpCode, setOtpCode] = useState('');
   const [theme, setTheme] = useState<'theme-dawn' | 'theme-day' | 'theme-dusk' | 'theme-night'>('theme-day');
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [parallaxTarget, setParallaxTarget] = useState({ x: 0, y: 0 });
+  const [parallax, setParallax] = useState({ x: 0, y: 0 });
+
+  useContrastChecker(theme);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 60; // Increased amplitude to notice planes
+      const y = (e.clientY / window.innerHeight - 0.5) * 60;
+      setParallaxTarget({ x, y });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    let animationFrameId: number;
+    const lerp = (start: number, end: number, factor: number) => start + (end - start) * factor;
+    
+    const updateParallax = () => {
+      setParallax((current) => ({
+        x: lerp(current.x, parallaxTarget.x, 0.06),
+        y: lerp(current.y, parallaxTarget.y, 0.06)
+      }));
+      animationFrameId = requestAnimationFrame(updateParallax);
+    };
+    animationFrameId = requestAnimationFrame(updateParallax);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [parallaxTarget]);
 
   const handleLangChange = (code: LanguageCode) => {
     setLang(code);
@@ -421,79 +551,168 @@ export default function LoginPage() {
   };
 
   return (
-    <main className={`living-field-root ${theme} auth-minimal animate-fade-slide-up`}>
-      <div className="living-field-sky-glow" aria-hidden="true" />
+    <main 
+      className={`auth-cinema-root ${theme}`} 
+      style={{ '--px': `${parallax.x}px`, '--py': `${parallax.y}px` } as React.CSSProperties}
+    >
       {toast && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-white/90 bg-white/80 px-4 py-3 text-sm font-bold text-[#1F6B4F] shadow-lg backdrop-blur-xl animate-fade-slide-up">
-          <Leaf className="h-4 w-4 animate-pulse-slow" />
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-[var(--lf-card-border)] bg-[var(--card-bg)] px-4 py-3 text-sm font-bold text-[var(--scene-ink)] shadow-lg backdrop-blur-xl animate-fade-slide-up">
+          <Leaf className="h-4 w-4 animate-pulse-slow text-[#188038]" />
           <span>{toast}</span>
         </div>
       )}
-      <div className="auth-aurora" aria-hidden="true" />
-      <div className="auth-glass-field" aria-hidden="true">
-        <span className="auth-glass-piece auth-glass-piece-1" />
-        <span className="auth-glass-piece auth-glass-piece-2"><Wheat /></span>
-        <span className="auth-glass-piece auth-glass-piece-3" />
-        <span className="auth-glass-piece auth-glass-piece-4"><Leaf /></span>
-        <span className="auth-glass-piece auth-glass-piece-5" />
-        <span className="auth-glass-piece auth-glass-piece-6" />
+
+      <div className="absolute top-6 right-8 z-50">
+        <button 
+          onClick={() => setShowLangMenu(!showLangMenu)} 
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--card-bg)] border border-[var(--card-border)] shadow-sm backdrop-blur-md text-[var(--scene-ink)] hover:bg-[var(--card-bg)]/80 transition-colors"
+          aria-label="Change Language"
+        >
+          <Globe className="h-5 w-5" />
+        </button>
+        {showLangMenu && (
+          <div className="absolute right-0 mt-2 w-32 overflow-hidden rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)] shadow-xl backdrop-blur-xl animate-fade-slide-up">
+            {UI_LANGUAGES.map((item) => (
+              <button
+                key={item.code}
+                onClick={() => { handleLangChange(item.code); setShowLangMenu(false); }}
+                className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--scene-ink)] hover:bg-[#188038]/10 transition-colors ${lang === item.code ? 'bg-[#188038]/5 text-[#188038]' : ''}`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <nav className="auth-language-links" aria-label={copy.tagline}>
-        {UI_LANGUAGES.map((item, index) => (
-          <Fragment key={item.code}>
-            {index > 0 && <span aria-hidden="true">|</span>}
-            <button
-              type="button"
-              onClick={() => handleLangChange(item.code)}
-              aria-label={item.aria}
-              aria-pressed={lang === item.code}
-              className={lang === item.code ? 'auth-language-active' : undefined}
-            >
-              {item.label}
-            </button>
-          </Fragment>
-        ))}
-      </nav>
+      <div className="auth-plane-0" aria-hidden="true">
+        {theme === 'theme-dawn' && <div className="dawn-sun" />}
+        {theme === 'theme-day' && <div className="day-sun" />}
+        {theme === 'theme-dusk' && <div className="dusk-sun" />}
+        {theme === 'theme-night' && <div className="night-moon" />}
+      </div>
 
-      <section className="auth-minimal-column" aria-label={copy.login}>
-        <header className="auth-wordmark-block">
-          <div className="auth-wordmark-viewport" aria-live="polite">
-            {previousWordmark && (
-              <span
-                key={`previous-${wordmarkState.tick}`}
-                aria-hidden="true"
-                className="auth-cycle-word auth-cycle-word-exit"
-                dir={previousWordmark.dir || 'ltr'}
-                lang={previousWordmark.lang}
+      <div className="auth-plane-1" aria-hidden="true">
+        {theme === 'theme-dawn' && (
+          <>
+            <div className="dawn-mist" />
+            <svg viewBox="0 0 24 24" className="dawn-bird">
+              <path d="M22.5,12.5 Q18,9 12,12 Q6,9 1.5,12 Q6,14 12,12 Q18,14 22.5,12.5 Z" fill="currentColor" />
+            </svg>
+          </>
+        )}
+        {theme === 'theme-day' && <div className="day-cloud-shadow" />}
+        {theme === 'theme-dusk' && (
+          <svg viewBox="0 0 100 50" className="dusk-birds">
+             <path d="M20,25 Q15,15 10,25 Q15,20 20,25 Z M40,15 Q35,5 30,15 Q35,10 40,15 Z M60,30 Q55,20 50,30 Q55,25 60,30 Z" fill="currentColor" />
+          </svg>
+        )}
+        {theme === 'theme-night' && (
+          <div className="absolute inset-0">
+             {[...Array(16)].map((_, i) => (
+                <div key={i} className={`absolute w-[1px] h-[1px] bg-white rounded-full ${i % 3 === 0 ? 'animate-pulse' : ''}`} style={{ top: `${10 + (i * 13) % 30}%`, left: `${5 + (i * 27) % 90}%`, opacity: 0.3 + (i % 5) * 0.1 }} />
+             ))}
+             <div className="absolute top-[20%] right-[30%] w-[100px] h-[20px] bg-white/5 blur-[30px] rounded-full animate-drift-slow" />
+          </div>
+        )}
+      </div>
+
+      <div className="auth-plane-2" aria-hidden="true">
+        <svg viewBox="0 0 1440 200" preserveAspectRatio="none" className="absolute bottom-0 w-full h-[18%] opacity-40 text-current stroke-current fill-none">
+          <path d="M0,150 Q200,140 400,160 T800,150 T1200,170 T1440,140" strokeWidth="1.5" />
+          <path d="M380,155 Q375,130 390,120 Q405,110 415,120 Q425,110 440,120 Q450,135 440,155 Z" strokeWidth="1.5" />
+          <line x1="410" y1="155" x2="410" y2="165" strokeWidth="1.5" />
+        </svg>
+      </div>
+
+      <div className="auth-plane-3" aria-hidden="true">
+        <svg viewBox="0 0 1440 200" preserveAspectRatio="none" className={`absolute bottom-0 w-[110%] -left-[5%] h-[20%] text-current fill-none ${theme === 'theme-dawn' ? 'stroke-current opacity-25 drop-shadow-[0_-1px_0_rgba(255,200,140,0.35)]' : theme === 'theme-night' ? 'stroke-current opacity-30 drop-shadow-[0_-1px_0_rgba(190,210,240,0.3)]' : theme === 'theme-day' ? 'stroke-[#188038]/15 opacity-80' : 'stroke-current opacity-60 drop-shadow-[10px_0_10px_rgba(0,0,0,0.2)]'}`}>
+          <path d="M0,150 Q200,140 400,160 T800,150 T1200,170 T1440,140" strokeWidth="1.5" />
+          <path d="M200,180 L180,200 M300,175 L290,200 M600,165 L580,200 M900,165 L890,200 M1200,185 L1190,200" strokeWidth="1" strokeDasharray="4 4" />
+          <path d="M380,155 Q375,130 390,120 Q405,110 415,120 Q425,110 440,120 Q450,135 440,155 Z" strokeWidth="1.5" />
+          <line x1="410" y1="155" x2="410" y2="165" strokeWidth="1.5" />
+          <rect x="950" y="145" width="20" height="15" rx="2" strokeWidth="1" />
+          <circle cx="955" cy="160" r="4" strokeWidth="1" />
+          <circle cx="965" cy="160" r="5" strokeWidth="1" />
+          <path d="M960,145 L965,135 L975,135" strokeWidth="1" />
+        </svg>
+        {theme === 'theme-night' && <div className="night-moon-pool" />}
+      </div>
+
+      <div className="auth-plane-4" aria-hidden="true">
+        <svg viewBox="0 0 100 200" className="absolute bottom-0 left-[5%] w-16 h-32 opacity-40 auth-sway-left text-current stroke-current fill-none">
+          <path d="M50,200 Q40,100 60,0" strokeWidth="2" strokeLinecap="round" />
+          <path d="M50,150 Q30,140 20,120" strokeWidth="1" />
+          <path d="M52,100 Q70,90 80,70" strokeWidth="1" />
+        </svg>
+        <svg viewBox="0 0 100 200" className="absolute bottom-0 right-[8%] w-20 h-40 opacity-30 auth-sway-right text-current stroke-current fill-none">
+          <path d="M50,200 Q60,100 40,0" strokeWidth="2" strokeLinecap="round" />
+          <path d="M50,140 Q70,130 80,110" strokeWidth="1" />
+          <path d="M48,80 Q30,70 20,50" strokeWidth="1" />
+        </svg>
+        {theme === 'theme-night' && (
+          <>
+            <div className="night-firefly firefly-1" />
+            <div className="night-firefly firefly-2" />
+            <div className="night-firefly firefly-3" />
+          </>
+        )}
+      </div>
+
+      <div className="auth-lens-flare" aria-hidden="true" />
+      <div className="auth-film-grain" aria-hidden="true" />
+
+      <div className="auth-cinema-grid">
+        <section className="auth-cinema-left auth-display-text" aria-label={copy.login}>
+          <div className="auth-scrim" />
+          <header className="auth-wordmark-block relative z-10">
+            <div className="auth-wordmark-viewport" aria-live="polite">
+              {previousWordmark && (
+                <span
+                  key={`previous-${wordmarkState.tick}`}
+                  aria-hidden="true"
+                  className={`auth-cycle-word auth-cycle-word-exit ${previousWordmark.dir === 'rtl' ? 'auth-rtl' : ''}`}
+                  dir={previousWordmark.dir || 'ltr'}
+                  lang={previousWordmark.lang}
+                >
+                  {previousWordmark.label}
+                  <span className="auth-wordmark-caption">{previousWordmark.lang.toUpperCase()}</span>
+                </span>
+              )}
+              <h1
+                key={`current-${wordmarkState.tick}`}
+                className={`auth-cycle-word auth-cycle-word-enter ${wordmark.dir === 'rtl' ? 'auth-rtl' : ''}`}
+                dir={wordmark.dir || 'ltr'}
+                lang={wordmark.lang}
               >
-                {previousWordmark.label}
-              </span>
-            )}
-            <h1
-              key={`current-${wordmarkState.tick}`}
-              className="auth-cycle-word auth-cycle-word-enter"
-              dir={wordmark.dir || 'ltr'}
-              lang={wordmark.lang}
-            >
-              {wordmark.label}
-            </h1>
-          </div>
-          <span key={`rule-${wordmarkState.tick}`} className="auth-tricolor-rule" aria-hidden="true" />
-          <p className="auth-tagline">{copy.tagline}</p>
-        </header>
+                {wordmark.label}
+                <span className="auth-wordmark-caption">{wordmark.lang.toUpperCase()}</span>
+              </h1>
+            </div>
+            <span key={`rule-${wordmarkState.tick}`} className="auth-tricolor-rule" aria-hidden="true" />
+            <div className="mt-8 text-center md:text-left">
+              <p className="auth-tagline font-bold text-[var(--scene-ink)]">{copy.tagline}</p>
+              <p className="auth-proof-line font-mono text-sm font-semibold text-[#188038] dark:text-[#34A853] mt-2 h-6 flex items-center justify-center md:justify-start">
+                <span className="typing-cursor border-r-2 border-current pr-1 whitespace-nowrap overflow-hidden">
+                  {typedProof}
+                </span>
+              </p>
+            </div>
+          </header>
+        </section>
 
-        <section className="auth-login-card" aria-label={copy.login} style={{ backgroundColor: 'var(--lf-card-bg)', borderColor: 'var(--lf-card-border)' }}>
-          <button type="button" onClick={continueWithGoogle} className="auth-google-button" style={{ marginBottom: '16px' }}>
-            <GoogleGIcon />
-            {copy.google}
-          </button>
+        <section className="auth-cinema-right" aria-label={copy.login}>
+          <div className="auth-login-card auth-card-entrance">
+            <button type="button" onClick={continueWithGoogle} className="auth-google-button flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-[var(--lf-card-border)] bg-[var(--lf-card-bg)] text-base font-bold text-[var(--lf-ink)] shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all">
+              <GoogleGIcon />
+              {copy.google}
+            </button>
 
-          <div className="auth-divider">
-            <span />
-            <strong>{copy.or}</strong>
-            <span />
-          </div>
+            <div className="auth-divider flex items-center gap-4 py-6 text-sm font-bold text-[var(--lf-ink)] opacity-60">
+              <span className="h-px flex-1 bg-current" />
+              <span>{copy.or}</span>
+              <span className="h-px flex-1 bg-current" />
+            </div>
 
           {authMethod === 'otp' ? (
             <form onSubmit={handleOtpSubmit} className="auth-login-form">
@@ -603,43 +822,18 @@ export default function LoginPage() {
             </form>
           )}
 
-          <p className="auth-consent" style={{ marginTop: '24px' }}>
+          <p className="mt-8 text-center text-[11px] font-semibold text-[var(--lf-ink)] opacity-60">
             {copy.consentPrefix}{' '}
-            <Link href="/privacy">{copy.consentLink}</Link>
+            <Link href="/privacy" className="underline hover:text-[#188038] transition-colors">{copy.consentLink}</Link>
           </p>
 
-          <button type="button" onClick={continueAsDemo} className="auth-demo-link">
-            {copy.demo}
-          </button>
+          <div className="mt-4 text-center">
+            <button type="button" onClick={continueAsDemo} className="text-sm font-bold text-[var(--lf-ink)] hover:text-[#188038] underline transition-colors">
+              {copy.demo}
+            </button>
+          </div>
+        </div>
         </section>
-      </section>
-
-      <div className="lf-svg-layer">
-        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full opacity-60">
-          <path className="lf-path" d="M0,288L48,272C96,256,192,224,288,197.3C384,171,480,149,576,165.3C672,181,768,235,864,250.7C960,267,1056,245,1152,250.7C1248,256,1344,288,1392,304L1440,320L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z" />
-          <path className="lf-path" d="M0,256L60,250.7C120,245,240,235,360,229.3C480,224,600,224,720,234.7C840,245,960,267,1080,261.3C1200,256,1320,224,1380,208L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z" />
-          <path className="lf-path" d="M0,192L80,181.3C160,171,320,149,480,165.3C640,181,800,235,960,250.7C1120,267,1280,245,1360,234.7L1440,224L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z" />
-          
-          <g className="lf-stalk-sway">
-            <line x1="120" y1="320" x2="120" y2="280" stroke="var(--lf-field-line)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M120,300 Q130,290 120,280" fill="none" stroke="var(--lf-field-line)" strokeWidth="1" />
-          </g>
-          
-          <g className="lf-stalk-sway" style={{ animationDelay: '-2s' }}>
-            <line x1="340" y1="320" x2="340" y2="260" stroke="var(--lf-field-line)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M340,290 Q325,275 340,260" fill="none" stroke="var(--lf-field-line)" strokeWidth="1" />
-          </g>
-          
-          <g className="lf-stalk-sway" style={{ animationDelay: '-5s' }}>
-            <line x1="880" y1="320" x2="880" y2="270" stroke="var(--lf-field-line)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M880,300 Q895,285 880,270" fill="none" stroke="var(--lf-field-line)" strokeWidth="1" />
-          </g>
-          
-          <g className="lf-stalk-sway" style={{ animationDelay: '-8s' }}>
-            <line x1="1200" y1="320" x2="1200" y2="250" stroke="var(--lf-field-line)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M1200,290 Q1185,270 1200,250" fill="none" stroke="var(--lf-field-line)" strokeWidth="1" />
-          </g>
-        </svg>
       </div>
     </main>
   );

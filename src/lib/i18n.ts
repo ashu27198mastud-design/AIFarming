@@ -102,6 +102,7 @@ export type TranslationSet = {
   setupStep2Title: string;
   setupStep3Title: string;
   nextBtn: string;
+  proofLines: string[];
 };
 
 export const LANGUAGES: { code: LanguageCode; name: string }[] = [
@@ -213,6 +214,11 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     setupStep2Title: 'आपका गांव / शहर?',
     setupStep3Title: 'खेत का स्थान सेट करें',
     nextBtn: 'आगे बढ़ें',
+    proofLines: [
+      'आज 2,40,000 किसानों ने सही फैसला लिया',
+      'फसल स्कैन: 10 सेकंड में रोग की पहचान',
+      'मंडी भाव: बेचो या रुको — हम बताएंगे',
+    ],
   },
   en: {
     title: 'KisanMitra',
@@ -316,6 +322,11 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     setupStep2Title: 'Your village / city?',
     setupStep3Title: 'Set farm location',
     nextBtn: 'Next',
+    proofLines: [
+      'Today 2,40,000 farmers made the right decision',
+      'Crop Scan: Disease identified in 10 seconds',
+      'Mandi Price: Sell or Wait — we\'ll tell you',
+    ],
   },
   mr: {
     title: 'किसानमित्र',
@@ -419,6 +430,11 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     authCompleting: 'Google \u0932\u0949\u0917\u093f\u0928 \u092a\u0942\u0930\u094d\u0923 \u0915\u0930\u0924 \u0906\u0939\u094b\u0924...',
     authFailed: 'Google \u0932\u0949\u0917\u093f\u0928 \u092a\u0942\u0930\u094d\u0923 \u091d\u093e\u0932\u0947 \u0928\u093e\u0939\u0940. \u092a\u0941\u0928\u094d\u0939\u093e \u092a\u094d\u0930\u092f\u0924\u094d\u0928 \u0915\u0930\u093e.',
     returnToLogin: '\u0932\u0949\u0917\u093f\u0928\u0935\u0930 \u092a\u0930\u0924 \u092f\u093e',
+    proofLines: [
+      'आज 2,40,000 शेतकऱ्यांनी योग्य निर्णय घेतला',
+      'पीक स्कॅन: 10 सेकंदात रोगाची ओळख',
+      'बाजार भाव: विका किंवा थांबा — आम्ही सांगू',
+    ],
   },
 };
 
