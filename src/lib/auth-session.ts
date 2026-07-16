@@ -1,7 +1,7 @@
 import type { LanguageCode } from '@/lib/i18n';
 
-export const AUTH_SESSION_KEY = 'km-auth-session-v1';
-export const AUTH_ACCOUNTS_KEY = 'km-auth-accounts-v1';
+export const AUTH_SESSION_KEY = 'km-auth-session-v2';
+export const AUTH_ACCOUNTS_KEY = 'km-auth-accounts-v2';
 
 export type AuthSession = {
   mode: 'user' | 'demo';
