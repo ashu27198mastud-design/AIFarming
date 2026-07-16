@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Leaf, Lock, Mail, Wheat } from 'lucide-react';
+import { Eye, EyeOff, Leaf, Lock, Mail, Wheat, Phone } from 'lucide-react';
 import { Fragment, FormEvent, useEffect, useState } from 'react';
 import { TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
 import { buildSupabaseGoogleOAuthUrl } from '@/lib/supabase-auth';
@@ -17,7 +17,7 @@ import {
 
 const LANGUAGE_STORAGE_KEY = 'km-lang';
 const LANGUAGE_OVERRIDE_STORAGE_KEY = 'km-lang-override';
-const WORDMARK_INTERVAL_MS = 2500;
+const WORDMARK_INTERVAL_MS = 2000;
 const DEMO_IDENTIFIER = 'asha@kisanmitra.demo';
 const DEMO_PASSWORD = 'Kisan123';
 
@@ -41,6 +41,11 @@ type LoginCopy = {
   accountCreated: string;
   forgotMessage: string;
   googleUnavailable: string;
+  mobileNumber: string;
+  getOtp: string;
+  enterOtp: string;
+  verifyOtp: string;
+  continueWithEmail: string;
 };
 
 type Wordmark = {
@@ -65,12 +70,12 @@ const UI_LANGUAGES: Array<{ code: LanguageCode; label: string; aria: string }> =
 const WORDMARKS: Wordmark[] = [
   { code: 'hi', label: 'किसानमित्र', lang: 'hi' },
   { code: 'bn', label: 'কিষাণমিত্র', lang: 'bn' },
-  { code: 'te', label: 'కిసాన్‌మిత్ర', lang: 'te' },
+  { code: 'te', label: 'కిసాన్మిత్ర', lang: 'te' },
   { code: 'mr', label: 'किसानमित्र', lang: 'mr' },
   { code: 'ta', label: 'கிசான்மித்ரா', lang: 'ta' },
   { code: 'ur', label: 'کسان متر', lang: 'ur', dir: 'rtl' },
   { code: 'gu', label: 'કિસાનમિત્ર', lang: 'gu' },
-  { code: 'kn', label: 'ಕಿಸಾನ್‌ಮಿತ್ರ', lang: 'kn' },
+  { code: 'kn', label: 'ಕಿಸಾನ್ಮಿತ್ರ', lang: 'kn' },
   { code: 'ml', label: 'കിസാൻമിത്ര', lang: 'ml' },
   { code: 'or', label: 'କିଷାଣମିତ୍ର', lang: 'or' },
   { code: 'pa', label: 'ਕਿਸਾਨਮਿੱਤਰ', lang: 'pa' },
@@ -109,6 +114,11 @@ const LOGIN_COPY: Record<LanguageCode, LoginCopy> = {
     accountCreated: 'खाता बन गया। अब डैशबोर्ड खोल रहे हैं।',
     forgotMessage: 'पासवर्ड रीसेट जल्द आएगा। अभी नया खाता बनाएं या डेमो देखें।',
     googleUnavailable: 'Google लॉगिन अभी पूरा नहीं हुआ। डेमो देखें या फिर कोशिश करें।',
+    mobileNumber: 'मोबाइल नंबर',
+    getOtp: 'OTP प्राप्त करें',
+    enterOtp: 'OTP दर्ज करें',
+    verifyOtp: 'OTP सत्यापित करें',
+    continueWithEmail: 'ईमेल व पासवर्ड से लॉगिन करें',
   },
   mr: {
     tagline: 'नुकसान होण्यापूर्वी, योग्य निर्णय.',
@@ -130,6 +140,11 @@ const LOGIN_COPY: Record<LanguageCode, LoginCopy> = {
     accountCreated: 'खाते तयार झाले. आता डॅशबोर्ड उघडत आहे.',
     forgotMessage: 'पासवर्ड रीसेट लवकरच येईल. आत्ता नवे खाते तयार करा किंवा डेमो पाहा.',
     googleUnavailable: 'Google लॉगिन अजून पूर्ण झाले नाही. डेमो पाहा किंवा पुन्हा प्रयत्न करा.',
+    mobileNumber: 'मोबाइल नंबर',
+    getOtp: 'OTP मिळवा',
+    enterOtp: 'OTP टाका',
+    verifyOtp: 'OTP तपासा',
+    continueWithEmail: 'ईमेल आणि पासवर्डने लॉगिन करा',
   },
   en: {
     tagline: 'Before the loss, the right decision.',
@@ -151,6 +166,11 @@ const LOGIN_COPY: Record<LanguageCode, LoginCopy> = {
     accountCreated: 'Account created. Opening your dashboard.',
     forgotMessage: 'Password reset is coming soon. Create a new account or view the demo for now.',
     googleUnavailable: 'Google login could not be completed yet. View the demo or try again.',
+    mobileNumber: 'Mobile Number',
+    getOtp: 'Get OTP',
+    enterOtp: 'Enter OTP',
+    verifyOtp: 'Verify OTP',
+    continueWithEmail: 'Continue with Email & Password',
   },
 };
 
@@ -191,10 +211,28 @@ export default function LoginPage() {
   const wordmark = WORDMARKS[wordmarkState.current];
   const previousWordmark = wordmarkState.previous === null ? null : WORDMARKS[wordmarkState.previous];
 
+  const [authMethod, setAuthMethod] = useState<'otp' | 'email'>('otp');
+  const [otpStage, setOtpStage] = useState<'phone' | 'verify'>('phone');
+  const [otpCode, setOtpCode] = useState('');
+  const [theme, setTheme] = useState<'theme-dawn' | 'theme-day' | 'theme-dusk' | 'theme-night'>('theme-day');
+
   const handleLangChange = (code: LanguageCode) => {
     setLang(code);
     window.localStorage.setItem(LANGUAGE_OVERRIDE_STORAGE_KEY, 'true');
   };
+
+  useEffect(() => {
+    const applyTheme = () => {
+      const hour = new Date().getHours();
+      if (hour >= 4 && hour < 7) setTheme('theme-dawn');
+      else if (hour >= 7 && hour < 17) setTheme('theme-day');
+      else if (hour >= 17 && hour < 20) setTheme('theme-dusk');
+      else setTheme('theme-night');
+    };
+    applyTheme();
+    const intervalId = window.setInterval(applyTheme, 60000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const hasOverride = window.localStorage.getItem(LANGUAGE_OVERRIDE_STORAGE_KEY) === 'true';
@@ -353,8 +391,38 @@ export default function LoginPage() {
 
   const continueAsDemo = () => finishLogin({ mode: 'demo', identifier: 'demo@kisanmitra.local', name: 'Asha Pawar' });
 
+  const handleOtpSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMessage(null);
+    if (otpStage === 'phone') {
+      if (identifier.length < 10) {
+        setMessage({ tone: 'error', text: copy.missingFields });
+        return;
+      }
+      setSubmitting(true);
+      window.setTimeout(() => {
+        setOtpStage('verify');
+        setSubmitting(false);
+      }, 800);
+    } else {
+      if (otpCode.length < 4) {
+        setMessage({ tone: 'error', text: copy.shortPassword });
+        return;
+      }
+      setSubmitting(true);
+      window.setTimeout(() => {
+        if (identifier === '9999999999' && otpCode === '1234') {
+          finishLogin({ mode: 'demo', identifier: 'demo@kisanmitra.local', name: 'Asha Pawar' });
+        } else {
+          finishLogin({ mode: 'user', identifier: identifier, name: 'Farmer' });
+        }
+      }, 800);
+    }
+  };
+
   return (
-    <main className="auth-minimal animate-fade-slide-up">
+    <main className={`living-field-root ${theme} auth-minimal animate-fade-slide-up`}>
+      <div className="living-field-sky-glow" aria-hidden="true" />
       {toast && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-white/90 bg-white/80 px-4 py-3 text-sm font-bold text-[#1F6B4F] shadow-lg backdrop-blur-xl animate-fade-slide-up">
           <Leaf className="h-4 w-4 animate-pulse-slow" />
@@ -415,78 +483,164 @@ export default function LoginPage() {
           <p className="auth-tagline">{copy.tagline}</p>
         </header>
 
-        <section className="auth-login-card" aria-label={copy.login}>
-          <form onSubmit={submit} className="auth-login-form">
-            <label className="auth-input-wrap">
-              <Mail aria-hidden="true" className="auth-input-icon" />
-              <input
-                value={identifier}
-                onChange={(event) => setIdentifier(event.target.value)}
-                placeholder={copy.identifier}
-                aria-label={copy.identifier}
-                inputMode="email"
-                autoComplete="username"
-              />
-            </label>
+        <section className="auth-login-card" aria-label={copy.login} style={{ backgroundColor: 'var(--lf-card-bg)', borderColor: 'var(--lf-card-border)' }}>
+          <button type="button" onClick={continueWithGoogle} className="auth-google-button" style={{ marginBottom: '16px' }}>
+            <GoogleGIcon />
+            {copy.google}
+          </button>
 
-            <label className="auth-input-wrap">
-              <Lock aria-hidden="true" className="auth-input-icon" />
-              <input
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder={copy.password}
-                aria-label={copy.password}
-                type={showPassword ? 'text' : 'password'}
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              />
+          <div className="auth-divider">
+            <span />
+            <strong>{copy.or}</strong>
+            <span />
+          </div>
+
+          {authMethod === 'otp' ? (
+            <form onSubmit={handleOtpSubmit} className="auth-login-form">
+              {otpStage === 'phone' ? (
+                <label className="auth-input-wrap">
+                  <Phone aria-hidden="true" className="auth-input-icon" />
+                  <input
+                    value={identifier}
+                    onChange={(event) => setIdentifier(event.target.value.replace(/\D/g, ''))}
+                    placeholder={copy.mobileNumber}
+                    aria-label={copy.mobileNumber}
+                    inputMode="numeric"
+                    maxLength={10}
+                    style={{ paddingLeft: '44px', height: '56px' }}
+                  />
+                </label>
+              ) : (
+                <label className="auth-input-wrap">
+                  <Lock aria-hidden="true" className="auth-input-icon" />
+                  <input
+                    value={otpCode}
+                    onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, ''))}
+                    placeholder={copy.enterOtp}
+                    aria-label={copy.enterOtp}
+                    inputMode="numeric"
+                    maxLength={6}
+                    style={{ paddingLeft: '44px', height: '56px' }}
+                  />
+                </label>
+              )}
+
+              {message && <p className={`auth-message auth-message-${message.tone}`}>{message.text}</p>}
+
+              <button type="submit" disabled={submitting} className="auth-primary-button">
+                {otpStage === 'phone' ? copy.getOtp : copy.verifyOtp}
+              </button>
+
               <button
                 type="button"
-                onClick={() => setShowPassword((value) => !value)}
-                className="auth-eye-button"
-                aria-label={copy.password}
+                className="auth-demo-link"
+                style={{ marginTop: '12px' }}
+                onClick={() => { setAuthMethod('email'); setMessage(null); }}
               >
-                {showPassword ? <EyeOff /> : <Eye />}
+                {copy.continueWithEmail}
               </button>
-            </label>
+            </form>
+          ) : (
+            <form onSubmit={submit} className="auth-login-form">
+              <label className="auth-input-wrap">
+                <Mail aria-hidden="true" className="auth-input-icon" />
+                <input
+                  value={identifier}
+                  onChange={(event) => setIdentifier(event.target.value)}
+                  placeholder={copy.identifier}
+                  aria-label={copy.identifier}
+                  inputMode="email"
+                  autoComplete="username"
+                  style={{ height: '56px' }}
+                />
+              </label>
 
-            {message && <p className={`auth-message auth-message-${message.tone}`}>{message.text}</p>}
+              <label className="auth-input-wrap">
+                <Lock aria-hidden="true" className="auth-input-icon" />
+                <input
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder={copy.password}
+                  aria-label={copy.password}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  style={{ height: '56px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="auth-eye-button"
+                  aria-label={copy.password}
+                >
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </button>
+              </label>
 
-            <button type="submit" disabled={submitting} className="auth-primary-button">
-              {mode === 'signup' ? copy.signupButton : copy.login}
-            </button>
+              {message && <p className={`auth-message auth-message-${message.tone}`}>{message.text}</p>}
 
-            <div className="auth-divider">
-              <span />
-              <strong>{copy.or}</strong>
-              <span />
-            </div>
-
-            <button type="button" onClick={continueWithGoogle} className="auth-google-button">
-              <GoogleGIcon />
-              {copy.google}
-            </button>
-
-            <div className="auth-form-links">
-              <button type="button" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage(null); }}>
-                {mode === 'login' ? copy.signup : copy.loginLink}
+              <button type="submit" disabled={submitting} className="auth-primary-button">
+                {mode === 'signup' ? copy.signupButton : copy.login}
               </button>
-              <span aria-hidden="true">·</span>
-              <button type="button" onClick={() => setMessage({ tone: 'info', text: copy.forgotMessage })}>
-                {copy.forgot}
+
+              <div className="auth-form-links">
+                <button type="button" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage(null); }}>
+                  {mode === 'login' ? copy.signup : copy.loginLink}
+                </button>
+                <span aria-hidden="true">·</span>
+                <button type="button" onClick={() => setMessage({ tone: 'info', text: copy.forgotMessage })}>
+                  {copy.forgot}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="auth-demo-link"
+                style={{ marginTop: '12px' }}
+                onClick={() => { setAuthMethod('otp'); setMessage(null); }}
+              >
+                {copy.mobileNumber}
               </button>
-            </div>
+            </form>
+          )}
 
-            <p className="auth-consent">
-              {copy.consentPrefix}{' '}
-              <Link href="/privacy">{copy.consentLink}</Link>
-            </p>
+          <p className="auth-consent" style={{ marginTop: '24px' }}>
+            {copy.consentPrefix}{' '}
+            <Link href="/privacy">{copy.consentLink}</Link>
+          </p>
 
-            <button type="button" onClick={continueAsDemo} className="auth-demo-link">
-              {copy.demo}
-            </button>
-          </form>
+          <button type="button" onClick={continueAsDemo} className="auth-demo-link">
+            {copy.demo}
+          </button>
         </section>
       </section>
+
+      <div className="lf-svg-layer">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full opacity-60">
+          <path className="lf-path" d="M0,288L48,272C96,256,192,224,288,197.3C384,171,480,149,576,165.3C672,181,768,235,864,250.7C960,267,1056,245,1152,250.7C1248,256,1344,288,1392,304L1440,320L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z" />
+          <path className="lf-path" d="M0,256L60,250.7C120,245,240,235,360,229.3C480,224,600,224,720,234.7C840,245,960,267,1080,261.3C1200,256,1320,224,1380,208L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z" />
+          <path className="lf-path" d="M0,192L80,181.3C160,171,320,149,480,165.3C640,181,800,235,960,250.7C1120,267,1280,245,1360,234.7L1440,224L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z" />
+          
+          <g className="lf-stalk-sway">
+            <line x1="120" y1="320" x2="120" y2="280" stroke="var(--lf-field-line)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M120,300 Q130,290 120,280" fill="none" stroke="var(--lf-field-line)" strokeWidth="1" />
+          </g>
+          
+          <g className="lf-stalk-sway" style={{ animationDelay: '-2s' }}>
+            <line x1="340" y1="320" x2="340" y2="260" stroke="var(--lf-field-line)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M340,290 Q325,275 340,260" fill="none" stroke="var(--lf-field-line)" strokeWidth="1" />
+          </g>
+          
+          <g className="lf-stalk-sway" style={{ animationDelay: '-5s' }}>
+            <line x1="880" y1="320" x2="880" y2="270" stroke="var(--lf-field-line)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M880,300 Q895,285 880,270" fill="none" stroke="var(--lf-field-line)" strokeWidth="1" />
+          </g>
+          
+          <g className="lf-stalk-sway" style={{ animationDelay: '-8s' }}>
+            <line x1="1200" y1="320" x2="1200" y2="250" stroke="var(--lf-field-line)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M1200,290 Q1185,270 1200,250" fill="none" stroke="var(--lf-field-line)" strokeWidth="1" />
+          </g>
+        </svg>
+      </div>
     </main>
   );
 }
