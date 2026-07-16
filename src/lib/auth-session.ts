@@ -1,7 +1,7 @@
 import type { LanguageCode } from '@/lib/i18n';
 
-export const AUTH_SESSION_KEY = 'km-auth-session-v1';
-export const AUTH_ACCOUNTS_KEY = 'km-auth-accounts-v1';
+export const AUTH_SESSION_KEY = 'km-auth-session-v2';
+export const AUTH_ACCOUNTS_KEY = 'km-auth-accounts-v2';
 
 export type AuthSession = {
   mode: 'user' | 'demo';
@@ -102,7 +102,7 @@ export function createSession(options: {
     language: options.language,
     createdAt: new Date().toISOString(),
     consentAt: options.consentAt,
-    setupCompleted: options.setupCompleted ?? isDemo,
+    setupCompleted: options.setupCompleted ?? false,
     village: options.village || (isDemo ? 'Nashik' : undefined),
     coords: options.coords || (isDemo ? { lat: 20.014, lng: 73.785 } : undefined),
   };

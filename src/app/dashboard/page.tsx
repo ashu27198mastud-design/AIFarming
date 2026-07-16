@@ -54,7 +54,21 @@ export default function Dashboard() {
   const [coords, setCoords] = useState(DEFAULT_COORDS);
   const [scans, setScans] = useState<ScanHistoryItem[]>([]);
   const [forecast, setForecast] = useState<WeatherForecast | null>(null);
+  const [theme, setTheme] = useState('theme-day');
   const [place, setPlace] = useState({ village: 'Nashik', district: 'Nashik', state: 'Maharashtra', source: 'fallback' });
+
+  useEffect(() => {
+    const updateTheme = () => {
+      const hour = new Date().getHours();
+      if (hour >= 4 && hour < 7) setTheme('theme-dawn');
+      else if (hour >= 7 && hour < 17) setTheme('theme-day');
+      else if (hour >= 17 && hour < 20) setTheme('theme-dusk');
+      else setTheme('theme-night');
+    };
+    updateTheme();
+    const interval = setInterval(updateTheme, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const t = TRANSLATIONS[lang];
   const market = useMemo(() => resolveGpsMarket(coords.lat, coords.lng), [coords.lat, coords.lng]);
@@ -156,8 +170,8 @@ export default function Dashboard() {
 
   if (!authReady) {
     return (
-      <div className="app-canvas flex min-h-screen items-center justify-center p-4">
-        <div className="m3-card max-w-sm text-center text-sm font-bold text-[#3C4043]">{t.loading}</div>
+      <div className={`living-field-root ${theme} flex min-h-screen items-center justify-center p-4`}>
+        <div className="m3-card max-w-sm text-center text-sm font-bold text-[var(--lf-ink)]">{t.loading}</div>
       </div>
     );
   }
@@ -177,15 +191,16 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="app-canvas flex min-h-screen flex-col items-center">
-      <div className="app-shell flex min-h-screen w-full max-w-[1180px] flex-col">
+    <div className={`living-field-root ${theme} flex min-h-screen flex-col items-center`}>
+      <div className="living-field-sky-glow" aria-hidden="true" />
+      <div className="app-shell relative z-10 flex min-h-screen w-full max-w-[1240px] flex-col">
         <header className="premium-header sticky top-0 z-30 flex items-center justify-between px-4 py-3">
           <button type="button" onClick={() => setActiveTab('home')} className="flex min-w-0 items-center gap-2.5 text-left">
             <div className="brand-orb flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-[#1F6B4F]">
               <Sprout className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-[19px] font-bold tracking-[-0.02em] text-[#202124]">{t.title}</h1>
+              <h1 className="truncate text-[19px] font-bold tracking-[-0.02em] text-[var(--lf-ink)]">{t.title}</h1>
               <p className="truncate text-[11px] font-medium text-[#6F7478]">{place.village}</p>
             </div>
           </button>
@@ -221,8 +236,8 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <span className="section-kicker">{t.today}</span>
-                    <h2 className="mt-2 text-[24px] font-bold text-[#202124]">{intelligence.todayAction}</h2>
-                    <p className="mt-2 line-clamp-2 text-sm font-medium text-[#5F6368]">{intelligence.actionReason}</p>
+                    <h2 className="mt-2 text-[24px] font-bold text-[var(--lf-ink)]">{intelligence.todayAction}</h2>
+                    <p className="mt-2 line-clamp-2 text-sm font-medium opacity-80 text-[var(--lf-ink)]">{intelligence.actionReason}</p>
                   </div>
                   <div className="score-chip"><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
                 </div>
@@ -250,7 +265,7 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <span className="section-kicker">{t.fertilizerPlan}</span>
-                    <h3 className="mt-2 text-lg font-black text-[#202124]">{intelligence.fertilizerPlan.crop}</h3>
+                    <h3 className="mt-2 text-lg font-black text-[var(--lf-ink)]">{intelligence.fertilizerPlan.crop}</h3>
                     <p className="mt-2 text-sm font-semibold leading-relaxed text-[#4F5B54]">{intelligence.fertilizerPlan.priority}</p>
                   </div>
                   <span className="google-icon google-icon-green"><Leaf className="h-5 w-5" /></span>
@@ -266,7 +281,7 @@ export default function Dashboard() {
                 <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} />
               </div>
 
-              <details className="m3-card clean-details">
+                <details className="m3-card clean-details">
                 <summary><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {t.farmPlan}</span><ChevronDown className="h-4 w-4" /></summary>
                 <div className="mt-4"><FieldPlanner coords={coords} market={market} /></div>
               </details>
