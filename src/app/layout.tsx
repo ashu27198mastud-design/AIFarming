@@ -1,23 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Noto_Sans, Noto_Sans_Devanagari } from 'next/font/google';
 import './globals.css';
 import './google-clean.css';
 import './google-compact.css';
 import './liquid-glass.css';
 
-const notoSans = Noto_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-noto-sans',
-  display: 'swap',
-});
-
-const notoSansDeva = Noto_Sans_Devanagari({
-  subsets: ['devanagari'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-noto-deva',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'ANVAYA Agriculture OS',
@@ -49,7 +35,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="hi">
-      <body className={`${notoSans.variable} ${notoSansDeva.variable} min-h-screen antialiased`}>
+      <body className="min-h-screen antialiased">
         {children}
       </body>
     </html>
