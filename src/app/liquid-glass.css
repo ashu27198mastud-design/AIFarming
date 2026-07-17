@@ -615,6 +615,190 @@ body {
   }
 }
 
+
+
+/* Dashboard phase: crisp, fast-loading command center inspired by modern Indian farm OS. */
+.living-field-root {
+  background:
+    linear-gradient(rgba(20, 85, 62, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 85, 62, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at 16% 2%, rgba(255, 153, 51, 0.12), transparent 32%),
+    radial-gradient(circle at 88% 8%, rgba(26, 115, 232, 0.08), transparent 30%),
+    radial-gradient(circle at 52% 100%, rgba(19, 136, 8, 0.11), transparent 35%),
+    #f7f9f3 !important;
+  background-size: 38px 38px, 38px 38px, auto, auto, auto, auto !important;
+}
+
+.living-field-sky-glow {
+  opacity: 0.34 !important;
+  filter: blur(16px) saturate(108%) !important;
+}
+
+.app-shell {
+  width: min(1440px, calc(100vw - 28px)) !important;
+  max-width: min(1440px, calc(100vw - 28px)) !important;
+  border-color: rgba(24, 67, 51, 0.13) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 252, 0.98), rgba(245, 249, 240, 0.96)) !important;
+  box-shadow: 0 26px 68px rgba(18, 40, 31, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.app-shell::before {
+  opacity: 0.24 !important;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 153, 51, 0.16), transparent 26%),
+    radial-gradient(circle at 85% 22%, rgba(26, 115, 232, 0.1), transparent 24%),
+    radial-gradient(circle at 58% 90%, rgba(19, 136, 8, 0.14), transparent 30%) !important;
+}
+
+.premium-header {
+  min-height: 72px;
+  border-bottom: 1px solid rgba(24, 67, 51, 0.08) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(10px) saturate(118%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(118%) !important;
+  box-shadow: 0 14px 36px rgba(35, 54, 45, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.premium-main {
+  background: transparent !important;
+}
+
+.m3-card,
+.google-action-card,
+.clean-details,
+.mandi-location-bar,
+.ai-land-plan,
+.soil-analysis-panel,
+.location-chip {
+  border-color: rgba(24, 67, 51, 0.12) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(250, 253, 247, 0.94)) !important;
+  box-shadow: 0 12px 30px rgba(24, 67, 51, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  backdrop-filter: blur(8px) saturate(112%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(112%) !important;
+}
+
+.google-hero,
+.dashboard-hero,
+.fertiliser-card,
+.scan-zone .m3-card {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(246, 251, 244, 0.96)),
+    linear-gradient(90deg, rgba(255, 153, 51, 0.08), rgba(19, 136, 8, 0.08)) !important;
+}
+
+.google-hero {
+  min-height: 178px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.google-hero h2 {
+  font-size: clamp(1.75rem, 2.35vw, 2.55rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 24px rgba(24, 67, 51, 0.1);
+}
+
+.google-hero p,
+.fertiliser-card p {
+  color: rgba(38, 52, 45, 0.78) !important;
+}
+
+.section-kicker {
+  color: rgba(128, 64, 20, 0.78) !important;
+  letter-spacing: 0.01em !important;
+}
+
+.google-action-card {
+  min-height: 82px;
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+.google-action-card small,
+.section-kicker {
+  font-size: 0.74rem !important;
+}
+
+.google-action-card strong {
+  color: #1f2f28 !important;
+  font-size: 0.98rem !important;
+}
+
+.score-chip {
+  width: 74px !important;
+  min-width: 74px !important;
+  height: 74px !important;
+  border-radius: 24px !important;
+  background: linear-gradient(145deg, #ffffff, #f2f8ff) !important;
+  color: #1967d2 !important;
+}
+
+.score-chip strong {
+  font-size: 1.45rem !important;
+}
+
+.google-icon,
+.brand-orb,
+.glass-icon-button,
+.language-pill,
+.capture-action,
+.clean-details > summary,
+.google-metric,
+.metric-pill {
+  border-color: rgba(24, 67, 51, 0.1) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 8px 20px rgba(24, 67, 51, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  backdrop-filter: blur(6px) saturate(110%) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(110%) !important;
+}
+
+.capture-action-primary,
+.btn-m3-primary {
+  background: linear-gradient(135deg, #1a73e8, #0b57d0) !important;
+  box-shadow: 0 12px 24px rgba(26, 115, 232, 0.2) !important;
+}
+
+.scan-zone .m3-card {
+  min-height: 132px;
+}
+
+.bottom-dock {
+  border-color: rgba(24, 67, 51, 0.13) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px) saturate(118%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(118%) !important;
+  box-shadow: 0 18px 44px rgba(24, 67, 51, 0.14), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+@media (min-width: 980px) {
+  .premium-main {
+    padding: 28px 30px 108px !important;
+  }
+
+  .google-home-grid {
+    gap: 20px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .premium-header {
+    min-height: 66px;
+  }
+
+  .google-hero {
+    min-height: 156px !important;
+  }
+
+  .google-hero h2 {
+    font-size: clamp(1.45rem, 8vw, 2rem) !important;
+  }
+}
+
 /* Login entry: compact white Google-style glass with a soft tricolor reflection. */
 .auth-canvas {
   isolation: isolate;
