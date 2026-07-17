@@ -21,6 +21,21 @@ const WORDMARK_INTERVAL_MS = 2000;
 const DEMO_IDENTIFIER = 'asha@kisanmitra.demo';
 const DEMO_PASSWORD = 'Kisan123';
 
+
+type ApproximateLocation = {
+  village?: string;
+  district?: string;
+  country?: string;
+};
+
+const MARATHI_LOCATION_TERMS = ['maharashtra', 'mumbai', 'pune', 'nashik', 'nagpur', 'thane', 'borivali', 'kolhapur', 'aurangabad', 'chhatrapati sambhajinagar'];
+
+function languageFromLocation(location: ApproximateLocation): LanguageCode | null {
+  const regionText = [location.village, location.district, location.country].filter(Boolean).join(' ').toLowerCase();
+  if (MARATHI_LOCATION_TERMS.some((term) => regionText.includes(term))) return 'mr';
+  if (location.country?.toLowerCase().includes('india')) return 'hi';
+  return null;
+}
 type LoginCopy = {
   tagline: string;
   identifier: string;
@@ -351,7 +366,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     const startupTimer = window.setTimeout(() => {
-      setLang(readSavedLanguage());
+      const savedLang = readSavedLanguage();
+      const hasManualLanguage = window.localStorage.getItem(LANGUAGE_OVERRIDE_STORAGE_KEY) === 'true';
+      setLang(savedLang);
       const forceLogin = new URLSearchParams(window.location.search).get('login') === '1';
       if (forceLogin) {
         clearAuthSession();
@@ -359,9 +376,20 @@ export default function LoginPage() {
         window.history.replaceState(null, '', '/');
         return;
       }
+
+      if (!hasManualLanguage) {
+        void fetch('/api/location/approximate', { cache: 'no-store' })
+          .then((response) => response.ok ? response.json() as Promise<ApproximateLocation> : null)
+          .then((location) => {
+            if (!location) return;
+            const locationLang = languageFromLocation(location);
+            if (locationLang) setLang(locationLang);
+          })
+          .catch(() => undefined);
+      }
     }, 0);
     return () => window.clearTimeout(startupTimer);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = lang;

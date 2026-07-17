@@ -11,7 +11,7 @@
   overflow: hidden;
   background: #f8f2e8;
   color: var(--ink);
-  font-family: var(--font-noto-sans), var(--font-noto-deva), sans-serif;
+  font-family: 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Segoe UI', system-ui, sans-serif;
   letter-spacing: 0;
 }
 
@@ -21,7 +21,8 @@
 
 .hero {
   position: relative;
-  min-height: 900px;
+  min-height: 100svh;
+  height: 100svh;
   overflow: hidden;
   isolation: isolate;
   background: #f8f2e8;
@@ -226,13 +227,13 @@
 
 .heroImage {
   object-fit: cover;
-  object-position: center;
+  object-position: center bottom;
 }
 
 .heroCopy {
   position: absolute;
   z-index: 5;
-  top: 112px;
+  top: clamp(92px, 10.5svh, 128px);
   left: 50%;
   width: min(900px, calc(100% - 48px));
   transform: translateX(-50%);
@@ -260,7 +261,7 @@
   max-width: 900px;
   margin: 0 auto;
   color: var(--ink);
-  font-size: 48px;
+  font-size: clamp(54px, 4.1vw, 76px);
   font-weight: 800;
   line-height: 1.08;
   text-wrap: balance;
@@ -285,12 +286,12 @@
 
 .primaryAction {
   display: inline-flex;
-  min-height: 52px;
+  min-height: 58px;
   align-items: center;
   justify-content: center;
   gap: 11px;
-  margin-top: 16px;
-  padding: 0 21px 0 23px;
+  margin-top: 20px;
+  padding: 0 28px 0 30px;
   border-radius: 8px;
   background: var(--green);
   color: #fff;
@@ -388,7 +389,7 @@
 }
 
 .soilCard {
-  bottom: 142px;
+  bottom: clamp(110px, 15svh, 168px);
   left: 16%;
 }
 
@@ -399,7 +400,7 @@
 
 .marketCard {
   right: 7%;
-  bottom: 142px;
+  bottom: clamp(110px, 15svh, 168px);
 }
 
 .trustRail {
@@ -541,7 +542,7 @@
 
   .support {
     max-width: 510px;
-    margin-top: 16px;
+    margin-top: 20px;
     font-size: 15px;
     line-height: 1.55;
   }
