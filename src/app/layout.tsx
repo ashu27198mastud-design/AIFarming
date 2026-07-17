@@ -20,15 +20,15 @@ const notoSansDeva = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
-  title: 'KisanMitra Predict',
-  description: 'A farmer-first crop intelligence app for disease detection, weather warnings, market prices, and practical crop advice.',
-  keywords: ['KisanMitra Predict', 'smart farming India', 'crop disease diagnosis', 'AI farmer assistant', 'mandi prices'],
-  authors: [{ name: 'KisanMitra Team' }],
+  title: 'ANVAYA Agriculture OS',
+  description: 'A farmer-first agriculture system connecting crop intelligence, weather, soil guidance, and market planning for India.',
+  keywords: ['ANVAYA Agriculture OS', 'smart farming India', 'crop intelligence', 'AI farmer assistant', 'mandi planning'],
+  authors: [{ name: 'ANVAYA Team' }],
   openGraph: {
-    title: 'KisanMitra Predict',
-    description: 'Detect crop diseases, plan treatments, follow weather alerts, and compare live market prices.',
+    title: 'ANVAYA Agriculture OS',
+    description: 'Weather, soil, crop, and market decisions in one trusted agriculture system.',
     type: 'website',
-    siteName: 'KisanMitra Predict',
+    siteName: 'ANVAYA Agriculture OS',
   },
   manifest: '/manifest.json',
   icons: {

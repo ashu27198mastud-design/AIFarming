@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Leaf, Lock, Mail, Wheat, Phone, Globe } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Phone, Globe } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
+import AnvayaLanding from '@/components/AnvayaLanding';
 import { buildSupabaseGoogleOAuthUrl } from '@/lib/supabase-auth';
 import {
   clearAuthSession,
@@ -301,7 +302,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [wordmarkState, setWordmarkState] = useState<WordmarkState>({ current: 0, tick: 0, isExiting: false });
-  const [toast, setToast] = useState<string | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
 
   const copy = LOGIN_COPY[lang];
   const t = TRANSLATIONS[lang];
@@ -350,35 +351,12 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const hasOverride = window.localStorage.getItem(LANGUAGE_OVERRIDE_STORAGE_KEY) === 'true';
-    const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    let toastTimer: number | undefined;
-
-    if (!hasOverride && !savedLang && typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          if (latitude >= 15.6 && latitude <= 22.0 && longitude >= 72.6 && longitude <= 80.9) {
-            setLang('mr');
-            setToast(TRANSLATIONS.mr.langAutoSwitched);
-            toastTimer = window.setTimeout(() => setToast(null), 3000);
-          }
-        },
-        undefined,
-        { timeout: 5000 }
-      );
-    }
-    return () => {
-      if (toastTimer) window.clearTimeout(toastTimer);
-    };
-  }, []);
-
-  useEffect(() => {
     const startupTimer = window.setTimeout(() => {
       setLang(readSavedLanguage());
       const forceLogin = new URLSearchParams(window.location.search).get('login') === '1';
       if (forceLogin) {
         clearAuthSession();
+        setShowLogin(true);
         window.history.replaceState(null, '', '/');
         return;
       }
@@ -532,6 +510,17 @@ export default function LoginPage() {
     }
   };
 
+  if (!showLogin) {
+    return (
+      <AnvayaLanding
+        lang={lang}
+        onLanguageChange={handleLangChange}
+        onDemo={continueAsDemo}
+        onLogin={() => setShowLogin(true)}
+      />
+    );
+  }
+
   return (
     <main 
       className={`auth-cinema-root`} 
@@ -542,13 +531,6 @@ export default function LoginPage() {
         '--px-l4': `${parallax.x * 0.14}px`, '--py-l4': `${parallax.y * 0.14}px` 
       } as React.CSSProperties}
     >
-      {toast && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-[rgba(255,255,255,0.85)] bg-[rgba(255,255,255,0.72)] px-4 py-3 text-sm font-bold text-[#1F2A1F] shadow-lg backdrop-blur-xl animate-fade-slide-up">
-          <Leaf className="h-4 w-4 animate-pulse-slow text-[#188038]" />
-          <span>{toast}</span>
-        </div>
-      )}
-
       <div className="absolute top-6 right-8 z-50">
         <button 
           onClick={() => setShowLangMenu(!showLangMenu)} 
