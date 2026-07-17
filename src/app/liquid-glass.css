@@ -973,10 +973,15 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   align-items: center;
 }
 
+.auth-wordmark-block {
+  width: min(100%, 760px);
+  min-width: 0;
+}
+
 .auth-wordmark-viewport {
   position: relative;
   width: 100%;
-  height: clamp(3.5rem, 6.5vw, 6.5rem);
+  height: clamp(4.25rem, 7.4vw, 7.5rem);
   overflow: visible;
 }
 
@@ -991,6 +996,7 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   font-weight: 650;
   line-height: 1;
   text-align: center;
+  white-space: nowrap;
 }
 
 @media (min-width: 1024px) {
@@ -1421,7 +1427,7 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   }
 
   .auth-wordmark-viewport {
-    height: 3.2rem;
+    height: 3.8rem;
   }
 
   .auth-cycle-word {
@@ -1467,7 +1473,7 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   }
 
   .auth-wordmark-viewport {
-    height: 3rem;
+    height: 3.7rem;
   }
 
   .auth-cycle-word {
@@ -1564,7 +1570,7 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   }
 
   .auth-wordmark-viewport {
-    height: 3.05rem;
+    height: 3.75rem;
   }
 
   .auth-cycle-word {
