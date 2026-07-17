@@ -118,10 +118,10 @@ export default function SetupPage() {
   }, [router]);
 
   useEffect(() => {
-    if (loading || locationRequestedRef.current) return;
+    if (loading || step !== 2 || locationRequestedRef.current) return;
     locationRequestedRef.current = true;
     detectLocation();
-  }, [detectLocation, loading]);
+  }, [detectLocation, loading, step]);
 
   const handleNextStep1 = (e: FormEvent) => {
     e.preventDefault();

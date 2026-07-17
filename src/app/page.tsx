@@ -10,7 +10,6 @@ import { buildSupabaseGoogleOAuthUrl } from '@/lib/supabase-auth';
 import {
   clearAuthSession,
   createSession,
-  readAuthSession,
   saveLocalAccount,
   verifyLocalAccount,
   writeAuthSession,
@@ -359,15 +358,6 @@ export default function LoginPage() {
         setShowLogin(true);
         window.history.replaceState(null, '', '/');
         return;
-      }
-
-      const session = readAuthSession();
-      if (session) {
-        if (!session.setupCompleted) {
-          router.replace('/setup');
-        } else {
-          router.replace('/dashboard');
-        }
       }
     }, 0);
     return () => window.clearTimeout(startupTimer);
