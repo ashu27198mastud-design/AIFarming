@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, Check, Leaf, MapPin, Sprout, User } from 'lucide-react';
 import { readAuthSession, writeAuthSession, createSession } from '@/lib/auth-session';
 import { TRANSLATIONS, type LanguageCode } from '@/lib/i18n';
@@ -23,10 +23,81 @@ export default function SetupPage() {
   const [detecting, setDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const locationRequestedRef = useRef(false);
 
   const copy = TRANSLATIONS[lang];
 
   const stepProgressLabel = `${step} / ${SETUP_TOTAL_STEPS}`;
+
+  const detectApproximateLocation = useCallback(async () => {
+    try {
+      const response = await fetch('/api/location/approximate', { cache: 'no-store' });
+      if (!response.ok) return false;
+
+      const payload = await response.json() as { lat?: number; lng?: number; village?: string };
+      const lat = Number(payload.lat);
+      const lng = Number(payload.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+
+      setCoords({ lat, lng });
+      if (payload.village) {
+        setVillage((current) => current.trim() ? current : payload.village || current);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const detectLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setDetecting(true);
+      setError(null);
+      void detectApproximateLocation().then((detected) => {
+        if (!detected) setError(copy.locationUnavailable);
+        setDetecting(false);
+      });
+      return;
+    }
+
+    setDetecting(true);
+    setError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setCoords({ lat, lng });
+
+        try {
+          const params = new URLSearchParams({
+            lat: String(lat),
+            lng: String(lng),
+            fallback: copy.locationUnavailable,
+          });
+          const response = await fetch(`/api/location/reverse?${params.toString()}`);
+          if (response.ok) {
+            const payload = await response.json() as { village?: string };
+            if (payload.village && payload.village !== copy.locationUnavailable) {
+              setVillage((current) => current.trim() ? current : payload.village || current);
+            }
+          }
+        } catch {
+          // Coordinates remain usable when the village lookup is offline.
+        } finally {
+          setDetecting(false);
+        }
+      },
+      async (locationError) => {
+        const detected = await detectApproximateLocation();
+        if (!detected) {
+          setError(locationError.code === locationError.PERMISSION_DENIED ? copy.gpsDenied : copy.locationUnavailable);
+        }
+        setDetecting(false);
+      },
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 }
+    );
+  }, [copy.gpsDenied, copy.locationUnavailable, detectApproximateLocation]);
 
   useEffect(() => {
     const startupTimer = window.setTimeout(() => {
@@ -46,6 +117,12 @@ export default function SetupPage() {
     return () => window.clearTimeout(startupTimer);
   }, [router]);
 
+  useEffect(() => {
+    if (loading || locationRequestedRef.current) return;
+    locationRequestedRef.current = true;
+    detectLocation();
+  }, [detectLocation, loading]);
+
   const handleNextStep1 = (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -56,26 +133,6 @@ export default function SetupPage() {
     e.preventDefault();
     if (!village.trim()) return;
     setStep(3);
-  };
-
-  const detectLocation = () => {
-    if (!navigator.geolocation) return;
-    setDetecting(true);
-    setError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        setCoords({ lat, lng });
-        setDetecting(false);
-      },
-      () => {
-        setError(copy.locationUnavailable);
-        setDetecting(false);
-      },
-      { timeout: 8000 }
-    );
   };
 
   const handleFinish = (event: FormEvent) => {
