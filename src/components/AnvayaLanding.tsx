@@ -276,6 +276,50 @@ export default function AnvayaLanding({ lang, onLanguageChange, onDemo, onLogin 
           <span><TrendingUp aria-hidden="true" />{copy.marketLinked}</span>
         </div>
       </section>
+
+      <section className={styles.productPreview} aria-labelledby="anvaya-preview-title">
+        <div className={styles.previewIntro}>
+          <p className={styles.previewKicker}>{copy.navIntelligence}</p>
+          <h2 id="anvaya-preview-title">{copy.primaryAction}</h2>
+          <p>{copy.support}</p>
+        </div>
+
+        <div className={styles.previewGrid}>
+          <article className={styles.askPreview}>
+            <div className={styles.askHeader}>
+              <span aria-hidden="true"><Bot /></span>
+              <div>
+                <small>{copy.navIntelligence}</small>
+                <strong>{copy.weatherAware}</strong>
+              </div>
+            </div>
+            <div className={styles.answerStack}>
+              <p><strong>{copy.weather}</strong><span>{copy.weatherValue}</span></p>
+              <p><strong>{copy.cropHealth}</strong><span>{copy.cropHealthValue}</span></p>
+              <p><strong>{copy.marketSignal}</strong><span>{copy.marketSignalValue}</span></p>
+            </div>
+            <button type="button" className={styles.previewAction} onClick={onDemo}>
+              <span>{copy.primaryAction}</span>
+              <ArrowRight aria-hidden="true" />
+            </button>
+          </article>
+
+          <div className={styles.missionGrid}>
+            {[
+              { icon: <Leaf />, label: copy.cropHealth, value: copy.cropHealthValue },
+              { icon: <Droplets />, label: copy.soilMoisture, value: copy.soilMoistureValue },
+              { icon: <CloudSun />, label: copy.weather, value: copy.weatherValue },
+              { icon: <TrendingUp />, label: copy.marketSignal, value: copy.marketSignalValue },
+            ].map((item) => (
+              <article className={styles.missionCard} key={item.label}>
+                <span aria-hidden="true">{item.icon}</span>
+                <small>{item.label}</small>
+                <strong>{item.value}</strong>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
