@@ -260,8 +260,8 @@ export default function Dashboard() {
         {gpsStatus === 'success' && <div className="status-strip">{t.locationUpdated}</div>}
         {gpsStatus === 'error' && <div className="status-strip status-strip-error">{t.locationUnavailable}</div>}
 
-        <main className="premium-main flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
-          <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
+        <main className="premium-main flex flex-1 flex-col overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
+          <section className={activeTab === 'home' ? 'dashboard-home-section flex flex-1 flex-col' : 'hidden'} aria-hidden={activeTab !== 'home'}>
             <div className="google-home-grid">
               <section className="m3-card krishi-command-panel" aria-labelledby="dashboard-heading">
                 <div className="krishi-command-header">
