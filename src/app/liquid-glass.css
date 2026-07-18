@@ -616,7 +616,6 @@ body {
 }
 
 
-
 /* Dashboard phase: crisp, fast-loading command center inspired by modern Indian farm OS. */
 .living-field-root {
   background:
@@ -1820,7 +1819,6 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   transform: none;
 }
 
-
 /* Login phase: modern Indian architectural glass entry. */
 .auth-cinema-root {
   isolation: isolate;
@@ -2105,7 +2103,6 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   }
 }
 
-
 /* Product phase: daily command intelligence rail. */
 .krishi-command-panel {
   position: relative;
@@ -2133,7 +2130,7 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   align-items: start;
 }
 
-.krishi-command-header h3 {
+.krishi-command-header h2 {
   margin-top: 8px;
   color: #1f2f28;
   font-size: clamp(1.35rem, 2.2vw, 2.1rem);
@@ -2141,6 +2138,21 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   line-height: 1.08;
   letter-spacing: 0;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95), 0 12px 28px rgba(24, 67, 51, 0.11);
+}
+
+.dashboard-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  padding: 7px 11px;
+  border: 1px solid rgba(19, 115, 51, 0.12);
+  border-radius: 999px;
+  background: rgba(232, 245, 233, 0.78);
+  color: #137333;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1;
 }
 
 .krishi-command-header p {
@@ -2297,5 +2309,52 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   .krishi-command-score {
     width: 64px;
     height: 64px;
+  }
+}
+
+/* Dashboard density: use the full desktop canvas without mobile-only dead space. */
+@media (min-width: 980px) {
+  .premium-main {
+    padding: 26px 30px 22px !important;
+  }
+
+  .google-home-grid {
+    gap: 16px !important;
+  }
+
+  .krishi-command-panel,
+  .google-action-grid {
+    grid-column: 1 / -1 !important;
+  }
+
+  .google-action-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .google-action-card {
+    min-height: 72px !important;
+  }
+
+  .fertiliser-card {
+    grid-column: 1 / span 4 !important;
+  }
+
+  .scan-zone {
+    grid-column: 5 / -1 !important;
+  }
+
+  .fertiliser-card,
+  .scan-zone .m3-card {
+    min-height: 184px !important;
+  }
+
+  .clean-details {
+    grid-column: 1 / -1 !important;
+  }
+
+  .bottom-dock-wrap {
+    padding-top: 4px !important;
+    padding-bottom: 12px !important;
   }
 }

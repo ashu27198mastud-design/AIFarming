@@ -263,22 +263,12 @@ export default function Dashboard() {
         <main className="premium-main flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
           <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
             <div className="google-home-grid">
-              <section className="m3-card google-hero">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <span className="section-kicker">{t.today}</span>
-                    <h2 className="mt-2 text-[24px] font-bold text-[var(--lf-ink)]">{intelligence.todayAction}</h2>
-                    <p className="mt-2 line-clamp-2 text-sm font-medium opacity-80 text-[var(--lf-ink)]">{intelligence.actionReason}</p>
-                  </div>
-                  <div className="score-chip"><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
-                </div>
-              </section>
-
-              <section className="m3-card krishi-command-panel">
+              <section className="m3-card krishi-command-panel" aria-labelledby="dashboard-heading">
                 <div className="krishi-command-header">
                   <div>
+                    <span className="dashboard-label"><Sprout className="h-3.5 w-3.5" /> {t.home} · {place.village}</span>
                     <span className="section-kicker">{t.today}</span>
-                    <h3>{intelligence.todayAction}</h3>
+                    <h2 id="dashboard-heading">{intelligence.todayAction}</h2>
                     <p>{intelligence.actionReason}</p>
                   </div>
                   <div className="krishi-command-score"><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
@@ -335,7 +325,7 @@ export default function Dashboard() {
                 <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} />
               </div>
 
-                <details className="m3-card clean-details">
+              <details className="m3-card clean-details">
                 <summary><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {t.farmPlan}</span><ChevronDown className="h-4 w-4" /></summary>
                 <div className="mt-4"><FieldPlanner coords={coords} market={market} /></div>
               </details>
