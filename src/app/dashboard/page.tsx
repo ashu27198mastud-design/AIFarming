@@ -260,8 +260,8 @@ export default function Dashboard() {
         {gpsStatus === 'success' && <div className="status-strip">{t.locationUpdated}</div>}
         {gpsStatus === 'error' && <div className="status-strip status-strip-error">{t.locationUnavailable}</div>}
 
-        <main className="premium-main flex flex-1 flex-col overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
-          <section className={activeTab === 'home' ? 'dashboard-home-section flex flex-1 flex-col' : 'hidden'} aria-hidden={activeTab !== 'home'}>
+        <main className="premium-main flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
+          <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
             <div className="google-home-grid">
               <section className="m3-card krishi-command-panel" aria-labelledby="dashboard-heading">
                 <div className="krishi-command-header">
@@ -324,6 +324,26 @@ export default function Dashboard() {
               <div className="scan-zone">
                 <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} />
               </div>
+
+
+              <section className="farm-pulse-strip" aria-label={t.myFarm}>
+                <div className="farm-pulse-item">
+                  <span className="farm-pulse-icon"><MapPin className="h-4 w-4" /></span>
+                  <span><small>{t.myFarm}</small><strong>{place.village}</strong><em>{place.district}, {place.state}</em></span>
+                </div>
+                <div className="farm-pulse-item">
+                  <span className="farm-pulse-icon farm-pulse-blue"><Navigation className="h-4 w-4" /></span>
+                  <span><small>{t.weather}</small><strong>{currentWeather ? Math.round(currentWeather.temperatureC) + ' C' : '--'}</strong><em>{currentWeather ? Math.round(currentWeather.precipProbability) + '% ' + t.rain + ' · ' + Math.round(currentWeather.windSpeedKmh) + ' km/h' : intelligence.actionReason}</em></span>
+                </div>
+                <div className="farm-pulse-item">
+                  <span className="farm-pulse-icon farm-pulse-amber"><Leaf className="h-4 w-4" /></span>
+                  <span><small>{t.activeCrop}</small><strong>{topCrop?.localName || t.addFarmData}</strong><em>{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} · {farmTwin.region}</em></span>
+                </div>
+                <div className="farm-pulse-item">
+                  <span className="farm-pulse-icon farm-pulse-red"><ShieldCheck className="h-4 w-4" /></span>
+                  <span><small>{t.savedScans}</small><strong>{scans.length}</strong><em>{t.score}: {intelligence.readinessScore}</em></span>
+                </div>
+              </section>
 
               <details className="m3-card clean-details">
                 <summary><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {t.farmPlan}</span><ChevronDown className="h-4 w-4" /></summary>
