@@ -4,12 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
+  BarChart3,
+  CalendarCheck,
   ChevronDown,
   ChevronRight,
   Leaf,
   MapPin,
   Navigation,
   RefreshCw,
+  ShieldCheck,
   Sprout,
   TrendingUp,
 } from 'lucide-react';
@@ -176,6 +179,34 @@ export default function Dashboard() {
     );
   }
 
+  const currentWeather = forecast?.hourly?.[0];
+  const commandCards = [
+    {
+      key: 'weather',
+      label: t.weather,
+      title: topAlert?.title || t.noMajorWeatherRisk,
+      detail: topAlert?.detail || intelligence.actionReason,
+      icon: ShieldCheck,
+      tone: topAlert?.tone === 'danger' ? 'danger' : topAlert?.tone === 'watch' ? 'watch' : 'good',
+    },
+    {
+      key: 'crop',
+      label: t.bestCrop,
+      title: topCrop?.localName || t.addFarmData,
+      detail: topCrop ? topCrop.reasons[0] : intelligence.actionReason,
+      icon: CalendarCheck,
+      tone: 'good',
+    },
+    {
+      key: 'market',
+      label: t.mandi,
+      title: market.district,
+      detail: currentWeather ? Math.round(currentWeather.precipProbability) + '% ' + t.rain + ' - ' + Math.round(currentWeather.windSpeedKmh) + ' km/h' : intelligence.fertilizerPlan.timing,
+      icon: BarChart3,
+      tone: 'watch',
+    },
+  ];
+
   const addScan = (scan: ScanHistoryItem) => {
     setScans((current) => {
       const next = [scan, ...current].slice(0, 20);
@@ -240,6 +271,29 @@ export default function Dashboard() {
                     <p className="mt-2 line-clamp-2 text-sm font-medium opacity-80 text-[var(--lf-ink)]">{intelligence.actionReason}</p>
                   </div>
                   <div className="score-chip"><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
+                </div>
+              </section>
+
+              <section className="m3-card krishi-command-panel">
+                <div className="krishi-command-header">
+                  <div>
+                    <span className="section-kicker">{t.today}</span>
+                    <h3>{intelligence.todayAction}</h3>
+                    <p>{intelligence.actionReason}</p>
+                  </div>
+                  <div className="krishi-command-score"><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
+                </div>
+                <div className="krishi-command-rail">
+                  {commandCards.map((item) => {
+                    const CommandIcon = item.icon;
+                    return (
+                      <button key={item.key} type="button" onClick={() => setActiveTab(item.key === 'weather' ? 'weather' : item.key === 'market' ? 'mandi' : 'farm')} className={`krishi-command-card krishi-command-${item.tone}`}>
+                        <span className="krishi-command-icon"><CommandIcon className="h-4 w-4" /></span>
+                        <span className="min-w-0"><small>{item.label}</small><strong>{item.title}</strong><em>{item.detail}</em></span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
 
