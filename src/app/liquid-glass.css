@@ -3341,3 +3341,354 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
     display: none;
   }
 }
+
+
+/* Edge-to-edge investor cockpit: full canvas, explicit decisions, measurable signals. */
+.ops-decision-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 0.34fr);
+  gap: 22px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ops-safe-window {
+  min-width: 0;
+  padding: 10px 0 10px 18px;
+  border-left: 3px solid #34a853;
+}
+
+.ops-safe-window-risk {
+  border-left-color: #d93025;
+}
+
+.ops-safe-window > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #68736d;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.ops-safe-window > strong {
+  display: block;
+  margin-top: 6px;
+  color: #24332b;
+  font-size: 0.92rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.ops-safe-window > p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: #6d7872;
+  font-size: 0.66rem;
+  font-weight: 750;
+}
+
+.ops-safe-window > button,
+.ops-market-panel > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+  margin-top: 9px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 7px;
+  background: #137333;
+  color: #fff;
+  font-size: 0.67rem;
+  font-weight: 850;
+  box-shadow: 0 7px 16px rgba(19, 115, 51, 0.16);
+}
+
+.ops-readiness-proof {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ops-readiness-proof > div {
+  min-width: 0;
+}
+
+.ops-readiness-proof > div > span:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.ops-readiness-proof small,
+.ops-readiness-proof strong {
+  overflow: hidden;
+  font-size: 0.56rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-readiness-proof small {
+  color: #7a857f;
+}
+
+.ops-readiness-proof strong {
+  color: #2c3932;
+}
+
+.ops-proof-track {
+  display: block;
+  overflow: hidden;
+  height: 4px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: #e3ebe5;
+}
+
+.ops-proof-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f9ab00, #137333);
+}
+
+.ops-score-basis {
+  margin-top: 7px;
+  color: #858e89;
+  font-size: 0.54rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.ops-chart-legend .ops-legend-safe::before {
+  background: #f9ab00;
+}
+
+.ops-market-panel {
+  grid-column: 10 / -1;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(24, 67, 51, 0.12);
+  border-radius: 8px;
+  background: linear-gradient(145deg, #fffdf8, #f8fbf6);
+  box-shadow: 0 10px 28px rgba(24, 67, 51, 0.08);
+}
+
+.ops-market-location {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+  margin-top: 11px;
+}
+
+.ops-market-location > div {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  color: #137333;
+}
+
+.ops-market-location > div strong {
+  font-size: 1.7rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ops-market-location > div span {
+  font-size: 0.66rem;
+  font-weight: 850;
+}
+
+.ops-market-location > span small,
+.ops-market-location > span strong,
+.ops-market-crop small,
+.ops-market-crop strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-market-location small,
+.ops-market-crop small {
+  color: #818a85;
+  font-size: 0.57rem;
+  font-weight: 800;
+}
+
+.ops-market-location > span strong,
+.ops-market-crop strong {
+  margin-top: 3px;
+  color: #28362f;
+  font-size: 0.79rem;
+  font-weight: 880;
+}
+
+.ops-market-crop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(24, 67, 51, 0.09);
+}
+
+.ops-market-signal {
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: #fef7e0;
+  color: #8a5100;
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.ops-market-signal-rising {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.ops-market-signal-watch {
+  background: #fce8e6;
+  color: #b3261e;
+}
+
+.ops-market-panel > button {
+  width: 100%;
+  margin-top: 12px;
+}
+
+@media (min-width: 1081px) {
+  .living-field-root {
+    align-items: stretch !important;
+  }
+
+  .living-field-root .app-shell {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 100svh !important;
+    margin: 0 !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .premium-header {
+    padding-right: 28px !important;
+    padding-left: 28px !important;
+  }
+
+  .premium-main {
+    padding: 16px 24px !important;
+  }
+
+  .farm-ops-grid {
+    height: max(712px, calc(100svh - 201px));
+    min-height: 712px;
+    grid-template-rows:
+      minmax(230px, 1.08fr)
+      minmax(200px, 1fr)
+      minmax(190px, 0.92fr)
+      minmax(50px, auto);
+  }
+
+  .ops-decision-panel {
+    justify-content: space-between;
+  }
+
+  .ops-fertilizer-panel {
+    grid-column: 1 / span 3;
+  }
+
+  .ops-scan-panel {
+    grid-column: 4 / span 6;
+  }
+
+  .ops-market-panel {
+    grid-column: 10 / -1;
+  }
+}
+
+@media (min-width: 1081px) and (min-height: 950px) {
+  .farm-ops-grid {
+    grid-template-rows:
+      250px
+      minmax(260px, 1.12fr)
+      minmax(230px, 1fr)
+      minmax(50px, auto);
+  }
+
+  .ops-decision-panel {
+    gap: 10px;
+  }
+
+  .ops-readiness-ring {
+    width: 112px;
+    height: 112px;
+  }
+
+  .ops-readiness-ring > div {
+    width: 86px;
+    height: 86px;
+  }
+}
+
+@media (min-width: 1081px) and (max-width: 1280px) {
+  .farm-ops-grid {
+    height: auto;
+  }
+
+  .ops-fertilizer-panel {
+    grid-column: 1 / span 4;
+  }
+
+  .ops-scan-panel {
+    grid-column: 5 / -1;
+  }
+
+  .ops-market-panel {
+    grid-column: 1 / -1;
+    min-height: 160px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .ops-market-panel {
+    grid-column: 1 / -1;
+  }
+
+  .ops-decision-main {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ops-safe-window {
+    padding: 10px 0 0;
+    border-top: 1px solid rgba(24, 67, 51, 0.1);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .ops-market-panel {
+    grid-column: 1;
+  }
+
+  .ops-readiness-proof {
+    gap: 6px;
+  }
+
+  .ops-score-basis {
+    text-align: left;
+  }
+}

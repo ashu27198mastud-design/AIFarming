@@ -22,6 +22,7 @@ import {
   Area,
   Bar,
   CartesianGrid,
+  Cell,
   ComposedChart,
   ResponsiveContainer,
   Tooltip,
@@ -43,6 +44,80 @@ import type { WeatherForecast } from '@/types';
 const DEFAULT_COORDS = { lat: 20.014, lng: 73.785 };
 const SCAN_STORAGE_KEY = 'km-scans-history-v2';
 const LANGUAGE_STORAGE_KEY = 'km-lang';
+
+const DASHBOARD_COPY: Record<LanguageCode, {
+  safeWindow: string;
+  safeOn: string;
+  noSafeWindow: string;
+  viewForecast: string;
+  scoreBasis: string;
+  weatherSafety: string;
+  cropFit: string;
+  dataCoverage: string;
+  nearestMarket: string;
+  distance: string;
+  cropOpportunity: string;
+  compareMarkets: string;
+  live: string;
+  rising: string;
+  stable: string;
+  watch: string;
+}> = {
+  hi: {
+    safeWindow: 'अगली सुरक्षित कार्य अवधि',
+    safeOn: 'सुरक्षित दिन',
+    noSafeWindow: 'अगले 7 दिनों में सुरक्षित अवधि नहीं',
+    viewForecast: 'पूरा पूर्वानुमान देखें',
+    scoreBasis: 'मौसम, फसल और खेत डेटा पर आधारित',
+    weatherSafety: 'मौसम सुरक्षा',
+    cropFit: 'फसल अनुकूलता',
+    dataCoverage: 'डेटा कवरेज',
+    nearestMarket: 'निकटतम मंडी',
+    distance: 'दूरी',
+    cropOpportunity: 'फसल अवसर',
+    compareMarkets: 'मंडियों की तुलना करें',
+    live: 'लाइव',
+    rising: 'बढ़ता',
+    stable: 'स्थिर',
+    watch: 'नज़र रखें',
+  },
+  en: {
+    safeWindow: 'Next safe work window',
+    safeOn: 'Safe day',
+    noSafeWindow: 'No safe window in the next 7 days',
+    viewForecast: 'View full forecast',
+    scoreBasis: 'Based on weather, crop, and farm data',
+    weatherSafety: 'Weather safety',
+    cropFit: 'Crop fit',
+    dataCoverage: 'Data coverage',
+    nearestMarket: 'Nearest market',
+    distance: 'Distance',
+    cropOpportunity: 'Crop opportunity',
+    compareMarkets: 'Compare markets',
+    live: 'Live',
+    rising: 'Rising',
+    stable: 'Stable',
+    watch: 'Watch',
+  },
+  mr: {
+    safeWindow: 'पुढील सुरक्षित कामाची वेळ',
+    safeOn: 'सुरक्षित दिवस',
+    noSafeWindow: 'पुढील ७ दिवसांत सुरक्षित वेळ नाही',
+    viewForecast: 'पूर्ण हवामान पहा',
+    scoreBasis: 'हवामान, पीक आणि शेत डेटावर आधारित',
+    weatherSafety: 'हवामान सुरक्षा',
+    cropFit: 'पीक अनुकूलता',
+    dataCoverage: 'डेटा कव्हरेज',
+    nearestMarket: 'जवळची मंडी',
+    distance: 'अंतर',
+    cropOpportunity: 'पीक संधी',
+    compareMarkets: 'मंड्यांची तुलना करा',
+    live: 'थेट',
+    rising: 'वाढता',
+    stable: 'स्थिर',
+    watch: 'लक्ष ठेवा',
+  },
+};
 function readSavedLanguage(): LanguageCode {
   if (typeof window === 'undefined') return 'hi';
   const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
@@ -192,12 +267,23 @@ export default function Dashboard() {
   }
 
   const currentWeather = forecast?.hourly?.[0];
+  const dashboardCopy = DASHBOARD_COPY[lang];
   const outlookLocale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
   const outlookData = (forecast?.daily ?? []).slice(0, 7).map((day) => ({
     day: new Intl.DateTimeFormat(outlookLocale, { weekday: 'short' }).format(new Date(day.date + 'T00:00:00')),
     rain: Math.round(day.precipProbability),
     temp: Math.round(day.maxTempC),
+    wind: Math.round(day.windSpeedKmh),
+    safe: day.precipProbability < 35 && day.windSpeedKmh < 16,
   }));
+  const safeDay = outlookData.find((day) => day.safe);
+  const weatherSafety = currentWeather
+    ? Math.max(0, Math.round(100 - currentWeather.precipProbability - Math.max(0, currentWeather.windSpeedKmh - 12) * 3))
+    : 0;
+  const cropFit = topCrop?.score ?? 0;
+  const dataCoverage = Math.min(100, Math.round(outlookData.length / 7 * 100));
+  const marketSignal = topCrop?.profitSignal ?? 'watch';
+  const marketSignalLabel = dashboardCopy[marketSignal];
   const commandCards = [
     {
       key: 'weather',
@@ -242,7 +328,7 @@ export default function Dashboard() {
   return (
     <div className={`living-field-root ${theme} flex min-h-screen flex-col items-center`}>
       <div className="living-field-sky-glow" aria-hidden="true" />
-      <div className="app-shell relative z-10 flex min-h-screen w-full max-w-[1720px] flex-col">
+      <div className="app-shell relative z-10 flex min-h-screen w-full max-w-none flex-col">
         <header className="premium-header sticky top-0 z-30 flex items-center justify-between px-4 py-3">
           <button type="button" onClick={() => setActiveTab('home')} className="flex min-w-0 items-center gap-2.5 text-left">
             <div className="brand-orb flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-[#1F6B4F]">
@@ -282,10 +368,18 @@ export default function Dashboard() {
           <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
             <div className="farm-ops-grid">
               <section className="ops-decision-panel" aria-labelledby="dashboard-heading">
-                <div className="ops-decision-copy">
-                  <span className="ops-eyebrow"><Sprout className="h-3.5 w-3.5" /> {t.today} - {place.village}</span>
-                  <h2 id="dashboard-heading">{intelligence.todayAction}</h2>
-                  <p>{intelligence.actionReason}</p>
+                <div className="ops-decision-main">
+                  <div className="ops-decision-copy">
+                    <span className="ops-eyebrow"><Sprout className="h-3.5 w-3.5" /> {t.today} - {place.village}</span>
+                    <h2 id="dashboard-heading">{intelligence.todayAction}</h2>
+                    <p>{intelligence.actionReason}</p>
+                  </div>
+                  <aside className={safeDay ? 'ops-safe-window' : 'ops-safe-window ops-safe-window-risk'}>
+                    <span><CalendarCheck className="h-4 w-4" /> {dashboardCopy.safeWindow}</span>
+                    <strong>{safeDay ? dashboardCopy.safeOn + ': ' + safeDay.day : dashboardCopy.noSafeWindow}</strong>
+                    <p><CloudRain className="h-3.5 w-3.5" /> {currentWeather ? Math.round(currentWeather.precipProbability) + '%' : '--'} <Wind className="h-3.5 w-3.5" /> {currentWeather ? Math.round(currentWeather.windSpeedKmh) + ' km/h' : '--'}</p>
+                    <button type="button" onClick={() => setActiveTab('weather')}>{dashboardCopy.viewForecast}<ChevronRight className="h-4 w-4" /></button>
+                  </aside>
                 </div>
                 <div className="ops-signal-row">
                   {commandCards.map((item) => {
@@ -318,12 +412,27 @@ export default function Dashboard() {
                     <div><BarChart3 className="h-4 w-4" /><span><small>{t.mandi}</small><strong>{market.district}</strong></span></div>
                   </div>
                 </div>
+                <div className="ops-readiness-proof" aria-label={dashboardCopy.scoreBasis}>
+                  <div>
+                    <span><small>{dashboardCopy.weatherSafety}</small><strong>{weatherSafety}%</strong></span>
+                    <span className="ops-proof-track"><span style={{ width: weatherSafety + '%' }} /></span>
+                  </div>
+                  <div>
+                    <span><small>{dashboardCopy.cropFit}</small><strong>{cropFit}%</strong></span>
+                    <span className="ops-proof-track"><span style={{ width: cropFit + '%' }} /></span>
+                  </div>
+                  <div>
+                    <span><small>{dashboardCopy.dataCoverage}</small><strong>{outlookData.length}/7</strong></span>
+                    <span className="ops-proof-track"><span style={{ width: dataCoverage + '%' }} /></span>
+                  </div>
+                </div>
+                <p className="ops-score-basis">{dashboardCopy.scoreBasis}</p>
               </aside>
 
               <section className="ops-outlook-panel">
                 <div className="ops-panel-heading">
                   <span><BarChart3 className="h-4 w-4" /> {t.weather} - {t.sevenDays}</span>
-                  <div className="ops-chart-legend"><span className="ops-legend-rain">{t.rain} %</span><span className="ops-legend-temp">C</span></div>
+                  <div className="ops-chart-legend"><span className="ops-legend-rain">{t.rain} %</span><span className="ops-legend-safe">{dashboardCopy.safeOn}</span><span className="ops-legend-temp">C</span></div>
                 </div>
                 <div className="ops-chart">
                   {outlookData.length ? (
@@ -334,7 +443,9 @@ export default function Dashboard() {
                         <YAxis yAxisId="rain" domain={[0, 100]} hide />
                         <YAxis yAxisId="temp" orientation="right" domain={['dataMin - 4', 'dataMax + 4']} hide />
                         <Tooltip contentStyle={{ border: '1px solid rgba(24,67,51,.12)', borderRadius: 10, boxShadow: '0 12px 30px rgba(24,67,51,.12)', fontSize: 12 }} cursor={{ fill: 'rgba(26,115,232,.04)' }} />
-                        <Bar yAxisId="rain" dataKey="rain" fill="#8ab4f8" radius={[6, 6, 0, 0]} barSize={18} isAnimationActive={false} />
+                        <Bar yAxisId="rain" dataKey="rain" radius={[6, 6, 0, 0]} barSize={18} isAnimationActive={false}>
+                          {outlookData.map((day, index) => <Cell key={day.day + index} fill={day.safe ? '#f9ab00' : '#8ab4f8'} />)}
+                        </Bar>
                         <Area yAxisId="temp" type="monotone" dataKey="temp" stroke="#137333" strokeWidth={3} fill="rgba(19,115,51,.10)" dot={{ r: 3, fill: '#137333', strokeWidth: 0 }} isAnimationActive={false} />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -384,6 +495,22 @@ export default function Dashboard() {
               <div id="crop-scan" className="ops-scan-panel">
                 <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} />
               </div>
+
+              <section className="ops-market-panel">
+                <div className="ops-panel-heading">
+                  <span><BarChart3 className="h-4 w-4" /> {dashboardCopy.nearestMarket}</span>
+                  <small>{dashboardCopy.live}</small>
+                </div>
+                <div className="ops-market-location">
+                  <div><strong>{market.distanceKm}</strong><span>km</span></div>
+                  <span><small>{dashboardCopy.distance}</small><strong>{market.district}</strong></span>
+                </div>
+                <div className="ops-market-crop">
+                  <span><small>{dashboardCopy.cropOpportunity}</small><strong>{topCrop?.localName || t.addFarmData}</strong></span>
+                  <em className={'ops-market-signal ops-market-signal-' + marketSignal}>{marketSignalLabel}</em>
+                </div>
+                <button type="button" onClick={() => setActiveTab('mandi')}>{dashboardCopy.compareMarkets}<ChevronRight className="h-4 w-4" /></button>
+              </section>
 
               <details className="ops-plan-panel">
                 <summary><span><MapPin className="h-4 w-4" /> {t.farmPlan}</span><span className="ops-plan-context">{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {farmTwin.region}</span><ChevronDown className="h-4 w-4" /></summary>
