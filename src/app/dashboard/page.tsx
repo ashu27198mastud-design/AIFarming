@@ -3,19 +3,31 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle,
+  Activity,
   BarChart3,
   CalendarCheck,
   ChevronDown,
   ChevronRight,
+  CloudRain,
   Leaf,
   MapPin,
   Navigation,
   RefreshCw,
   ShieldCheck,
   Sprout,
-  TrendingUp,
+  ThermometerSun,
+  Wind,
 } from 'lucide-react';
+import {
+  Area,
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import BottomNav, { type TabId } from '@/components/BottomNav';
 import FieldPlanner from '@/components/FieldPlanner';
 import HomeTab, { type ScanHistoryItem } from '@/components/tabs/HomeTab';
@@ -180,6 +192,12 @@ export default function Dashboard() {
   }
 
   const currentWeather = forecast?.hourly?.[0];
+  const outlookLocale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
+  const outlookData = (forecast?.daily ?? []).slice(0, 7).map((day) => ({
+    day: new Intl.DateTimeFormat(outlookLocale, { weekday: 'short' }).format(new Date(day.date + 'T00:00:00')),
+    rain: Math.round(day.precipProbability),
+    temp: Math.round(day.maxTempC),
+  }));
   const commandCards = [
     {
       key: 'weather',
@@ -262,24 +280,21 @@ export default function Dashboard() {
 
         <main className="premium-main flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
           <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
-            <div className="google-home-grid">
-              <section className="m3-card krishi-command-panel" aria-labelledby="dashboard-heading">
-                <div className="krishi-command-header">
-                  <div>
-                    <span className="dashboard-label"><Sprout className="h-3.5 w-3.5" /> {t.home} · {place.village}</span>
-                    <span className="section-kicker">{t.today}</span>
-                    <h2 id="dashboard-heading">{intelligence.todayAction}</h2>
-                    <p>{intelligence.actionReason}</p>
-                  </div>
-                  <div className="krishi-command-score"><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
+            <div className="farm-ops-grid">
+              <section className="ops-decision-panel" aria-labelledby="dashboard-heading">
+                <div className="ops-decision-copy">
+                  <span className="ops-eyebrow"><Sprout className="h-3.5 w-3.5" /> {t.today} - {place.village}</span>
+                  <h2 id="dashboard-heading">{intelligence.todayAction}</h2>
+                  <p>{intelligence.actionReason}</p>
                 </div>
-                <div className="krishi-command-rail">
+                <div className="ops-signal-row">
                   {commandCards.map((item) => {
                     const CommandIcon = item.icon;
+                    const destination = item.key === 'weather' ? 'weather' : item.key === 'market' ? 'mandi' : 'farm';
                     return (
-                      <button key={item.key} type="button" onClick={() => setActiveTab(item.key === 'weather' ? 'weather' : item.key === 'market' ? 'mandi' : 'farm')} className={`krishi-command-card krishi-command-${item.tone}`}>
-                        <span className="krishi-command-icon"><CommandIcon className="h-4 w-4" /></span>
-                        <span className="min-w-0"><small>{item.label}</small><strong>{item.title}</strong><em>{item.detail}</em></span>
+                      <button key={item.key} type="button" onClick={() => setActiveTab(destination)} className={'ops-signal ops-signal-' + item.tone}>
+                        <span className="ops-signal-icon"><CommandIcon className="h-4 w-4" /></span>
+                        <span><small>{item.label}</small><strong>{item.title}</strong></span>
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     );
@@ -287,67 +302,92 @@ export default function Dashboard() {
                 </div>
               </section>
 
-              <div className="google-action-grid">
-                <button type="button" onClick={() => setActiveTab('weather')} className="google-action-card">
-                  <span className="google-icon google-icon-amber"><AlertTriangle className="h-5 w-5" /></span>
-                  <span><small>{t.alerts}</small><strong>{topAlert?.title || t.noMajorRisk}</strong></span>
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <button type="button" onClick={() => setActiveTab('mandi')} className="google-action-card">
-                  <span className="google-icon google-icon-blue"><TrendingUp className="h-5 w-5" /></span>
-                  <span><small>{t.mandi}</small><strong>{market.district}</strong></span>
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <button type="button" onClick={() => setActiveTab('farm')} className="google-action-card">
-                  <span className="google-icon google-icon-green"><Leaf className="h-5 w-5" /></span>
-                  <span><small>{t.bestCrop}</small><strong>{topCrop?.localName || t.addFarmData}</strong></span>
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-
-              <section className="m3-card fertiliser-card">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <span className="section-kicker">{t.fertilizerPlan}</span>
-                    <h3 className="mt-2 text-lg font-black text-[var(--lf-ink)]">{intelligence.fertilizerPlan.crop}</h3>
-                    <p className="mt-2 text-sm font-semibold leading-relaxed text-[#4F5B54]">{intelligence.fertilizerPlan.priority}</p>
+              <aside className="ops-readiness-panel" aria-label={t.score}>
+                <div className="ops-panel-heading">
+                  <span><Activity className="h-4 w-4" /> {t.myFarm}</span>
+                  <small>{place.village}</small>
+                </div>
+                <div className="ops-readiness-body">
+                  <div className="ops-readiness-ring" style={{ background: 'conic-gradient(#137333 ' + intelligence.readinessScore + '%, #e4ebe6 0)' }}>
+                    <div><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
                   </div>
-                  <span className="google-icon google-icon-green"><Leaf className="h-5 w-5" /></span>
+                  <div className="ops-readiness-metrics">
+                    <div><ThermometerSun className="h-4 w-4" /><span><small>{t.weather}</small><strong>{currentWeather ? Math.round(currentWeather.temperatureC) + ' C' : '--'}</strong></span></div>
+                    <div><CloudRain className="h-4 w-4" /><span><small>{t.rain}</small><strong>{currentWeather ? Math.round(currentWeather.precipProbability) + '%' : '--'}</strong></span></div>
+                    <div><Wind className="h-4 w-4" /><span><small>km/h</small><strong>{currentWeather ? Math.round(currentWeather.windSpeedKmh) : '--'}</strong></span></div>
+                    <div><BarChart3 className="h-4 w-4" /><span><small>{t.mandi}</small><strong>{market.district}</strong></span></div>
+                  </div>
                 </div>
-                <div className="mt-3 grid gap-2 text-xs font-bold text-[#526058] sm:grid-cols-2">
-                  <p className="rounded-2xl bg-[#F4FAF6] p-3">{t.mineral}: {intelligence.fertilizerPlan.mineralCategory}</p>
-                  <p className="rounded-2xl bg-[#FFF8EA] p-3">{t.timing}: {intelligence.fertilizerPlan.timing}</p>
+              </aside>
+
+              <section className="ops-outlook-panel">
+                <div className="ops-panel-heading">
+                  <span><BarChart3 className="h-4 w-4" /> {t.weather} - {t.sevenDays}</span>
+                  <div className="ops-chart-legend"><span className="ops-legend-rain">{t.rain} %</span><span className="ops-legend-temp">C</span></div>
                 </div>
-                <p className="mt-3 text-[11px] font-bold leading-relaxed text-[#6A756F]">{intelligence.fertilizerPlan.safety}</p>
+                <div className="ops-chart">
+                  {outlookData.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={outlookData} margin={{ top: 8, right: 2, bottom: 0, left: 2 }}>
+                        <CartesianGrid stroke="rgba(24,67,51,0.08)" vertical={false} />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#65736b', fontSize: 11, fontWeight: 700 }} />
+                        <YAxis yAxisId="rain" domain={[0, 100]} hide />
+                        <YAxis yAxisId="temp" orientation="right" domain={['dataMin - 4', 'dataMax + 4']} hide />
+                        <Tooltip contentStyle={{ border: '1px solid rgba(24,67,51,.12)', borderRadius: 10, boxShadow: '0 12px 30px rgba(24,67,51,.12)', fontSize: 12 }} cursor={{ fill: 'rgba(26,115,232,.04)' }} />
+                        <Bar yAxisId="rain" dataKey="rain" fill="#8ab4f8" radius={[6, 6, 0, 0]} barSize={18} isAnimationActive={false} />
+                        <Area yAxisId="temp" type="monotone" dataKey="temp" stroke="#137333" strokeWidth={3} fill="rgba(19,115,51,.10)" dot={{ r: 3, fill: '#137333', strokeWidth: 0 }} isAnimationActive={false} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="ops-chart-empty"><RefreshCw className="h-5 w-5 animate-spin" /> {t.loading}</div>
+                  )}
+                </div>
               </section>
 
-              <div className="scan-zone">
+              <section className="ops-action-panel">
+                <div className="ops-panel-heading">
+                  <span><CalendarCheck className="h-4 w-4" /> {t.whatToDo}</span>
+                  <small>{t.today}</small>
+                </div>
+                <div className="ops-action-queue">
+                  <button type="button" onClick={() => setActiveTab('weather')}>
+                    <span className="ops-action-number ops-action-critical">01</span>
+                    <span><small>{t.alerts}</small><strong>{topAlert?.title || t.noMajorRisk}</strong></span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={() => setActiveTab('farm')}>
+                    <span className="ops-action-number">02</span>
+                    <span><small>{t.fertilizerPlan}</small><strong>{intelligence.fertilizerPlan.priority}</strong></span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={() => document.getElementById('crop-scan')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                    <span className="ops-action-number ops-action-blue">03</span>
+                    <span><small>{t.cropDiseaseScan}</small><strong>{t.captureOrUploadCropPhoto}</strong></span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </section>
+
+              <section className="ops-fertilizer-panel">
+                <div className="ops-panel-heading">
+                  <span><Leaf className="h-4 w-4" /> {t.fertilizerPlan}</span>
+                  <strong>{intelligence.fertilizerPlan.crop}</strong>
+                </div>
+                <p className="ops-fertilizer-priority">{intelligence.fertilizerPlan.priority}</p>
+                <div className="ops-fertilizer-facts">
+                  <p><small>{t.mineral}</small><strong>{intelligence.fertilizerPlan.mineralCategory}</strong></p>
+                  <p><small>{t.timing}</small><strong>{intelligence.fertilizerPlan.timing}</strong></p>
+                </div>
+                <p className="ops-safety-note"><ShieldCheck className="h-3.5 w-3.5" /> {intelligence.fertilizerPlan.safety}</p>
+              </section>
+
+              <div id="crop-scan" className="ops-scan-panel">
                 <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} />
               </div>
 
-
-              <section className="farm-pulse-strip" aria-label={t.myFarm}>
-                <div className="farm-pulse-item">
-                  <span className="farm-pulse-icon"><MapPin className="h-4 w-4" /></span>
-                  <span><small>{t.myFarm}</small><strong>{place.village}</strong><em>{place.district}, {place.state}</em></span>
-                </div>
-                <div className="farm-pulse-item">
-                  <span className="farm-pulse-icon farm-pulse-blue"><Navigation className="h-4 w-4" /></span>
-                  <span><small>{t.weather}</small><strong>{currentWeather ? Math.round(currentWeather.temperatureC) + ' C' : '--'}</strong><em>{currentWeather ? Math.round(currentWeather.precipProbability) + '% ' + t.rain + ' · ' + Math.round(currentWeather.windSpeedKmh) + ' km/h' : intelligence.actionReason}</em></span>
-                </div>
-                <div className="farm-pulse-item">
-                  <span className="farm-pulse-icon farm-pulse-amber"><Leaf className="h-4 w-4" /></span>
-                  <span><small>{t.activeCrop}</small><strong>{topCrop?.localName || t.addFarmData}</strong><em>{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} · {farmTwin.region}</em></span>
-                </div>
-                <div className="farm-pulse-item">
-                  <span className="farm-pulse-icon farm-pulse-red"><ShieldCheck className="h-4 w-4" /></span>
-                  <span><small>{t.savedScans}</small><strong>{scans.length}</strong><em>{t.score}: {intelligence.readinessScore}</em></span>
-                </div>
-              </section>
-
-              <details className="m3-card clean-details">
-                <summary><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {t.farmPlan}</span><ChevronDown className="h-4 w-4" /></summary>
-                <div className="mt-4"><FieldPlanner coords={coords} market={market} /></div>
+              <details className="ops-plan-panel">
+                <summary><span><MapPin className="h-4 w-4" /> {t.farmPlan}</span><span className="ops-plan-context">{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {farmTwin.region}</span><ChevronDown className="h-4 w-4" /></summary>
+                <div className="ops-plan-content"><FieldPlanner coords={coords} market={market} /></div>
               </details>
             </div>
           </section>
