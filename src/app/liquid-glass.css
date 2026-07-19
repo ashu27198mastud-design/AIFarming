@@ -2477,6 +2477,11 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   color: #b06000;
 }
 
+.ops-signal > span:not(.ops-signal-icon) {
+  width: 100%;
+  min-width: 0;
+}
+
 .ops-signal small,
 .ops-signal strong {
   display: block;
@@ -2495,6 +2500,18 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   margin-top: 3px;
   font-size: 0.82rem;
   font-weight: 850;
+}
+
+.ops-signal em {
+  display: none;
+  overflow: hidden;
+  color: #77827c;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 650;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ops-readiness-panel {
@@ -2886,13 +2903,63 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
 }
 
 @media (min-width: 1081px) {
+  .living-field-root .app-shell {
+    width: min(1720px, calc(100vw - 32px)) !important;
+    max-width: 1720px !important;
+  }
+
+  .farm-ops-grid {
+    height: max(687px, calc(100svh - 217px));
+    min-height: 687px;
+    grid-template-rows:
+      minmax(205px, 1.08fr)
+      minmax(200px, 1fr)
+      minmax(190px, 0.92fr)
+      minmax(50px, auto);
+  }
+
   .ops-decision-panel,
   .ops-readiness-panel {
     min-height: 205px;
   }
 
   .ops-decision-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     padding: 16px 18px;
+  }
+
+  .ops-readiness-panel,
+  .ops-outlook-panel,
+  .ops-action-panel,
+  .ops-fertilizer-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ops-readiness-body {
+    flex: 1;
+  }
+
+  .ops-chart {
+    height: auto;
+    min-height: 146px;
+    flex: 1;
+  }
+
+  .ops-action-queue {
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    flex: 1;
+  }
+
+  .ops-fertilizer-facts,
+  .ops-safety-note {
+    margin-top: auto;
+  }
+
+  .ops-scan-panel .m3-card {
+    align-content: center;
   }
 
   .ops-decision-copy h2 {
@@ -2944,7 +3011,7 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
 
   .ops-outlook-panel,
   .ops-action-panel {
-    height: 200px;
+    height: 100%;
     min-height: 200px;
   }
 
@@ -2974,7 +3041,7 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   .ops-fertilizer-panel,
   .ops-scan-panel,
   .ops-scan-panel .m3-card {
-    height: 190px;
+    height: 100%;
     min-height: 190px !important;
   }
 
@@ -3083,6 +3150,70 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
 
   .bottom-dock {
     width: min(620px, calc(100vw - 48px)) !important;
+  }
+}
+
+@media (min-width: 1081px) and (min-height: 950px) {
+  .farm-ops-grid {
+    grid-template-rows:
+      230px
+      minmax(260px, 1.12fr)
+      minmax(230px, 1fr)
+      minmax(50px, auto);
+  }
+
+  .ops-decision-panel {
+    justify-content: center;
+    gap: 15px;
+  }
+
+  .ops-decision-copy h2 {
+    font-size: 2.1rem;
+  }
+
+  .ops-signal-row {
+    margin-top: 0;
+  }
+
+  .ops-signal {
+    min-height: 74px;
+  }
+
+  .ops-signal em {
+    display: block;
+    margin-top: 3px;
+  }
+
+  .ops-readiness-body {
+    grid-template-columns: 124px minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .ops-readiness-ring {
+    width: 120px;
+    height: 120px;
+  }
+
+  .ops-readiness-ring > div {
+    width: 92px;
+    height: 92px;
+  }
+
+  .ops-readiness-ring strong {
+    margin-top: 17px;
+    font-size: 1.8rem;
+  }
+
+  .ops-readiness-ring span {
+    margin-top: -14px;
+  }
+
+  .ops-readiness-metrics {
+    gap: 18px 16px;
+  }
+
+  .ops-readiness-metrics strong {
+    font-size: 0.86rem;
   }
 }
 

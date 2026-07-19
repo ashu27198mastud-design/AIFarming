@@ -242,7 +242,7 @@ export default function Dashboard() {
   return (
     <div className={`living-field-root ${theme} flex min-h-screen flex-col items-center`}>
       <div className="living-field-sky-glow" aria-hidden="true" />
-      <div className="app-shell relative z-10 flex min-h-screen w-full max-w-[1240px] flex-col">
+      <div className="app-shell relative z-10 flex min-h-screen w-full max-w-[1720px] flex-col">
         <header className="premium-header sticky top-0 z-30 flex items-center justify-between px-4 py-3">
           <button type="button" onClick={() => setActiveTab('home')} className="flex min-w-0 items-center gap-2.5 text-left">
             <div className="brand-orb flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-[#1F6B4F]">
@@ -294,7 +294,7 @@ export default function Dashboard() {
                     return (
                       <button key={item.key} type="button" onClick={() => setActiveTab(destination)} className={'ops-signal ops-signal-' + item.tone}>
                         <span className="ops-signal-icon"><CommandIcon className="h-4 w-4" /></span>
-                        <span><small>{item.label}</small><strong>{item.title}</strong></span>
+                        <span><small>{item.label}</small><strong>{item.title}</strong><em>{item.detail}</em></span>
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     );
