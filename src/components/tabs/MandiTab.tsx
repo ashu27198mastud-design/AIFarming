@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { Info, MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 const CROPS = [
@@ -127,8 +127,9 @@ export default function MandiTab({ t, lang, market }: Props) {
       {loading && <div className="m3-card text-center text-sm font-medium text-[#5F6368]">{t.loading}</div>}
 
       {current?.dataSource === 'fallback' && (
-        <div className="rounded-2xl bg-[#FEF7E0] p-4 text-sm font-bold leading-relaxed text-[#B06000]">
-          {t.liveMarketKeyMissing}
+        <div className="flex items-start gap-3 rounded-2xl border border-[#DCE8DE] bg-white/75 p-3 text-xs font-semibold leading-relaxed text-[#5F6368] shadow-[0_10px_30px_rgba(60,64,67,0.08)]">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#188038]" aria-hidden="true" />
+          <span>{t.liveMarketKeyMissing}</span>
         </div>
       )}
 
