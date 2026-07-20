@@ -22,6 +22,7 @@ import LatinLeakScanner from '@/components/LatinLeakScanner';
 import ScoreRing from '@/components/ScoreRing';
 import FertilizerGapCard from '@/components/FertilizerGapCard';
 import FieldPlanner from '@/components/FieldPlanner';
+import CommerceHub from '@/components/CommerceHub';
 import HomeTab, { type ScanHistoryItem } from '@/components/tabs/HomeTab';
 import WeatherTab from '@/components/tabs/WeatherTab';
 import MandiTab from '@/components/tabs/MandiTab';
@@ -294,7 +295,7 @@ export default function Dashboard() {
   const currentWeather = forecast?.hourly?.[0];
   const dashboardCopy = DASHBOARD_COPY[lang];
   const displayedScore = forecast ? intelligence.readinessScore : null;
-  const activeSectionLabel = activeTab === 'weather' ? t.weather : activeTab === 'mandi' ? t.mandi : activeTab === 'farm' ? t.myFarm : activeTab === 'tools' ? t.farmPlan : t.home;
+  const activeSectionLabel = activeTab === 'weather' ? t.weather : activeTab === 'mandi' ? t.mandi : activeTab === 'farm' ? t.myFarm : activeTab === 'tools' ? t.farmPlan : activeTab === 'commerce' ? (lang === 'en' ? 'Seller hub' : lang === 'hi' ? 'बिक्री केंद्र' : 'विक्री केंद्र') : t.home;
   const outlookLocale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
   const outlookData = (forecast?.daily ?? []).slice(0, 7).map((day) => ({
     day: new Intl.DateTimeFormat(outlookLocale, { weekday: 'short' }).format(new Date(day.date + 'T00:00:00')),
@@ -520,9 +521,10 @@ export default function Dashboard() {
           <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} lang={lang} market={{ ...market, village: displayLocality, apmcName: marketName }} /></section>
           <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: displayDistrict || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
           <section className={activeTab === 'tools' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'tools'}><FieldPlanner coords={coords} market={market} lang={lang} placeLabel={displayDistrict} /></section>
+          <section className={activeTab === 'commerce' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'commerce'}><CommerceHub lang={lang} placeLabel={displayDistrict} /></section>
         </main>
 
-        <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} locality={displayLocality} userName={userName} />
+        <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} locality={displayLocality} userName={userName} lang={lang} />
       </div>
     </div>
   );

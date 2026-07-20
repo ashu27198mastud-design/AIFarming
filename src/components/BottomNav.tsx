@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { CloudRain, LayoutDashboard, ListChecks, Settings, Sprout, TrendingUp } from 'lucide-react';
-import type { TranslationSet } from '@/lib/i18n';
+import { CloudRain, LayoutDashboard, ListChecks, Settings, Sprout, Store, TrendingUp } from 'lucide-react';
+import type { LanguageCode, TranslationSet } from '@/lib/i18n';
 
-export type TabId = 'home' | 'weather' | 'mandi' | 'farm' | 'tools';
+export type TabId = 'home' | 'weather' | 'mandi' | 'farm' | 'tools' | 'commerce';
 
 type Props = {
   activeTab: TabId;
@@ -12,6 +12,7 @@ type Props = {
   t: TranslationSet;
   locality: string;
   userName: string;
+  lang: LanguageCode;
 };
 
 function initialsFor(name: string): string {
@@ -25,13 +26,15 @@ function initialsFor(name: string): string {
   return initials.toUpperCase() || 'K';
 }
 
-export default function BottomNav({ activeTab, onChange, t, locality, userName }: Props) {
+export default function BottomNav({ activeTab, onChange, t, locality, userName, lang }: Props) {
+  const commerceLabel = lang === 'en' ? 'Seller hub' : lang === 'hi' ? 'बिक्री केंद्र' : 'विक्री केंद्र';
   const items = [
     { id: 'home' as const, label: t.home, icon: LayoutDashboard },
     { id: 'weather' as const, label: t.weather, icon: CloudRain },
     { id: 'mandi' as const, label: t.mandi, icon: TrendingUp },
     { id: 'farm' as const, label: t.myFarm, icon: Sprout },
     { id: 'tools' as const, label: t.farmPlan, icon: ListChecks },
+    { id: 'commerce' as const, label: commerceLabel, icon: Store },
   ];
 
   return (
