@@ -33,7 +33,7 @@ type MandiResponse = {
 type Props = {
   t: TranslationSet;
   lang: string;
-  market: { state: string; district: string; distanceKm: number; village?: string };
+  market: { state: string; district: string; distanceKm: number; village?: string; apmcName?: string };
 };
 
 function parseArrivalDate(value: string): number {
@@ -110,8 +110,8 @@ export default function MandiTab({ t, lang, market }: Props) {
       <section className="m3-card flex items-center justify-between gap-3">
         <div className="min-w-0">
           <span className="section-kicker">{t.nearestMarket}</span>
-          <h2 className="mt-1 truncate text-xl font-bold text-[#202124]">{market.district}</h2>
-          <p className="mt-1 text-xs font-medium text-[#5F6368]">{market.village || market.district} · {market.distanceKm} km</p>
+          <h2 className="mt-1 truncate text-xl font-bold text-[#202124]">{market.apmcName || market.district}</h2>
+          <p className="mt-1 text-xs font-medium text-[#5F6368]">{market.village || market.district} · {market.district} · ~{market.distanceKm} km</p>
         </div>
         <span className="google-icon google-icon-blue"><MapPin className="h-5 w-5" /></span>
       </section>

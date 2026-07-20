@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, CloudRain, Sprout, TrendingUp } from 'lucide-react';
+import { CloudRain, LayoutDashboard, Sprout, TrendingUp } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 export type TabId = 'home' | 'weather' | 'mandi' | 'farm';
@@ -13,7 +13,7 @@ type Props = {
 
 export default function BottomNav({ activeTab, onChange, t }: Props) {
   const items = [
-    { id: 'home' as const, label: t.home, icon: Camera },
+    { id: 'home' as const, label: t.home, icon: LayoutDashboard },
     { id: 'weather' as const, label: t.weather, icon: CloudRain },
     { id: 'mandi' as const, label: t.mandi, icon: TrendingUp },
     { id: 'farm' as const, label: t.myFarm, icon: Sprout },

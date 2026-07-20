@@ -571,10 +571,10 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">{t.captureOrUploadCropPhoto}</h2>
       <p className="mx-auto mb-5 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">{t.photoGuidance}</p>
 
-      <div className="mb-5 grid grid-cols-3 gap-2 text-left">
-        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">{t.symptomStep}</div>
-        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">{t.plantStep}</div>
-        <div className="rounded-2xl border border-zinc-100 bg-white p-3 text-[11px] font-bold text-zinc-600 shadow-sm">{t.lightStep}</div>
+      <div className="capture-tips" aria-label={t.photoGuidance}>
+        <span><Check className="h-3.5 w-3.5" /><span>{t.symptomStep}</span></span>
+        <span><Check className="h-3.5 w-3.5" /><span>{t.plantStep}</span></span>
+        <span><Check className="h-3.5 w-3.5" /><span>{t.lightStep}</span></span>
       </div>
 
       <div className="capture-actions">
@@ -582,39 +582,41 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
           <Camera className="h-5 w-5" />
           <span>{t.startLiveCamera}</span>
         </button>
-        <label className={`capture-action ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
-          <Camera className="h-5 w-5" />
-          <span>{t.takePhonePhoto}</span>
-          <input
-            data-testid="take-phone-photo"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            disabled={disabled || preparing}
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              if (file) void handleFile(file);
-              event.currentTarget.value = '';
-            }}
-          />
-        </label>
-        <label className={`capture-action ${disabled || preparing ? 'pointer-events-none opacity-60' : ''}`}>
-          <ImagePlus className="h-5 w-5" />
-          <span>{t.uploadPhoto}</span>
-          <input
-            data-testid="upload-crop-photo"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            disabled={disabled || preparing}
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              if (file) void handleFile(file);
-              event.currentTarget.value = '';
-            }}
-          />
-        </label>
+        <div className="capture-secondary-actions">
+          <label className={'capture-link ' + (disabled || preparing ? 'pointer-events-none opacity-60' : '')}>
+            <Camera className="h-4 w-4" />
+            <span>{t.takePhonePhoto}</span>
+            <input
+              data-testid="take-phone-photo"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              disabled={disabled || preparing}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (file) void handleFile(file);
+                event.currentTarget.value = '';
+              }}
+            />
+          </label>
+          <span aria-hidden="true">·</span>
+          <label className={'capture-link ' + (disabled || preparing ? 'pointer-events-none opacity-60' : '')}>
+            <ImagePlus className="h-4 w-4" />
+            <span>{t.uploadPhoto}</span>
+            <input
+              data-testid="upload-crop-photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={disabled || preparing}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (file) void handleFile(file);
+                event.currentTarget.value = '';
+              }}
+            />
+          </label>
+        </div>
       </div>
-
       <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">{t.diagnosisDisclaimer}</p>
       {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm">{error}</div>}
     </div>

@@ -54,7 +54,9 @@ const DASHBOARD_COPY: Record<LanguageCode, {
   weatherSafety: string;
   cropFit: string;
   dataCoverage: string;
+  complete: string;
   nearestMarket: string;
+  locationBased: string;
   distance: string;
   cropOpportunity: string;
   compareMarkets: string;
@@ -71,8 +73,10 @@ const DASHBOARD_COPY: Record<LanguageCode, {
     scoreBasis: 'मौसम, फसल और खेत डेटा पर आधारित',
     weatherSafety: 'मौसम सुरक्षा',
     cropFit: 'फसल अनुकूलता',
-    dataCoverage: 'डेटा कवरेज',
-    nearestMarket: 'निकटतम मंडी',
+    dataCoverage: '7 दिन का पूर्वानुमान',
+    complete: 'पूरा',
+    nearestMarket: 'जिला APMC',
+    locationBased: 'GPS अनुमान',
     distance: 'दूरी',
     cropOpportunity: 'फसल अवसर',
     compareMarkets: 'मंडियों की तुलना करें',
@@ -89,8 +93,10 @@ const DASHBOARD_COPY: Record<LanguageCode, {
     scoreBasis: 'Based on weather, crop, and farm data',
     weatherSafety: 'Weather safety',
     cropFit: 'Crop fit',
-    dataCoverage: 'Data coverage',
-    nearestMarket: 'Nearest market',
+    dataCoverage: '7-day forecast',
+    complete: 'Complete',
+    nearestMarket: 'District APMC',
+    locationBased: 'GPS estimate',
     distance: 'Distance',
     cropOpportunity: 'Crop opportunity',
     compareMarkets: 'Compare markets',
@@ -107,8 +113,10 @@ const DASHBOARD_COPY: Record<LanguageCode, {
     scoreBasis: 'हवामान, पीक आणि शेत डेटावर आधारित',
     weatherSafety: 'हवामान सुरक्षा',
     cropFit: 'पीक अनुकूलता',
-    dataCoverage: 'डेटा कव्हरेज',
-    nearestMarket: 'जवळची मंडी',
+    dataCoverage: '७ दिवसांचा अंदाज',
+    complete: 'पूर्ण',
+    nearestMarket: 'जिल्हा APMC',
+    locationBased: 'GPS अंदाज',
     distance: 'अंतर',
     cropOpportunity: 'पीक संधी',
     compareMarkets: 'मंड्यांची तुलना करा',
@@ -118,10 +126,10 @@ const DASHBOARD_COPY: Record<LanguageCode, {
     watch: 'लक्ष ठेवा',
   },
 };
-function readSavedLanguage(): LanguageCode {
-  if (typeof window === 'undefined') return 'hi';
+function readSavedLanguage(fallback: LanguageCode = 'hi'): LanguageCode {
+  if (typeof window === 'undefined') return fallback;
   const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
-  return savedLang && TRANSLATIONS[savedLang] ? savedLang : 'hi';
+  return savedLang && TRANSLATIONS[savedLang] ? savedLang : fallback;
 }
 function readSavedScans(): ScanHistoryItem[] {
   if (typeof window === 'undefined') return [];
@@ -139,13 +147,13 @@ export default function Dashboard() {
   const [authReady, setAuthReady] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [lang, setLang] = useState<LanguageCode>('hi');
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'searching' | 'success' | 'error'>('idle');
   const [coords, setCoords] = useState(DEFAULT_COORDS);
   const [scans, setScans] = useState<ScanHistoryItem[]>([]);
   const [forecast, setForecast] = useState<WeatherForecast | null>(null);
   const [theme, setTheme] = useState('theme-day');
   const [place, setPlace] = useState({ village: 'Nashik', district: 'Nashik', state: 'Maharashtra', source: 'fallback' });
+  const [apmcDirectory, setApmcDirectory] = useState<{ name: string; dataSource: 'live' | 'fallback' }>({ name: '', dataSource: 'fallback' });
 
   useEffect(() => {
     const updateTheme = () => {
@@ -162,15 +170,16 @@ export default function Dashboard() {
 
   const t = TRANSLATIONS[lang];
   const market = useMemo(() => resolveGpsMarket(coords.lat, coords.lng), [coords.lat, coords.lng]);
+  const resolvedDistrict = place.district.replace(/\s+District$/i, '').trim() || market.district;
   const intelligence = useMemo(
     () => buildFarmIntelligence({
       coords,
       forecast,
       scans,
-      farm: { region: farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares },
+      farm: { region: resolvedDistrict || place.state || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares },
       lang,
     }),
-    [coords, farmTwin.farmSizeHectares, farmTwin.region, forecast, lang, scans],
+    [coords, farmTwin.farmSizeHectares, farmTwin.region, forecast, lang, place.state, resolvedDistrict, scans],
   );
 
   const topAlert = intelligence.preventiveAlerts[0];
@@ -189,7 +198,7 @@ export default function Dashboard() {
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(console.error);
     const storageTimer = window.setTimeout(() => {
-      setLang(session.language && TRANSLATIONS[session.language] ? session.language : readSavedLanguage());
+      setLang(readSavedLanguage(session.language && TRANSLATIONS[session.language] ? session.language : 'hi'));
       setScans(readSavedScans());
       if (session.coords) {
         setCoords(session.coords);
@@ -209,8 +218,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     document.documentElement.lang = lang;
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
-  }, [lang]);
+    if (authReady) localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+  }, [authReady, lang]);
 
   useEffect(() => {
     if (!authReady) return undefined;
@@ -239,6 +248,26 @@ export default function Dashboard() {
     return () => controller.abort();
   }, [coords.lat, coords.lng, authReady, market.district, market.state]);
 
+  useEffect(() => {
+    if (!authReady || !place.state || !resolvedDistrict) return undefined;
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      state: place.state,
+      district: resolvedDistrict,
+      language: lang,
+    });
+    fetch('/api/apmc?' + params.toString(), { signal: controller.signal })
+      .then((response) => response.json())
+      .then((payload: { apmcs?: Array<{ name: string }>; dataSource?: 'live' | 'fallback' }) => {
+        const first = payload.apmcs?.[0];
+        setApmcDirectory({
+          name: first?.name || market.district + ' APMC',
+          dataSource: first ? 'live' : 'fallback',
+        });
+      })
+      .catch(() => setApmcDirectory({ name: market.district + ' APMC', dataSource: 'fallback' }));
+    return () => controller.abort();
+  }, [authReady, lang, market.district, place.state, resolvedDistrict]);
   const locate = () => {
     if (!navigator.geolocation) return setGpsStatus('error');
     setGpsStatus('searching');
@@ -271,7 +300,8 @@ export default function Dashboard() {
   const outlookLocale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
   const outlookData = (forecast?.daily ?? []).slice(0, 7).map((day) => ({
     day: new Intl.DateTimeFormat(outlookLocale, { weekday: 'short' }).format(new Date(day.date + 'T00:00:00')),
-    rain: Math.round(day.precipProbability),
+    rainMm: Number(day.precipMm.toFixed(1)),
+    rainChance: Math.round(day.precipProbability),
     temp: Math.round(day.maxTempC),
     wind: Math.round(day.windSpeedKmh),
     safe: day.precipProbability < 35 && day.windSpeedKmh < 16,
@@ -284,6 +314,7 @@ export default function Dashboard() {
   const dataCoverage = Math.min(100, Math.round(outlookData.length / 7 * 100));
   const marketSignal = topCrop?.profitSignal ?? 'watch';
   const marketSignalLabel = dashboardCopy[marketSignal];
+  const marketName = apmcDirectory.name || market.district + ' APMC';
   const commandCards = [
     {
       key: 'weather',
@@ -304,8 +335,8 @@ export default function Dashboard() {
     {
       key: 'market',
       label: t.mandi,
-      title: market.district,
-      detail: currentWeather ? Math.round(currentWeather.precipProbability) + '% ' + t.rain + ' - ' + Math.round(currentWeather.windSpeedKmh) + ' km/h' : intelligence.fertilizerPlan.timing,
+      title: marketName,
+      detail: apmcDirectory.dataSource === 'live' ? dashboardCopy.live : dashboardCopy.locationBased + ' · ~' + market.distanceKm + ' km',
       icon: BarChart3,
       tone: 'watch',
     },
@@ -344,19 +375,16 @@ export default function Dashboard() {
             <button type="button" onClick={locate} disabled={gpsStatus === 'searching'} className="glass-icon-button flex h-10 w-10 items-center justify-center rounded-full" aria-label="Use GPS">
               {gpsStatus === 'searching' ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
             </button>
-            <div className="relative">
-              <button type="button" onClick={() => setLangMenuOpen((value) => !value)} className="language-pill flex h-10 items-center gap-1 rounded-full px-3 text-xs font-semibold">
-                {LANGUAGES.find((item) => item.code === lang)?.name}<ChevronDown className="h-3.5 w-3.5" />
-              </button>
-              {langMenuOpen && (
-                <div className="absolute right-0 z-50 mt-2 w-40 overflow-hidden rounded-2xl border border-[#E4E7E5] bg-white p-1.5 shadow-xl">
-                  {LANGUAGES.map((item) => (
-                    <button key={item.code} type="button" onClick={() => { setLang(item.code); setLangMenuOpen(false); }} className={`block w-full rounded-xl px-3 py-2 text-left text-sm font-medium ${lang === item.code ? 'bg-[#E8F0FE] text-[#1967D2]' : 'text-[#3C4043] hover:bg-[#F1F3F4]'}`}>
-                      {item.name}
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="language-select-wrap">
+              <select
+                value={lang}
+                onChange={(event) => setLang(event.target.value as LanguageCode)}
+                className="language-pill h-10 appearance-none rounded-full py-0 pl-3 pr-8 text-xs font-semibold"
+                aria-label="Language"
+              >
+                {LANGUAGES.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+              </select>
+              <ChevronDown className="language-select-icon h-3.5 w-3.5" aria-hidden="true" />
             </div>
           </div>
         </header>
@@ -374,9 +402,9 @@ export default function Dashboard() {
                     <h2 id="dashboard-heading">{intelligence.todayAction}</h2>
                     <p>{intelligence.actionReason}</p>
                   </div>
-                  <aside className={safeDay ? 'ops-safe-window' : 'ops-safe-window ops-safe-window-risk'}>
+                  <aside className={!outlookData.length ? 'ops-safe-window ops-safe-window-pending' : safeDay ? 'ops-safe-window' : 'ops-safe-window ops-safe-window-risk'}>
                     <span><CalendarCheck className="h-4 w-4" /> {dashboardCopy.safeWindow}</span>
-                    <strong>{safeDay ? dashboardCopy.safeOn + ': ' + safeDay.day : dashboardCopy.noSafeWindow}</strong>
+                    <strong>{!outlookData.length ? t.loading : safeDay ? dashboardCopy.safeOn + ': ' + safeDay.day : dashboardCopy.noSafeWindow}</strong>
                     <p><CloudRain className="h-3.5 w-3.5" /> {currentWeather ? Math.round(currentWeather.precipProbability) + '%' : '--'} <Wind className="h-3.5 w-3.5" /> {currentWeather ? Math.round(currentWeather.windSpeedKmh) + ' km/h' : '--'}</p>
                     <button type="button" onClick={() => setActiveTab('weather')}>{dashboardCopy.viewForecast}<ChevronRight className="h-4 w-4" /></button>
                   </aside>
@@ -402,8 +430,8 @@ export default function Dashboard() {
                   <small>{place.village}</small>
                 </div>
                 <div className="ops-readiness-body">
-                  <div className="ops-readiness-ring" style={{ background: 'conic-gradient(#137333 ' + intelligence.readinessScore + '%, #e4ebe6 0)' }}>
-                    <div><strong>{intelligence.readinessScore}</strong><span>{t.score}</span></div>
+                  <div className="ops-readiness-ring" style={{ background: 'conic-gradient(#137333 ' + (forecast ? intelligence.readinessScore : 0) + '%, #e4ebe6 0)' }}>
+                    <div><strong>{forecast ? intelligence.readinessScore : '--'}</strong><span>{t.score}</span></div>
                   </div>
                   <div className="ops-readiness-metrics">
                     <div><ThermometerSun className="h-4 w-4" /><span><small>{t.weather}</small><strong>{currentWeather ? Math.round(currentWeather.temperatureC) + ' C' : '--'}</strong></span></div>
@@ -422,7 +450,7 @@ export default function Dashboard() {
                     <span className="ops-proof-track"><span style={{ width: cropFit + '%' }} /></span>
                   </div>
                   <div>
-                    <span><small>{dashboardCopy.dataCoverage}</small><strong>{outlookData.length}/7</strong></span>
+                    <span><small>{dashboardCopy.dataCoverage}</small><strong>{outlookData.length === 7 ? dashboardCopy.complete : outlookData.length + '/7'}</strong></span>
                     <span className="ops-proof-track"><span style={{ width: dataCoverage + '%' }} /></span>
                   </div>
                 </div>
@@ -432,7 +460,7 @@ export default function Dashboard() {
               <section className="ops-outlook-panel">
                 <div className="ops-panel-heading">
                   <span><BarChart3 className="h-4 w-4" /> {t.weather} - {t.sevenDays}</span>
-                  <div className="ops-chart-legend"><span className="ops-legend-rain">{t.rain} %</span><span className="ops-legend-safe">{dashboardCopy.safeOn}</span><span className="ops-legend-temp">C</span></div>
+                  <div className="ops-chart-legend"><span className="ops-legend-rain">{t.rain} mm</span><span className="ops-legend-safe">{dashboardCopy.safeOn}</span><span className="ops-legend-temp">C</span></div>
                 </div>
                 <div className="ops-chart">
                   {outlookData.length ? (
@@ -440,11 +468,11 @@ export default function Dashboard() {
                       <ComposedChart data={outlookData} margin={{ top: 8, right: 2, bottom: 0, left: 2 }}>
                         <CartesianGrid stroke="rgba(24,67,51,0.08)" vertical={false} />
                         <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#65736b', fontSize: 11, fontWeight: 700 }} />
-                        <YAxis yAxisId="rain" domain={[0, 100]} hide />
+                        <YAxis yAxisId="rain" domain={[0, 'dataMax + 2']} hide />
                         <YAxis yAxisId="temp" orientation="right" domain={['dataMin - 4', 'dataMax + 4']} hide />
-                        <Tooltip contentStyle={{ border: '1px solid rgba(24,67,51,.12)', borderRadius: 10, boxShadow: '0 12px 30px rgba(24,67,51,.12)', fontSize: 12 }} cursor={{ fill: 'rgba(26,115,232,.04)' }} />
-                        <Bar yAxisId="rain" dataKey="rain" radius={[6, 6, 0, 0]} barSize={18} isAnimationActive={false}>
-                          {outlookData.map((day, index) => <Cell key={day.day + index} fill={day.safe ? '#f9ab00' : '#8ab4f8'} />)}
+                        <Tooltip contentStyle={{ border: '1px solid rgba(24,67,51,.12)', borderRadius: 10, boxShadow: '0 12px 30px rgba(24,67,51,.12)', fontSize: 12 }} cursor={{ fill: 'rgba(23,107,69,.05)' }} />
+                        <Bar yAxisId="rain" dataKey="rainMm" name={t.rain + ' (mm)'} radius={[6, 6, 0, 0]} barSize={18} isAnimationActive={false}>
+                          {outlookData.map((day, index) => <Cell key={day.day + index} fill={day.safe ? '#1f7a4c' : '#9fbea9'} />)}
                         </Bar>
                         <Area yAxisId="temp" type="monotone" dataKey="temp" stroke="#137333" strokeWidth={3} fill="rgba(19,115,51,.10)" dot={{ r: 3, fill: '#137333', strokeWidth: 0 }} isAnimationActive={false} />
                       </ComposedChart>
@@ -468,7 +496,7 @@ export default function Dashboard() {
                   </button>
                   <button type="button" onClick={() => setActiveTab('farm')}>
                     <span className="ops-action-number">02</span>
-                    <span><small>{t.fertilizerPlan}</small><strong>{intelligence.fertilizerPlan.priority}</strong></span>
+                    <span><small>{t.timing}</small><strong>{intelligence.fertilizerPlan.timing}</strong></span>
                     <ChevronRight className="h-4 w-4" />
                   </button>
                   <button type="button" onClick={() => document.getElementById('crop-scan')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
@@ -499,11 +527,12 @@ export default function Dashboard() {
               <section className="ops-market-panel">
                 <div className="ops-panel-heading">
                   <span><BarChart3 className="h-4 w-4" /> {dashboardCopy.nearestMarket}</span>
-                  <small>{dashboardCopy.live}</small>
+                  <small>{apmcDirectory.dataSource === 'live' ? dashboardCopy.live : dashboardCopy.locationBased}</small>
                 </div>
                 <div className="ops-market-location">
-                  <div><strong>{market.distanceKm}</strong><span>km</span></div>
-                  <span><small>{dashboardCopy.distance}</small><strong>{market.district}</strong></span>
+                  <MapPin className="h-5 w-5" />
+                  <span><small>{resolvedDistrict}</small><strong>{marketName}</strong></span>
+                  {apmcDirectory.dataSource !== 'live' && <em>~{market.distanceKm} km</em>}
                 </div>
                 <div className="ops-market-crop">
                   <span><small>{dashboardCopy.cropOpportunity}</small><strong>{topCrop?.localName || t.addFarmData}</strong></span>
@@ -513,15 +542,15 @@ export default function Dashboard() {
               </section>
 
               <details className="ops-plan-panel">
-                <summary><span><MapPin className="h-4 w-4" /> {t.farmPlan}</span><span className="ops-plan-context">{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {farmTwin.region}</span><ChevronDown className="h-4 w-4" /></summary>
+                <summary><span><MapPin className="h-4 w-4" /> {t.farmPlan}</span><span className="ops-plan-context">{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {resolvedDistrict || place.state}</span><ChevronDown className="h-4 w-4" /></summary>
                 <div className="ops-plan-content"><FieldPlanner coords={coords} market={market} /></div>
               </details>
             </div>
           </section>
 
           <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}><WeatherTab t={t} lang={lang} coords={coords} /></section>
-          <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} lang={lang} market={{ ...market, village: place.village }} /></section>
-          <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
+          <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} lang={lang} market={{ ...market, village: place.village, apmcName: marketName }} /></section>
+          <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: resolvedDistrict || place.state || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
         </main>
 
         <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} />

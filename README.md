@@ -64,3 +64,17 @@ ANVAYA does not provide pesticide dosage or application-method instructions and 
 ## Deployment
 
 The repository includes a root Dockerfile and Next.js standalone output for Google Cloud Run compatibility. Deployment follows only after the relevant implementation phase passes its acceptance checks.
+
+## UMANG/eNAM APMC Integration
+
+APMC discovery and mandi details are requested only from the server. Configure these values in the deployment secret store or local `.env.local`:
+
+```bash
+UMANG_ENAM_API_KEY=
+UMANG_ENAM_ACCESS_TOKEN=
+UMANG_ENAM_REQUEST_TOKEN=
+UMANG_ENAM_TRACKER=213132
+UMANG_ENAM_USER_ID=09
+```
+
+The UMANG gateway requires both the bearer authorization token and `x-api-key`. When credentials are absent, expired, or forbidden, the dashboard labels the market as a GPS estimate and uses the local fallback rather than presenting it as live data.

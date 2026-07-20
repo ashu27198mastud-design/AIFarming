@@ -115,6 +115,18 @@ const CROP_NAMES: Record<string, LocalizedText> = {
   Cotton: { en: 'Cotton', hi: 'कपास', mr: 'कापूस' },
 };
 
+const SEASON_NAMES: Record<string, LocalizedText> = {
+  'Kharif + protected Rabi': { en: 'Kharif and protected Rabi', hi: 'खरीफ और संरक्षित रबी', mr: 'खरीप आणि संरक्षित रब्बी' },
+  Kharif: { en: 'Kharif', hi: 'खरीफ', mr: 'खरीप' },
+  Rabi: { en: 'Rabi', hi: 'रबी', mr: 'रब्बी' },
+};
+
+const WATER_NEED_NAMES: Record<CropRecommendation['waterNeed'], LocalizedText> = {
+  low: { en: 'low', hi: 'कम', mr: 'कमी' },
+  medium: { en: 'medium', hi: 'मध्यम', mr: 'मध्यम' },
+  high: { en: 'high', hi: 'अधिक', mr: 'जास्त' },
+};
+
 const FERTILIZER_FOCUS: Record<string, Record<LanguageCode, string[]>> = {
   Tomato: {
     en: ['Calcium support', 'Potassium at flowering', 'Balanced nitrogen'],
@@ -147,8 +159,8 @@ const FARM_COPY = {
   en: {
     planCrop: (crop: string, score: number) => 'Plan ' + crop + ' with a ' + score + '/100 crop-profit score.',
     planReason: 'Best recommendation combines season, water need, weather risk, and market potential.',
-    noSpray: 'Do not spray today. Wait for the safe weather window.',
-    noSprayReason: (rain: number, wind: number) => 'Rain risk ' + rain + '% and wind up to ' + wind + ' km/h can reduce spray effectiveness.',
+    noSpray: 'Do not spray today.',
+    noSprayReason: (rain: number, wind: number) => 'Rain ' + rain + '% and wind ' + wind + ' km/h make spraying ineffective now.',
     inspectLeaves: 'Inspect leaves today and prepare preventive disease control.',
     inspectReason: 'Humidity and rain pattern can trigger fungal pressure before visible loss appears.',
     floweringStage: 'Flowering and fruit-set planning',
@@ -172,8 +184,8 @@ const FARM_COPY = {
   hi: {
     planCrop: (crop: string, score: number) => crop + ' की योजना बनाएं। फसल लाभ स्कोर ' + score + '/100 है।',
     planReason: 'सलाह मौसम, पानी की जरूरत, रोग जोखिम और मंडी संभावना को मिलाकर बनाई गई है।',
-    noSpray: 'आज छिड़काव न करें। सुरक्षित मौसम खिड़की का इंतजार करें।',
-    noSprayReason: (rain: number, wind: number) => 'बारिश जोखिम ' + rain + '% और हवा ' + wind + ' km/h तक है, इससे छिड़काव का असर घट सकता है।',
+    noSpray: 'आज छिड़काव न करें।',
+    noSprayReason: (rain: number, wind: number) => 'बारिश ' + rain + '% और हवा ' + wind + ' km/h है। अभी छिड़काव असरदार नहीं होगा।',
     inspectLeaves: 'आज पत्तियों की जांच करें और रोग से बचाव की तैयारी रखें।',
     inspectReason: 'नमी और बारिश का पैटर्न दिखने वाले नुकसान से पहले फफूंद दबाव बढ़ा सकता है।',
     floweringStage: 'फूल और फल बनने की योजना',
@@ -197,8 +209,8 @@ const FARM_COPY = {
   mr: {
     planCrop: (crop: string, score: number) => crop + ' साठी योजना करा. पीक-लाभ स्कोर ' + score + '/100 आहे.',
     planReason: 'सल्ला हंगाम, पाण्याची गरज, हवामान धोका आणि बाजार शक्यता पाहून दिला आहे.',
-    noSpray: 'आज फवारणी करू नका. सुरक्षित हवामान वेळेची वाट पाहा.',
-    noSprayReason: (rain: number, wind: number) => 'पावसाचा धोका ' + rain + '% आणि वारा ' + wind + ' km/h पर्यंत आहे, त्यामुळे फवारणीचा परिणाम कमी होऊ शकतो.',
+    noSpray: 'आज फवारणी करू नका.',
+    noSprayReason: (rain: number, wind: number) => 'पाऊस ' + rain + '% आणि वारा ' + wind + ' km/h आहे. सध्या फवारणी परिणामकारक ठरणार नाही.',
     inspectLeaves: 'आज पानांची तपासणी करा आणि रोग प्रतिबंधाची तयारी ठेवा.',
     inspectReason: 'आर्द्रता आणि पावसाचा नमुना दिसणाऱ्या नुकसानीपूर्वी बुरशीचा दबाव वाढवू शकतो.',
     floweringStage: 'फुलोरा आणि फळधारणा योजना',
@@ -227,6 +239,35 @@ function cropName(crop: string, lang: LanguageCode): string {
 
 function fertilizerFocusFor(crop: string, lang: LanguageCode): string[] {
   return FERTILIZER_FOCUS[crop]?.[lang] ?? FERTILIZER_FOCUS[crop]?.en ?? [];
+}
+
+function recommendationReasons(
+  season: string,
+  waterNeed: CropRecommendation['waterNeed'],
+  score: number,
+  lang: LanguageCode,
+): string[] {
+  const seasonName = SEASON_NAMES[season]?.[lang] ?? season;
+  const waterName = WATER_NEED_NAMES[waterNeed][lang];
+  if (lang === 'mr') {
+    return [
+      seasonName + ' हंगामासाठी योग्य',
+      waterName + ' पाण्याची गरज सध्याच्या नियोजनाला योग्य',
+      score >= 75 ? 'नफा आणि वेळेचा मजबूत संकेत' : 'बाजारभाव आणि हवामानावर लक्ष ठेवा',
+    ];
+  }
+  if (lang === 'hi') {
+    return [
+      seasonName + ' मौसम के लिए उपयुक्त',
+      waterName + ' पानी की जरूरत मौजूदा योजना के अनुकूल',
+      score >= 75 ? 'लाभ और समय का मजबूत संकेत' : 'मंडी भाव और मौसम पर नजर रखें',
+    ];
+  }
+  return [
+    seasonName + ' season fit',
+    waterName + ' water demand suits the current plan',
+    score >= 75 ? 'Strong profit and timing signal' : 'Watch price and weather before committing',
+  ];
 }
 
 function maxDaily(days: DailyWeather[], field: keyof Pick<DailyWeather, 'precipProbability' | 'windSpeedKmh' | 'maxTempC'>): number {
@@ -272,11 +313,7 @@ function buildCropRecommendations(forecast: WeatherForecast | null, lang: Langua
     const weatherFit = heatRisk > 40 && crop.crop !== 'Cotton' ? 8 : 14;
     const diseasePenalty = rainRisk > 70 ? crop.diseaseSensitivity : Math.round(crop.diseaseSensitivity / 2);
     const score = clamp(36 + crop.marketBase + season + water + weatherFit - diseasePenalty);
-    const reasons = [
-      `${crop.season} season fit`,
-      `${crop.waterNeed} water demand suits current planning`,
-      score >= 75 ? 'Strong profit and timing signal' : 'Needs price and weather monitoring',
-    ];
+    const reasons = recommendationReasons(crop.season, crop.waterNeed, score, lang);
 
     return {
       crop: crop.crop,
@@ -344,12 +381,17 @@ export function buildFarmIntelligence(input: BuildInput): FarmIntelligence {
   const topCrop = cropRecommendations[0];
   const days = input.forecast?.daily ?? [];
   const hourly = input.forecast?.hourly ?? [];
-  const rainRisk = maxDaily(days, 'precipProbability');
-  const windRisk = maxDaily(days, 'windSpeedKmh');
-  const heatRisk = maxDaily(days, 'maxTempC');
+  const currentWeather = hourly[0];
+  const todayWeather = days[0];
+  const rainRisk = currentWeather?.precipProbability ?? todayWeather?.precipProbability ?? 0;
+  const windRisk = currentWeather?.windSpeedKmh ?? todayWeather?.windSpeedKmh ?? 0;
+  const heatRisk = currentWeather?.temperatureC ?? todayWeather?.maxTempC ?? 0;
+  const weeklyRainRisk = maxDaily(days, 'precipProbability');
   const humidHours = hourly.filter((hour) => hour.humidity > 82).length;
-  const diseaseRisk: FarmIntelligence['diseaseRisk'] = rainRisk > 70 || humidHours > 10 ? 'high' : rainRisk > 40 || humidHours > 4 ? 'medium' : 'low';
-  const readinessScore = clamp(88 - (rainRisk > 60 ? 14 : 0) - (windRisk > 28 ? 10 : 0) - (heatRisk > 39 ? 8 : 0) + Math.round(topCrop.score / 10));
+  const diseaseRisk: FarmIntelligence['diseaseRisk'] = weeklyRainRisk > 70 || humidHours > 10 ? 'high' : weeklyRainRisk > 40 || humidHours > 4 ? 'medium' : 'low';
+  const weatherSafety = clamp(100 - rainRisk - Math.max(0, windRisk - 12) * 3 - (heatRisk > 39 ? 12 : 0));
+  const forecastCoverage = clamp((days.length / 7) * 100);
+  const readinessScore = clamp(weatherSafety * 0.5 + topCrop.score * 0.3 + forecastCoverage * 0.2);
 
   let todayAction = copy.planCrop(topCrop.localName, topCrop.score);
   let actionReason = copy.planReason;
