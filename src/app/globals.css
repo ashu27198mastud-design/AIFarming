@@ -1407,3 +1407,28 @@ body {
     transform: none;
   }
 }
+
+
+/* Shared dashboard glass surfaces. */
+.premium-glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 16, 0.04),
+    0 12px 32px rgba(16, 24, 16, 0.06) !important;
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.premium-glass-card-raised {
+  box-shadow:
+    0 1px 2px rgba(16, 24, 16, 0.04),
+    0 16px 40px rgba(16, 24, 16, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+@media (max-width: 1023px) {
+  .premium-glass-card {
+    backdrop-filter: blur(8px) saturate(1.15);
+  }
+}

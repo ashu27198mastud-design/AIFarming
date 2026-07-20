@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronRight,
   CloudRain,
-  Leaf,
   MapPin,
   Navigation,
   RefreshCw,
@@ -18,25 +17,20 @@ import {
   ThermometerSun,
   Wind,
 } from 'lucide-react';
-import {
-  Area,
-  Bar,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import BottomNav, { type TabId } from '@/components/BottomNav';
+import LatinLeakScanner from '@/components/LatinLeakScanner';
+import ScoreRing from '@/components/ScoreRing';
+import WeatherOutlookChart from '@/components/WeatherOutlookChart';
 import FieldPlanner from '@/components/FieldPlanner';
+import FertilizerGapCard from '@/components/FertilizerGapCard';
 import HomeTab, { type ScanHistoryItem } from '@/components/tabs/HomeTab';
 import WeatherTab from '@/components/tabs/WeatherTab';
 import MandiTab from '@/components/tabs/MandiTab';
 import FarmTab from '@/components/tabs/FarmTab';
 import { buildFarmIntelligence } from '@/lib/farm-intelligence';
 import { readAuthSession } from '@/lib/auth-session';
+import { formatLocality, formatMarketName } from '@/lib/locality';
+import { getScoreSemantic } from '@/lib/score-semantics';
 import { LANGUAGES, TRANSLATIONS, resolveGpsMarket, resolveGpsToLanguage, type LanguageCode } from '@/lib/i18n';
 import { useFarmStore } from '@/store/farmStore';
 import type { WeatherForecast } from '@/types';
@@ -76,7 +70,7 @@ const DASHBOARD_COPY: Record<LanguageCode, {
     dataCoverage: '7 दिन का पूर्वानुमान',
     complete: 'पूरा',
     nearestMarket: 'जिला APMC',
-    locationBased: 'GPS अनुमान',
+    locationBased: 'जीपीएस अनुमान',
     distance: 'दूरी',
     cropOpportunity: 'फसल अवसर',
     compareMarkets: 'मंडियों की तुलना करें',
@@ -116,7 +110,7 @@ const DASHBOARD_COPY: Record<LanguageCode, {
     dataCoverage: '७ दिवसांचा अंदाज',
     complete: 'पूर्ण',
     nearestMarket: 'जिल्हा APMC',
-    locationBased: 'GPS अंदाज',
+    locationBased: 'जीपीएस अंदाज',
     distance: 'अंतर',
     cropOpportunity: 'पीक संधी',
     compareMarkets: 'मंड्यांची तुलना करा',
@@ -146,6 +140,7 @@ export default function Dashboard() {
   const { farmTwin } = useFarmStore();
   const [authReady, setAuthReady] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('home');
+  const [userName, setUserName] = useState('Asha Pawar');
   const [lang, setLang] = useState<LanguageCode>('hi');
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'searching' | 'success' | 'error'>('idle');
   const [coords, setCoords] = useState(DEFAULT_COORDS);
@@ -171,15 +166,18 @@ export default function Dashboard() {
   const t = TRANSLATIONS[lang];
   const market = useMemo(() => resolveGpsMarket(coords.lat, coords.lng), [coords.lat, coords.lng]);
   const resolvedDistrict = place.district.replace(/\s+District$/i, '').trim() || market.district;
+  const displayLocality = formatLocality(place, lang);
+  const displayDistrict = formatLocality({ village: resolvedDistrict, district: market.district, state: place.state }, lang);
+  const displayMarketDistrict = formatLocality({ village: market.district, state: market.state }, lang);
   const intelligence = useMemo(
     () => buildFarmIntelligence({
       coords,
       forecast,
       scans,
-      farm: { region: resolvedDistrict || place.state || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares },
+      farm: { region: displayDistrict || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares },
       lang,
     }),
-    [coords, farmTwin.farmSizeHectares, farmTwin.region, forecast, lang, place.state, resolvedDistrict, scans],
+    [coords, displayDistrict, farmTwin.farmSizeHectares, farmTwin.region, forecast, lang, scans],
   );
 
   const topAlert = intelligence.preventiveAlerts[0];
@@ -199,6 +197,7 @@ export default function Dashboard() {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(console.error);
     const storageTimer = window.setTimeout(() => {
       setLang(readSavedLanguage(session.language && TRANSLATIONS[session.language] ? session.language : 'hi'));
+      setUserName(session.name || 'Kisan');
       setScans(readSavedScans());
       if (session.coords) {
         setCoords(session.coords);
@@ -234,7 +233,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!authReady) return undefined;
     const controller = new AbortController();
-    fetch(`/api/location/reverse?lat=${coords.lat}&lng=${coords.lng}&fallback=${encodeURIComponent(market.district)}`, { signal: controller.signal })
+    fetch(`/api/location/reverse?lat=${coords.lat}&lng=${coords.lng}&fallback=${encodeURIComponent(market.district)}&language=${lang}`, { signal: controller.signal })
       .then((response) => response.json())
       .then((payload) => {
         const session = readAuthSession();
@@ -246,14 +245,14 @@ export default function Dashboard() {
       })
       .catch(() => setPlace({ village: market.district, district: market.district, state: market.state, source: 'fallback' }));
     return () => controller.abort();
-  }, [coords.lat, coords.lng, authReady, market.district, market.state]);
+  }, [coords.lat, coords.lng, authReady, lang, market.district, market.state]);
 
   useEffect(() => {
-    if (!authReady || !place.state || !resolvedDistrict) return undefined;
+    if (!authReady || !market.state || !market.district) return undefined;
     const controller = new AbortController();
     const params = new URLSearchParams({
-      state: place.state,
-      district: resolvedDistrict,
+      state: market.state,
+      district: market.district,
       language: lang,
     });
     fetch('/api/apmc?' + params.toString(), { signal: controller.signal })
@@ -267,7 +266,7 @@ export default function Dashboard() {
       })
       .catch(() => setApmcDirectory({ name: market.district + ' APMC', dataSource: 'fallback' }));
     return () => controller.abort();
-  }, [authReady, lang, market.district, place.state, resolvedDistrict]);
+  }, [authReady, lang, market.district, market.state]);
   const locate = () => {
     if (!navigator.geolocation) return setGpsStatus('error');
     setGpsStatus('searching');
@@ -297,6 +296,8 @@ export default function Dashboard() {
 
   const currentWeather = forecast?.hourly?.[0];
   const dashboardCopy = DASHBOARD_COPY[lang];
+  const displayedScore = forecast ? intelligence.readinessScore : null;
+  const activeSectionLabel = activeTab === 'weather' ? t.weather : activeTab === 'mandi' ? t.mandi : activeTab === 'farm' ? t.myFarm : t.home;
   const outlookLocale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
   const outlookData = (forecast?.daily ?? []).slice(0, 7).map((day) => ({
     day: new Intl.DateTimeFormat(outlookLocale, { weekday: 'short' }).format(new Date(day.date + 'T00:00:00')),
@@ -314,7 +315,7 @@ export default function Dashboard() {
   const dataCoverage = Math.min(100, Math.round(outlookData.length / 7 * 100));
   const marketSignal = topCrop?.profitSignal ?? 'watch';
   const marketSignalLabel = dashboardCopy[marketSignal];
-  const marketName = apmcDirectory.name || market.district + ' APMC';
+  const marketName = formatMarketName(apmcDirectory.name || market.district + ' APMC', { district: market.district, state: market.state }, lang);
   const commandCards = [
     {
       key: 'weather',
@@ -358,16 +359,21 @@ export default function Dashboard() {
 
   return (
     <div className={`living-field-root ${theme} flex min-h-screen flex-col items-center`}>
+      <LatinLeakScanner locale={lang} />
       <div className="living-field-sky-glow" aria-hidden="true" />
       <div className="app-shell relative z-10 flex min-h-screen w-full max-w-none flex-col">
         <header className="premium-header sticky top-0 z-30 flex items-center justify-between px-4 py-3">
-          <button type="button" onClick={() => setActiveTab('home')} className="flex min-w-0 items-center gap-2.5 text-left">
+          <div className="desktop-header-context">
+            <strong>{activeSectionLabel}</strong>
+            <span>{displayLocality}</span>
+          </div>
+          <button type="button" onClick={() => setActiveTab('home')} className="premium-header-brand flex min-w-0 items-center gap-2.5 text-left">
             <div className="brand-orb flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-[#1F6B4F]">
               <Sprout className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <h1 className="truncate text-[19px] font-bold tracking-[-0.02em] text-[var(--lf-ink)]">{t.title}</h1>
-              <p className="truncate text-[11px] font-medium text-[#6F7478]">{place.village}</p>
+              <p className="truncate text-[11px] font-medium text-[#6F7478]">{displayLocality}</p>
             </div>
           </button>
 
@@ -395,10 +401,10 @@ export default function Dashboard() {
         <main className="premium-main flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
           <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
             <div className="farm-ops-grid">
-              <section className="ops-decision-panel" aria-labelledby="dashboard-heading">
+              <section className="ops-decision-panel premium-glass-card premium-glass-card-raised" aria-labelledby="dashboard-heading">
                 <div className="ops-decision-main">
                   <div className="ops-decision-copy">
-                    <span className="ops-eyebrow"><Sprout className="h-3.5 w-3.5" /> {t.today} - {place.village}</span>
+                    <span className="ops-eyebrow"><Sprout className="h-3.5 w-3.5" /> {t.today} - {displayLocality}</span>
                     <h2 id="dashboard-heading">{intelligence.todayAction}</h2>
                     <p>{intelligence.actionReason}</p>
                   </div>
@@ -424,66 +430,56 @@ export default function Dashboard() {
                 </div>
               </section>
 
-              <aside className="ops-readiness-panel" aria-label={t.score}>
+              <aside className="ops-readiness-panel premium-glass-card premium-glass-card-raised" aria-label={t.score}>
                 <div className="ops-panel-heading">
                   <span><Activity className="h-4 w-4" /> {t.myFarm}</span>
-                  <small>{place.village}</small>
+                  <small>{displayLocality}</small>
                 </div>
                 <div className="ops-readiness-body">
-                  <div className="ops-readiness-ring" style={{ background: 'conic-gradient(#137333 ' + (forecast ? intelligence.readinessScore : 0) + '%, #e4ebe6 0)' }}>
-                    <div><strong>{forecast ? intelligence.readinessScore : '--'}</strong><span>{t.score}</span></div>
-                  </div>
+                  <ScoreRing score={displayedScore} t={t} />
                   <div className="ops-readiness-metrics">
                     <div><ThermometerSun className="h-4 w-4" /><span><small>{t.weather}</small><strong>{currentWeather ? Math.round(currentWeather.temperatureC) + ' C' : '--'}</strong></span></div>
                     <div><CloudRain className="h-4 w-4" /><span><small>{t.rain}</small><strong>{currentWeather ? Math.round(currentWeather.precipProbability) + '%' : '--'}</strong></span></div>
                     <div><Wind className="h-4 w-4" /><span><small>km/h</small><strong>{currentWeather ? Math.round(currentWeather.windSpeedKmh) : '--'}</strong></span></div>
-                    <div><BarChart3 className="h-4 w-4" /><span><small>{t.mandi}</small><strong>{market.district}</strong></span></div>
+                    <div><BarChart3 className="h-4 w-4" /><span><small>{t.mandi}</small><strong>{displayMarketDistrict}</strong></span></div>
                   </div>
                 </div>
                 <div className="ops-readiness-proof" aria-label={dashboardCopy.scoreBasis}>
                   <div>
                     <span><small>{dashboardCopy.weatherSafety}</small><strong>{weatherSafety}%</strong></span>
-                    <span className="ops-proof-track"><span style={{ width: weatherSafety + '%' }} /></span>
+                    <span className="ops-proof-track"><span style={{ width: weatherSafety + '%', backgroundColor: getScoreSemantic(weatherSafety).color }} /></span>
                   </div>
                   <div>
                     <span><small>{dashboardCopy.cropFit}</small><strong>{cropFit}%</strong></span>
-                    <span className="ops-proof-track"><span style={{ width: cropFit + '%' }} /></span>
+                    <span className="ops-proof-track"><span style={{ width: cropFit + '%', backgroundColor: getScoreSemantic(cropFit).color }} /></span>
                   </div>
                   <div>
                     <span><small>{dashboardCopy.dataCoverage}</small><strong>{outlookData.length === 7 ? dashboardCopy.complete : outlookData.length + '/7'}</strong></span>
-                    <span className="ops-proof-track"><span style={{ width: dataCoverage + '%' }} /></span>
+                    <span className="ops-proof-track"><span style={{ width: dataCoverage + '%', backgroundColor: getScoreSemantic(dataCoverage).color }} /></span>
                   </div>
                 </div>
                 <p className="ops-score-basis">{dashboardCopy.scoreBasis}</p>
               </aside>
 
-              <section className="ops-outlook-panel">
+              <section className="ops-outlook-panel premium-glass-card">
                 <div className="ops-panel-heading">
                   <span><BarChart3 className="h-4 w-4" /> {t.weather} - {t.sevenDays}</span>
                   <div className="ops-chart-legend"><span className="ops-legend-rain">{t.rain} mm</span><span className="ops-legend-safe">{dashboardCopy.safeOn}</span><span className="ops-legend-temp">C</span></div>
                 </div>
                 <div className="ops-chart">
                   {outlookData.length ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={outlookData} margin={{ top: 8, right: 2, bottom: 0, left: 2 }}>
-                        <CartesianGrid stroke="rgba(24,67,51,0.08)" vertical={false} />
-                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#65736b', fontSize: 11, fontWeight: 700 }} />
-                        <YAxis yAxisId="rain" domain={[0, 'dataMax + 2']} hide />
-                        <YAxis yAxisId="temp" orientation="right" domain={['dataMin - 4', 'dataMax + 4']} hide />
-                        <Tooltip contentStyle={{ border: '1px solid rgba(24,67,51,.12)', borderRadius: 10, boxShadow: '0 12px 30px rgba(24,67,51,.12)', fontSize: 12 }} cursor={{ fill: 'rgba(23,107,69,.05)' }} />
-                        <Bar yAxisId="rain" dataKey="rainMm" name={t.rain + ' (mm)'} radius={[6, 6, 0, 0]} barSize={18} isAnimationActive={false}>
-                          {outlookData.map((day, index) => <Cell key={day.day + index} fill={day.safe ? '#1f7a4c' : '#9fbea9'} />)}
-                        </Bar>
-                        <Area yAxisId="temp" type="monotone" dataKey="temp" stroke="#137333" strokeWidth={3} fill="rgba(19,115,51,.10)" dot={{ r: 3, fill: '#137333', strokeWidth: 0 }} isAnimationActive={false} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
+                    <WeatherOutlookChart
+                      data={outlookData}
+                      ariaLabel={t.weather + ' - ' + t.sevenDays}
+                      rainLabel={t.rain}
+                    />
                   ) : (
                     <div className="ops-chart-empty"><RefreshCw className="h-5 w-5 animate-spin" /> {t.loading}</div>
                   )}
                 </div>
               </section>
 
-              <section className="ops-action-panel">
+              <section className="ops-action-panel premium-glass-card">
                 <div className="ops-panel-heading">
                   <span><CalendarCheck className="h-4 w-4" /> {t.whatToDo}</span>
                   <small>{t.today}</small>
@@ -507,31 +503,20 @@ export default function Dashboard() {
                 </div>
               </section>
 
-              <section className="ops-fertilizer-panel">
-                <div className="ops-panel-heading">
-                  <span><Leaf className="h-4 w-4" /> {t.fertilizerPlan}</span>
-                  <strong>{intelligence.fertilizerPlan.crop}</strong>
-                </div>
-                <p className="ops-fertilizer-priority">{intelligence.fertilizerPlan.priority}</p>
-                <div className="ops-fertilizer-facts">
-                  <p><small>{t.mineral}</small><strong>{intelligence.fertilizerPlan.mineralCategory}</strong></p>
-                  <p><small>{t.timing}</small><strong>{intelligence.fertilizerPlan.timing}</strong></p>
-                </div>
-                <p className="ops-safety-note"><ShieldCheck className="h-3.5 w-3.5" /> {intelligence.fertilizerPlan.safety}</p>
-              </section>
+              <FertilizerGapCard crop={intelligence.fertilizerPlan.crop} language={lang} />
 
               <div id="crop-scan" className="ops-scan-panel">
                 <HomeTab t={t} lang={lang} coords={coords} onAddScan={addScan} />
               </div>
 
-              <section className="ops-market-panel">
+              <section className="ops-market-panel premium-glass-card">
                 <div className="ops-panel-heading">
                   <span><BarChart3 className="h-4 w-4" /> {dashboardCopy.nearestMarket}</span>
                   <small>{apmcDirectory.dataSource === 'live' ? dashboardCopy.live : dashboardCopy.locationBased}</small>
                 </div>
                 <div className="ops-market-location">
                   <MapPin className="h-5 w-5" />
-                  <span><small>{resolvedDistrict}</small><strong>{marketName}</strong></span>
+                  <span><small>{displayDistrict}</small><strong>{marketName}</strong></span>
                   {apmcDirectory.dataSource !== 'live' && <em>~{market.distanceKm} km</em>}
                 </div>
                 <div className="ops-market-crop">
@@ -541,19 +526,19 @@ export default function Dashboard() {
                 <button type="button" onClick={() => setActiveTab('mandi')}>{dashboardCopy.compareMarkets}<ChevronRight className="h-4 w-4" /></button>
               </section>
 
-              <details className="ops-plan-panel">
-                <summary><span><MapPin className="h-4 w-4" /> {t.farmPlan}</span><span className="ops-plan-context">{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {resolvedDistrict || place.state}</span><ChevronDown className="h-4 w-4" /></summary>
+              <details className="ops-plan-panel premium-glass-card">
+                <summary><span><MapPin className="h-4 w-4" /> {t.farmPlan}</span><span className="ops-plan-context">{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {displayDistrict}</span><ChevronDown className="h-4 w-4" /></summary>
                 <div className="ops-plan-content"><FieldPlanner coords={coords} market={market} /></div>
               </details>
             </div>
           </section>
 
           <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}><WeatherTab t={t} lang={lang} coords={coords} /></section>
-          <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} lang={lang} market={{ ...market, village: place.village, apmcName: marketName }} /></section>
-          <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: resolvedDistrict || place.state || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
+          <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} lang={lang} market={{ ...market, village: displayLocality, apmcName: marketName }} /></section>
+          <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: displayDistrict || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
         </main>
 
-        <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} />
+        <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} locality={displayLocality} userName={userName} />
       </div>
     </div>
   );

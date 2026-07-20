@@ -34,6 +34,9 @@ export type TranslationSet = {
   loading: string;
   today: string;
   score: string;
+  scoreDanger: string;
+  scoreWarning: string;
+  scoreGood: string;
   noMajorRisk: string;
   bestCrop: string;
   addFarmData: string;
@@ -146,6 +149,9 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     loading: 'लोड हो रहा है...',
     today: 'आज',
     score: 'स्कोर',
+    scoreDanger: 'धोका',
+    scoreWarning: 'सावधान',
+    scoreGood: 'उत्तम',
     noMajorRisk: 'बड़ा जोखिम नहीं',
     bestCrop: 'बेहतर फसल',
     addFarmData: 'खेत की जानकारी जोड़ें',
@@ -254,6 +260,9 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     loading: 'Loading...',
     today: 'Today',
     score: 'Score',
+    scoreDanger: 'Risk',
+    scoreWarning: 'Caution',
+    scoreGood: 'Good',
     noMajorRisk: 'No major risk',
     bestCrop: 'Best crop',
     addFarmData: 'Add farm data',
@@ -362,6 +371,9 @@ export const TRANSLATIONS: Record<LanguageCode, TranslationSet> = {
     loading: 'लोड होत आहे...',
     today: 'आज',
     score: 'स्कोर',
+    scoreDanger: 'धोका',
+    scoreWarning: 'सावधान',
+    scoreGood: 'उत्तम',
     noMajorRisk: 'मोठा धोका नाही',
     bestCrop: 'योग्य पीक',
     addFarmData: 'शेताची माहिती जोडा',

@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
   const lat = Number(searchParams.get('lat'));
   const lng = Number(searchParams.get('lng'));
   const fallback = searchParams.get('fallback') || 'Location unavailable';
+  const requestedLanguage = searchParams.get('language') || 'en';
+  const language = requestedLanguage === 'mr' ? 'mr-IN,mr,en' : requestedLanguage === 'hi' ? 'hi-IN,hi,en' : 'en-IN,en';
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return NextResponse.json({ village: fallback, district: fallback, state: '', source: 'fallback' }, { status: 400 });
   }
@@ -18,8 +20,12 @@ export async function GET(request: NextRequest) {
     url.searchParams.set('lon', String(lng));
     url.searchParams.set('zoom', '14');
     url.searchParams.set('addressdetails', '1');
+    url.searchParams.set('accept-language', language);
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'KisanMitra-Farm-Assistant/1.0' },
+      headers: {
+        'Accept-Language': language,
+        'User-Agent': 'KisanMitra-Farm-Assistant/1.0',
+      },
       next: { revalidate: 86400 },
     });
     if (!response.ok) throw new Error(`Reverse geocoding returned ${response.status}`);

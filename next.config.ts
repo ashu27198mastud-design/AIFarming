@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ['framer-motion', 'recharts', 'lucide-react'],
+    optimizePackageImports: ['framer-motion', 'lucide-react'],
   },
 };
 

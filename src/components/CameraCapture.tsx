@@ -562,7 +562,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   }
 
   return (
-    <div className="m3-card border-dashed p-7 text-center">
+    <div className="m3-card premium-glass-card border-dashed p-7 text-center">
       {hiddenInputs}
       <div className="camera-launch-orb mx-auto mb-5" aria-hidden="true">
         <Camera className="relative z-10 h-11 w-11" />
