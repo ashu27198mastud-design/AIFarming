@@ -8279,3 +8279,194 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
     font-size: clamp(2rem, 14vw, 3.4rem);
   }
 }
+
+/* Farm inventory and asset valuation pass. */
+.farm-section-head button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 14px;
+  background: rgba(23,107,69,0.09);
+  color: var(--ops-green);
+  padding: 0 13px;
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.farm-inventory-panel,
+.farm-valuation-panel {
+  display: grid;
+  gap: 16px;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.74);
+  padding: 20px;
+}
+
+.farm-inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.farm-inventory-column {
+  display: grid;
+  gap: 12px;
+  min-height: 250px;
+  border: 1px solid rgba(23, 73, 52, 0.1);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.86), rgba(246,252,248,0.72)),
+    radial-gradient(circle at 15% 0%, rgba(255, 166, 66, 0.1), transparent 34%);
+  padding: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 18px 34px rgba(32,49,41,0.055);
+}
+
+.farm-inventory-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #1f2d25;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.farm-inventory-title svg {
+  color: var(--ops-green);
+}
+
+.farm-inventory-list {
+  display: grid;
+  gap: 10px;
+}
+
+.farm-inventory-list div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(23, 73, 52, 0.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.74);
+  padding: 12px;
+}
+
+.farm-inventory-list strong,
+.farm-inventory-list small {
+  display: block;
+  min-width: 0;
+}
+
+.farm-inventory-list strong {
+  overflow: hidden;
+  color: #1f2924;
+  font-size: 0.98rem;
+  font-weight: 940;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.farm-inventory-list small {
+  margin-top: 3px;
+  color: #68766f;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.farm-inventory-list em {
+  color: #14251c;
+  font-size: 0.86rem;
+  font-style: normal;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.farm-valuation-panel {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.88), rgba(245,252,247,0.74)),
+    radial-gradient(circle at 0% 0%, rgba(255, 155, 56, 0.12), transparent 32%),
+    radial-gradient(circle at 100% 20%, rgba(23, 107, 69, 0.12), transparent 34%);
+}
+
+.farm-valuation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.farm-valuation-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #1f2d25;
+  font-size: 1.12rem;
+  font-weight: 950;
+}
+
+.farm-valuation-head svg {
+  color: var(--ops-green);
+}
+
+.farm-valuation-head > strong {
+  color: #0f4225;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  font-weight: 980;
+  line-height: 1;
+}
+
+.farm-valuation-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.farm-valuation-grid article {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(23, 73, 52, 0.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.74);
+  padding: 14px;
+}
+
+.farm-valuation-grid span {
+  color: #68766f;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.farm-valuation-grid strong {
+  color: #1e2c24;
+  font-size: 1.05rem;
+  font-weight: 960;
+}
+
+.farm-valuation-grid small {
+  overflow: hidden;
+  color: #75817b;
+  font-size: 0.72rem;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.farm-valuation-panel > p {
+  color: #65736c;
+  font-size: 0.86rem;
+  font-weight: 780;
+  line-height: 1.45;
+}
+
+@media (max-width: 1280px) {
+  .farm-inventory-grid,
+  .farm-valuation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .farm-valuation-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
