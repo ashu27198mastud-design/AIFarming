@@ -7764,3 +7764,219 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
     justify-items: start;
   }
 }
+
+/* Seller scale-up pass: bigger farmer-readable typography and useful lower canvas. */
+.seller-pro-header {
+  min-height: 150px;
+  padding: 26px 28px;
+}
+
+.seller-pro-title h2 {
+  font-size: clamp(2.6rem, 4vw, 4.8rem);
+}
+
+.seller-pro-title p {
+  max-width: 920px;
+  font-size: 1.08rem;
+}
+
+.seller-pro-location small,
+.seller-pro-kpis small,
+.seller-pro-proof-metrics small {
+  font-size: 0.78rem;
+}
+
+.seller-pro-location strong {
+  font-size: 1.08rem;
+}
+
+.seller-pro-location button,
+.seller-pro-section-head button {
+  min-height: 52px;
+  font-size: 0.98rem;
+}
+
+.seller-pro-tabs {
+  gap: 10px;
+  padding: 10px;
+}
+
+.seller-pro-tabs button {
+  min-height: 54px;
+  padding: 0 18px;
+  font-size: 1.02rem;
+}
+
+.seller-pro-workspace-expanded {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+}
+
+.seller-pro-main {
+  min-height: 610px;
+  padding: 22px;
+}
+
+.seller-pro-section-head span {
+  font-size: 1.35rem;
+}
+
+.seller-pro-section-head p {
+  max-width: 920px;
+  font-size: 1rem;
+}
+
+.seller-pro-grid-rich {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+}
+
+.seller-pro-row-large {
+  min-height: 122px;
+  padding: 18px;
+}
+
+.seller-pro-row-main strong {
+  font-size: 1.22rem;
+}
+
+.seller-pro-row-main small {
+  font-size: 0.88rem;
+}
+
+.seller-pro-row-main p {
+  font-size: 0.88rem;
+}
+
+.seller-pro-row-price strong {
+  font-size: 1.18rem;
+}
+
+.seller-pro-row-price span,
+.seller-pro-row > button {
+  font-size: 0.82rem;
+}
+
+.seller-pro-action-card {
+  padding: 18px;
+}
+
+.seller-pro-action-card small {
+  font-size: 0.8rem;
+}
+
+.seller-pro-action-card strong {
+  font-size: 1.08rem;
+}
+
+.seller-pro-action-card label,
+.seller-pro-proof-upload {
+  min-height: 52px;
+  font-size: 0.95rem;
+}
+
+.seller-pro-action-card p {
+  font-size: 0.9rem;
+}
+
+.seller-pro-kpis article {
+  min-height: 78px;
+}
+
+.seller-pro-kpis strong,
+.seller-pro-proof-metrics strong {
+  font-size: 1.28rem;
+}
+
+.seller-pro-orders-head span {
+  font-size: 1.1rem;
+}
+
+.seller-pro-pipeline span {
+  min-height: 28px;
+  font-size: 0.76rem;
+  line-height: 28px;
+}
+
+.seller-pro-order-list article {
+  padding: 13px;
+}
+
+.seller-pro-order-list strong {
+  font-size: 0.94rem;
+}
+
+.seller-pro-order-list small,
+.seller-pro-order-list button {
+  font-size: 0.78rem;
+}
+
+.seller-smart-strip {
+  display: grid;
+  gap: 12px;
+  margin-top: 2px;
+  border: 1px solid rgba(23, 73, 52, 0.1);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.82), rgba(245,252,248,0.74)),
+    radial-gradient(circle at 0% 50%, rgba(255, 153, 45, 0.1), transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(23, 107, 69, 0.1), transparent 32%);
+  padding: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 18px 36px rgba(32,49,41,0.055);
+}
+
+.seller-smart-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #1f2d25;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.seller-smart-head svg {
+  color: #b66b1e;
+}
+
+.seller-smart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.seller-smart-grid article {
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(23, 73, 52, 0.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.72);
+  padding: 14px;
+}
+
+.seller-smart-grid strong {
+  color: var(--ops-green);
+  font-size: 1.25rem;
+  font-weight: 960;
+}
+
+.seller-smart-grid span {
+  color: #203129;
+  font-size: 0.96rem;
+  font-weight: 930;
+}
+
+.seller-smart-grid p {
+  color: #65736c;
+  font-size: 0.84rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+@media (max-width: 1280px) {
+  .seller-pro-workspace-expanded,
+  .seller-pro-grid-rich {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-smart-grid {
+    grid-template-columns: 1fr;
+  }
+}
