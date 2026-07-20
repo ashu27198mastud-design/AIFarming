@@ -36,11 +36,7 @@ type CommerceCopy = {
   live: string;
   draft: string;
   verified: string;
-  pending: string;
   grade: string;
-  fat: string;
-  protein: string;
-  a2: string;
   addCertificate: string;
   addMilkReport: string;
   addBirdBatch: string;
@@ -55,14 +51,15 @@ type CommerceCopy = {
   proofWallet: string;
   quality: string;
   locationTrust: string;
-  todaysFocus: string;
-  readyToSell: string;
+  activeListings: string;
+  nextAction: string;
+  performance: string;
 };
 
 const COPY: Record<LanguageCode, CommerceCopy> = {
   en: {
     title: 'Seller Hub',
-    subtitle: 'Choose one line of business and manage it like a focused mini dashboard.',
+    subtitle: 'Manage crop, dairy, poultry, animals and proof from one simple selling desk.',
     locality: 'Selling from',
     primary: 'Create listing',
     earnings: 'Season earnings',
@@ -71,11 +68,7 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     live: 'Live',
     draft: 'Draft',
     verified: 'Verified',
-    pending: 'Pending',
     grade: 'Grade',
-    fat: 'Fat',
-    protein: 'Protein',
-    a2: 'A2 claim',
     addCertificate: 'Add certificate',
     addMilkReport: 'Add milk test',
     addBirdBatch: 'Add batch photo',
@@ -83,11 +76,11 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     smallNote: 'Proof builds buyer trust: grade, certificate, scan history, milk test, animal type and delivery promise.',
     sectionLabel: { crop: 'Crop sale', milk: 'Milk products', poultry: 'Eggs & poultry', animals: 'Live animals', proof: 'Certificates' },
     sectionHint: {
-      crop: 'Sell organic and fresh produce with certificate, photo and mandi-linked price.',
-      milk: 'Sell milk, ghee, paneer and curd with fat, protein, A2 and animal type proof.',
-      poultry: 'Sell eggs, hens, chicks and poultry lots with batch photos.',
-      animals: 'List goats, cows, buffalo, pigs and other animals with verified photos.',
-      proof: 'Keep certificates, reports and trust signals in one wallet.',
+      crop: 'Fresh and organic produce with mandi-linked pricing.',
+      milk: 'Milk, ghee, paneer and curd with fat, protein and A2 proof.',
+      poultry: 'Eggs, hens, chicks and poultry lots with batch photos.',
+      animals: 'Goats, cows, buffalo, pigs and verified farm animals.',
+      proof: 'Certificates, reports and trust signals for every sale.',
     },
     sectionCta: { crop: 'Add crop sale', milk: 'Add milk product', poultry: 'Add poultry lot', animals: 'Add animal listing', proof: 'Upload proof' },
     items: {
@@ -115,14 +108,15 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     ],
     pipeline: ['New', 'Accepted', 'Ready', 'On road', 'Done'],
     proofWallet: 'Proof wallet',
-    quality: 'Quality',
+    quality: 'Quality proof',
     locationTrust: 'Local verified',
-    todaysFocus: 'Today focus',
-    readyToSell: 'Ready to sell',
+    activeListings: 'Active listings',
+    nextAction: 'Next action',
+    performance: 'Performance',
   },
   hi: {
     title: 'बिक्री केंद्र',
-    subtitle: 'एक व्यवसाय लाइन चुनें और उसे साफ मिनी डैशबोर्ड की तरह चलाएं.',
+    subtitle: 'फसल, डेयरी, पोल्ट्री, पशु और प्रमाण को एक सरल बिक्री डेस्क से संभालें.',
     locality: 'बिक्री स्थान',
     primary: 'नई बिक्री जोड़ें',
     earnings: 'सीजन कमाई',
@@ -131,11 +125,7 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     live: 'लाइव',
     draft: 'ड्राफ्ट',
     verified: 'सत्यापित',
-    pending: 'बाकी',
     grade: 'ग्रेड',
-    fat: 'फैट',
-    protein: 'प्रोटीन',
-    a2: 'A2 दावा',
     addCertificate: 'प्रमाणपत्र जोड़ें',
     addMilkReport: 'दूध जांच जोड़ें',
     addBirdBatch: 'बैच फोटो जोड़ें',
@@ -143,11 +133,11 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     smallNote: 'ग्रेड, प्रमाणपत्र, स्कैन इतिहास, दूध जांच, पशु प्रकार और डिलीवरी वादा खरीदार भरोसा बनाते हैं.',
     sectionLabel: { crop: 'फसल बिक्री', milk: 'दूध उत्पाद', poultry: 'अंडे व पोल्ट्री', animals: 'जीवित पशु', proof: 'प्रमाणपत्र' },
     sectionHint: {
-      crop: 'ऑर्गेनिक और ताजी उपज प्रमाणपत्र, फोटो और मंडी से जुड़े भाव के साथ बेचें.',
-      milk: 'दूध, घी, पनीर, दही को फैट, प्रोटीन, A2 और पशु प्रकार प्रमाण के साथ बेचें.',
-      poultry: 'अंडे, मुर्गी, चूजे और पोल्ट्री लॉट बैच फोटो के साथ बेचें.',
-      animals: 'बकरी, गाय, भैंस, सूअर और अन्य पशु सत्यापित फोटो के साथ जोड़ें.',
-      proof: 'प्रमाणपत्र, रिपोर्ट और भरोसा संकेत एक वॉलेट में रखें.',
+      crop: 'ताजी और ऑर्गेनिक उपज मंडी से जुड़े भाव के साथ.',
+      milk: 'दूध, घी, पनीर, दही: फैट, प्रोटीन और A2 प्रमाण के साथ.',
+      poultry: 'अंडे, मुर्गी, चूजे और पोल्ट्री लॉट बैच फोटो के साथ.',
+      animals: 'बकरी, गाय, भैंस, सूअर और सत्यापित खेत पशु.',
+      proof: 'हर बिक्री के लिए प्रमाणपत्र, रिपोर्ट और भरोसा संकेत.',
     },
     sectionCta: { crop: 'फसल बिक्री जोड़ें', milk: 'दूध उत्पाद जोड़ें', poultry: 'पोल्ट्री लॉट जोड़ें', animals: 'पशु लिस्टिंग जोड़ें', proof: 'प्रमाण अपलोड' },
     items: {
@@ -175,14 +165,15 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     ],
     pipeline: ['नया', 'स्वीकार', 'तैयार', 'रास्ते में', 'पूर्ण'],
     proofWallet: 'प्रमाण वॉलेट',
-    quality: 'गुणवत्ता',
+    quality: 'गुणवत्ता प्रमाण',
     locationTrust: 'स्थानीय सत्यापित',
-    todaysFocus: 'आज का ध्यान',
-    readyToSell: 'बिक्री के लिए तैयार',
+    activeListings: 'सक्रिय बिक्री',
+    nextAction: 'अगला काम',
+    performance: 'प्रदर्शन',
   },
   mr: {
     title: 'विक्री केंद्र',
-    subtitle: 'एक व्यवसाय लाइन निवडा आणि ती स्वच्छ मिनी डॅशबोर्डसारखी चालवा.',
+    subtitle: 'पीक, डेअरी, पोल्ट्री, जनावरे आणि प्रमाण एका सोप्या विक्री डेस्कवर हाताळा.',
     locality: 'विक्री स्थान',
     primary: 'नवीन विक्री जोडा',
     earnings: 'हंगाम कमाई',
@@ -191,11 +182,7 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     live: 'लाइव्ह',
     draft: 'ड्राफ्ट',
     verified: 'सत्यापित',
-    pending: 'बाकी',
     grade: 'ग्रेड',
-    fat: 'फॅट',
-    protein: 'प्रोटीन',
-    a2: 'A2 दावा',
     addCertificate: 'प्रमाणपत्र जोडा',
     addMilkReport: 'दूध चाचणी जोडा',
     addBirdBatch: 'बॅच फोटो जोडा',
@@ -203,11 +190,11 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     smallNote: 'ग्रेड, प्रमाणपत्र, स्कॅन इतिहास, दूध चाचणी, जनावर प्रकार आणि डिलिव्हरी वचन खरेदीदार विश्वास वाढवतात.',
     sectionLabel: { crop: 'पीक विक्री', milk: 'दूध उत्पादने', poultry: 'अंडी व कोंबडी', animals: 'जिवंत जनावरे', proof: 'प्रमाणपत्र' },
     sectionHint: {
-      crop: 'सेंद्रिय आणि ताजे उत्पादन प्रमाणपत्र, फोटो आणि मंडीशी जोडलेल्या भावासह विका.',
-      milk: 'दूध, तूप, पनीर, दही फॅट, प्रोटीन, A2 आणि जनावर प्रकार पुराव्यासह विका.',
-      poultry: 'अंडी, कोंबडी, पिल्ले आणि पोल्ट्री लॉट बॅच फोटोसह विका.',
-      animals: 'शेळी, गाय, म्हैस, डुक्कर आणि इतर जनावरे सत्यापित फोटोसह जोडा.',
-      proof: 'प्रमाणपत्रे, रिपोर्ट आणि विश्वास संकेत एका वॉलेटमध्ये ठेवा.',
+      crop: 'ताजे आणि सेंद्रिय उत्पादन मंडीशी जोडलेल्या भावासह.',
+      milk: 'दूध, तूप, पनीर, दही: फॅट, प्रोटीन आणि A2 पुराव्यासह.',
+      poultry: 'अंडी, कोंबडी, पिल्ले आणि पोल्ट्री लॉट बॅच फोटोसह.',
+      animals: 'शेळी, गाय, म्हैस, डुक्कर आणि सत्यापित शेत जनावरे.',
+      proof: 'प्रत्येक विक्रीसाठी प्रमाणपत्रे, रिपोर्ट आणि विश्वास संकेत.',
     },
     sectionCta: { crop: 'पीक विक्री जोडा', milk: 'दूध उत्पादन जोडा', poultry: 'पोल्ट्री लॉट जोडा', animals: 'जनावर लिस्टिंग जोडा', proof: 'प्रमाण अपलोड' },
     items: {
@@ -235,10 +222,11 @@ const COPY: Record<LanguageCode, CommerceCopy> = {
     ],
     pipeline: ['नवीन', 'स्वीकारले', 'तयार', 'रस्त्यात', 'पूर्ण'],
     proofWallet: 'प्रमाण वॉलेट',
-    quality: 'गुणवत्ता',
+    quality: 'गुणवत्ता प्रमाण',
     locationTrust: 'स्थानिक सत्यापित',
-    todaysFocus: 'आजचा फोकस',
-    readyToSell: 'विक्रीसाठी तयार',
+    activeListings: 'सक्रिय विक्री',
+    nextAction: 'पुढचे काम',
+    performance: 'कामगिरी',
   },
 };
 
@@ -256,24 +244,25 @@ export default function CommerceHub({ lang, placeLabel }: Props) {
   const [uploads, setUploads] = useState<Record<UploadKey, string>>({ certificate: '', milkReport: '', birdBatch: '', animalPhoto: '' });
   const trustScore = useMemo(() => uploads.certificate ? 92 : 78, [uploads.certificate]);
   const activeConfig = sectionConfig.find((item) => item.key === activeSection) ?? sectionConfig[0];
+  const ActiveIcon = activeConfig.icon;
 
   const updateUpload = (key: UploadKey, name: string) => setUploads((current) => ({ ...current, [key]: name }));
 
   return (
-    <section className="commerce-hub commerce-hub-wide commerce-page-dashboard">
-      <div className="commerce-topline premium-glass-card premium-glass-card-raised">
-        <div className="commerce-topline-copy">
+    <section className="seller-pro-dashboard commerce-hub commerce-hub-wide">
+      <header className="seller-pro-header premium-glass-card premium-glass-card-raised">
+        <div className="seller-pro-title">
           <span className="section-kicker"><Store className="h-3.5 w-3.5" /> {copy.title}</span>
-          <h2>{copy.sectionLabel[activeSection]}</h2>
-          <p>{copy.sectionHint[activeSection]}</p>
+          <h2>{copy.title}</h2>
+          <p>{copy.subtitle}</p>
         </div>
-        <div className="commerce-topline-actions">
+        <div className="seller-pro-location">
           <span><small>{copy.locality}</small><strong>{placeLabel}</strong></span>
-          <button type="button"><Plus className="h-4 w-4" /> {copy.sectionCta[activeSection]}</button>
+          <button type="button"><Plus className="h-4 w-4" /> {copy.primary}</button>
         </div>
-      </div>
+      </header>
 
-      <nav className="commerce-subnav premium-glass-card" aria-label={copy.title}>
+      <nav className="seller-pro-tabs premium-glass-card" aria-label={copy.title}>
         {sectionConfig.map((section) => {
           const Icon = section.icon;
           return (
@@ -285,66 +274,59 @@ export default function CommerceHub({ lang, placeLabel }: Props) {
         })}
       </nav>
 
-      <div className="commerce-kpi-strip">
-        <article><IndianRupee className="h-5 w-5" /><span><small>{copy.earnings}</small><strong>₹42,740</strong></span></article>
-        <article><PackageCheck className="h-5 w-5" /><span><small>{copy.orders}</small><strong>8</strong></span></article>
-        <article><ShieldCheck className="h-5 w-5" /><span><small>{copy.trust}</small><strong>{trustScore}%</strong></span></article>
-      </div>
+      <section className="seller-pro-workspace">
+        <div className="seller-pro-main premium-glass-card">
+          <div className="seller-pro-section-head">
+            <div>
+              <span><ActiveIcon className="h-4 w-4" /> {copy.sectionLabel[activeSection]}</span>
+              <p>{copy.sectionHint[activeSection]}</p>
+            </div>
+            <button type="button">{copy.sectionCta[activeSection]}<ChevronRight className="h-4 w-4" /></button>
+          </div>
 
-      <section className="commerce-section-page premium-glass-card">
-        <div className="commerce-section-head">
-          <span><activeConfig.icon className="h-4 w-4" /> {copy.sectionLabel[activeSection]}</span>
-          <em>{copy.readyToSell}</em>
+          {activeSection === 'proof' ? (
+            <ProofDesk copy={copy} certificateName={uploads.certificate} trustScore={trustScore} onUpload={(name) => updateUpload('certificate', name)} />
+          ) : (
+            <ListingDesk
+              copy={copy}
+              sectionKey={activeSection}
+              uploadName={activeConfig.upload ? uploads[activeConfig.upload] : ''}
+              onUpload={activeConfig.upload ? (name) => updateUpload(activeConfig.upload as UploadKey, name) : undefined}
+            />
+          )}
         </div>
-        {activeSection === 'proof' ? (
-          <ProofDashboard copy={copy} certificateName={uploads.certificate} trustScore={trustScore} onUpload={(name) => updateUpload('certificate', name)} />
-        ) : (
-          <SellDashboard
-            copy={copy}
-            sectionKey={activeSection}
-            uploadName={activeConfig.upload ? uploads[activeConfig.upload] : ''}
-            onUpload={activeConfig.upload ? (name) => updateUpload(activeConfig.upload as UploadKey, name) : undefined}
-          />
-        )}
-      </section>
 
-      <section className="commerce-card commerce-orders-card premium-glass-card commerce-orders-wide commerce-orders-compact commerce-orders-page">
-        <div className="commerce-card-head"><span><Truck className="h-4 w-4" /> {copy.orders}</span><em>8</em></div>
-        <div className="commerce-pipeline">{copy.pipeline.map((stage, index) => <span key={stage} className={index < 3 ? 'commerce-stage-on' : ''}>{stage}</span>)}</div>
-        <div className="commerce-order-list">{copy.ordersList.map((order) => <article key={order.buyer}><div><strong>{order.buyer}</strong><small>{order.item}</small></div><span>{order.value}</span><button type="button">{order.action}</button></article>)}</div>
+        <aside className="seller-pro-side">
+          <div className="seller-pro-kpis premium-glass-card">
+            <Kpi icon={IndianRupee} label={copy.earnings} value="₹42,740" />
+            <Kpi icon={PackageCheck} label={copy.orders} value="8" />
+            <Kpi icon={ShieldCheck} label={copy.trust} value={trustScore + '%'} />
+          </div>
+          <OrdersPanel copy={copy} />
+        </aside>
       </section>
     </section>
   );
 }
 
-function SellDashboard({ copy, sectionKey, uploadName, onUpload }: { copy: CommerceCopy; sectionKey: Exclude<SectionKey, 'proof'>; uploadName: string; onUpload?: (name: string) => void }) {
-  const uploadLabel = sectionKey === 'milk' ? copy.addMilkReport : sectionKey === 'poultry' ? copy.addBirdBatch : sectionKey === 'animals' ? copy.addAnimalPhoto : copy.sectionCta.crop;
+function Kpi({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return <article><Icon className="h-5 w-5" /><span><small>{label}</small><strong>{value}</strong></span></article>;
+}
+
+function ListingDesk({ copy, sectionKey, uploadName, onUpload }: { copy: CommerceCopy; sectionKey: Exclude<SectionKey, 'proof'>; uploadName: string; onUpload?: (name: string) => void }) {
   const items = copy.items[sectionKey];
-  const featured = items[0];
+  const uploadLabel = sectionKey === 'milk' ? copy.addMilkReport : sectionKey === 'poultry' ? copy.addBirdBatch : sectionKey === 'animals' ? copy.addAnimalPhoto : copy.sectionCta.crop;
 
   return (
-    <div className="commerce-subpage-grid">
-      <article className="commerce-feature-card">
-        <div>
-          <small>{copy.todaysFocus}</small>
-          <h3>{featured.title}</h3>
-          <p>{featured.meta}</p>
-        </div>
-        <strong>{featured.price}</strong>
-        <button type="button">{copy.sectionCta[sectionKey]}<ChevronRight className="h-4 w-4" /></button>
-      </article>
-
-      <div className="commerce-list-panel">
-        {items.map((item) => <ProductTile key={item.title} item={item} />)}
+    <div className="seller-pro-grid">
+      <div className="seller-pro-list">
+        {items.map((item) => <ProductRow key={item.title} item={item} />)}
       </div>
-
-      <aside className="commerce-action-panel">
-        <div className="commerce-proof-mini">
-          <BadgeCheck className="h-5 w-5" />
-          <span><small>{copy.quality}</small><strong>{featured.proof}</strong></span>
-        </div>
+      <aside className="seller-pro-action-card">
+        <BadgeCheck className="h-5 w-5" />
+        <div><small>{copy.quality}</small><strong>{items[0]?.proof}</strong></div>
         {onUpload && (
-          <label className="commerce-mini-upload commerce-mini-upload-wide">
+          <label>
             <Camera className="h-4 w-4" /> {uploadName || uploadLabel}
             <input type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => onUpload(event.currentTarget.files?.[0]?.name || '')} />
           </label>
@@ -355,36 +337,47 @@ function SellDashboard({ copy, sectionKey, uploadName, onUpload }: { copy: Comme
   );
 }
 
-function ProofDashboard({ copy, certificateName, trustScore, onUpload }: { copy: CommerceCopy; certificateName: string; trustScore: number; onUpload: (name: string) => void }) {
+function ProofDesk({ copy, certificateName, trustScore, onUpload }: { copy: CommerceCopy; certificateName: string; trustScore: number; onUpload: (name: string) => void }) {
   return (
-    <div className="commerce-proof-page">
-      <label className="commerce-upload commerce-upload-compact">
+    <div className="seller-pro-proof-grid">
+      <label className="seller-pro-proof-upload">
         <FileCheck2 className="h-5 w-5" />
         <span>{certificateName || copy.addCertificate}</span>
         <input type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => onUpload(event.currentTarget.files?.[0]?.name || '')} />
       </label>
-      <div className="commerce-proof-stack commerce-proof-stack-wide">
-        <div><span>{copy.grade}</span><strong>A</strong></div>
-        <div><span>{copy.trust}</span><strong>{trustScore}%</strong></div>
-        <div><span>{copy.locationTrust}</span><strong>{copy.verified}</strong></div>
+      <div className="seller-pro-proof-metrics">
+        <div><small>{copy.grade}</small><strong>A</strong></div>
+        <div><small>{copy.trust}</small><strong>{trustScore}%</strong></div>
+        <div><small>{copy.locationTrust}</small><strong>{copy.verified}</strong></div>
       </div>
       <p>{copy.smallNote}</p>
     </div>
   );
 }
 
-function ProductTile({ item }: { item: SellItem }) {
+function ProductRow({ item }: { item: SellItem }) {
   return (
-    <article className="commerce-column-card commerce-product-row-card">
-      <div className="commerce-column-card-top">
-        <span><strong>{item.title}</strong><small>{item.meta}</small></span>
-        <em>{item.value ?? item.status}</em>
+    <article className="seller-pro-row">
+      <div className="seller-pro-row-main">
+        <strong>{item.title}</strong>
+        <small>{item.meta}</small>
+        <p><BadgeCheck className="h-3.5 w-3.5" /> {item.proof}</p>
       </div>
-      <p><BadgeCheck className="h-3.5 w-3.5" /> {item.proof}</p>
-      <div className="commerce-column-card-bottom">
+      <div className="seller-pro-row-price">
         <strong>{item.price}</strong>
-        <button type="button">{item.status}<ChevronRight className="h-4 w-4" /></button>
+        <span>{item.value ?? item.status}</span>
       </div>
+      <button type="button">{item.status}<ChevronRight className="h-4 w-4" /></button>
     </article>
+  );
+}
+
+function OrdersPanel({ copy }: { copy: CommerceCopy }) {
+  return (
+    <section className="seller-pro-orders premium-glass-card">
+      <div className="seller-pro-orders-head"><span><Truck className="h-4 w-4" /> {copy.orders}</span><em>8</em></div>
+      <div className="seller-pro-pipeline">{copy.pipeline.map((stage, index) => <span key={stage} className={index < 3 ? 'active' : ''}>{stage}</span>)}</div>
+      <div className="seller-pro-order-list">{copy.ordersList.map((order) => <article key={order.buyer}><div><strong>{order.buyer}</strong><small>{order.item}</small></div><span>{order.value}</span><button type="button">{order.action}</button></article>)}</div>
+    </section>
   );
 }
