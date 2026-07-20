@@ -5197,3 +5197,188 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
       0 20px 48px rgba(16, 24, 16, 0.1) !important;
   }
 }
+
+/* Dashboard clarity pass: keep Home decision-first, move heavy inputs behind sidebar tools. */
+@media (min-width: 1081px) {
+  .farm-ops-grid {
+    min-height: 0 !important;
+    height: auto !important;
+    grid-template-rows: auto auto auto auto !important;
+    gap: 18px !important;
+  }
+
+  .ops-decision-panel {
+    grid-column: 1 / span 8 !important;
+    min-height: 198px !important;
+    padding: 22px !important;
+  }
+
+  .ops-readiness-panel {
+    grid-column: 9 / -1 !important;
+    min-height: 198px !important;
+    padding: 20px !important;
+  }
+
+  .ops-outlook-panel {
+    grid-column: 1 / span 4 !important;
+    min-height: 158px !important;
+  }
+
+  .ops-action-panel {
+    grid-column: 5 / span 4 !important;
+    min-height: 158px !important;
+  }
+
+  .ops-market-panel {
+    grid-column: 9 / -1 !important;
+    min-height: 158px !important;
+  }
+
+  .ops-fertilizer-panel {
+    grid-column: 1 / span 4 !important;
+  }
+
+  .ops-scan-panel {
+    grid-column: 5 / -1 !important;
+  }
+
+  .ops-plan-panel.ops-plan-compact {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+.ops-readiness-metrics {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+.ops-readiness-metrics > div {
+  min-height: 42px !important;
+  padding: 9px 10px !important;
+  border-radius: 12px !important;
+}
+
+.ops-readiness-proof,
+.ops-chart-legend,
+.ops-chart {
+  display: none !important;
+}
+
+.ops-day-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.ops-day-card {
+  display: flex;
+  min-width: 0;
+  min-height: 78px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid rgba(23, 73, 52, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #52615a;
+  text-align: left;
+}
+
+.ops-day-card strong {
+  color: #24332b;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.ops-day-card span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #68746e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ops-day-safe {
+  border-color: rgba(23, 107, 69, 0.18);
+  background: rgba(232, 243, 236, 0.72);
+}
+
+.ops-outlook-panel .ops-panel-heading > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ops-green);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ops-plan-panel.ops-plan-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 58px;
+  padding: 14px 18px;
+}
+
+.ops-plan-compact > div {
+  min-width: 0;
+}
+
+.ops-plan-compact span,
+.ops-plan-compact button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.ops-plan-compact span {
+  color: #52615a;
+}
+
+.ops-plan-compact strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: #24332b;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-plan-compact button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 9px;
+  background: var(--ops-green-soft);
+  color: var(--ops-green);
+}
+
+.field-planner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+@media (max-width: 760px) {
+  .ops-day-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ops-plan-panel.ops-plan-compact {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ops-plan-compact button {
+    justify-content: center;
+  }
+}

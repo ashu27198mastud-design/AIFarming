@@ -20,9 +20,8 @@ import {
 import BottomNav, { type TabId } from '@/components/BottomNav';
 import LatinLeakScanner from '@/components/LatinLeakScanner';
 import ScoreRing from '@/components/ScoreRing';
-import WeatherOutlookChart from '@/components/WeatherOutlookChart';
-import FieldPlanner from '@/components/FieldPlanner';
 import FertilizerGapCard from '@/components/FertilizerGapCard';
+import FieldPlanner from '@/components/FieldPlanner';
 import HomeTab, { type ScanHistoryItem } from '@/components/tabs/HomeTab';
 import WeatherTab from '@/components/tabs/WeatherTab';
 import MandiTab from '@/components/tabs/MandiTab';
@@ -30,7 +29,6 @@ import FarmTab from '@/components/tabs/FarmTab';
 import { buildFarmIntelligence } from '@/lib/farm-intelligence';
 import { readAuthSession } from '@/lib/auth-session';
 import { formatLocality, formatMarketName } from '@/lib/locality';
-import { getScoreSemantic } from '@/lib/score-semantics';
 import { LANGUAGES, TRANSLATIONS, resolveGpsMarket, resolveGpsToLanguage, type LanguageCode } from '@/lib/i18n';
 import { useFarmStore } from '@/store/farmStore';
 import type { WeatherForecast } from '@/types';
@@ -168,7 +166,6 @@ export default function Dashboard() {
   const resolvedDistrict = place.district.replace(/\s+District$/i, '').trim() || market.district;
   const displayLocality = formatLocality(place, lang);
   const displayDistrict = formatLocality({ village: resolvedDistrict, district: market.district, state: place.state }, lang);
-  const displayMarketDistrict = formatLocality({ village: market.district, state: market.state }, lang);
   const intelligence = useMemo(
     () => buildFarmIntelligence({
       coords,
@@ -297,7 +294,7 @@ export default function Dashboard() {
   const currentWeather = forecast?.hourly?.[0];
   const dashboardCopy = DASHBOARD_COPY[lang];
   const displayedScore = forecast ? intelligence.readinessScore : null;
-  const activeSectionLabel = activeTab === 'weather' ? t.weather : activeTab === 'mandi' ? t.mandi : activeTab === 'farm' ? t.myFarm : t.home;
+  const activeSectionLabel = activeTab === 'weather' ? t.weather : activeTab === 'mandi' ? t.mandi : activeTab === 'farm' ? t.myFarm : activeTab === 'tools' ? t.farmPlan : t.home;
   const outlookLocale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
   const outlookData = (forecast?.daily ?? []).slice(0, 7).map((day) => ({
     day: new Intl.DateTimeFormat(outlookLocale, { weekday: 'short' }).format(new Date(day.date + 'T00:00:00')),
@@ -308,11 +305,6 @@ export default function Dashboard() {
     safe: day.precipProbability < 35 && day.windSpeedKmh < 16,
   }));
   const safeDay = outlookData.find((day) => day.safe);
-  const weatherSafety = currentWeather
-    ? Math.max(0, Math.round(100 - currentWeather.precipProbability - Math.max(0, currentWeather.windSpeedKmh - 12) * 3))
-    : 0;
-  const cropFit = topCrop?.score ?? 0;
-  const dataCoverage = Math.min(100, Math.round(outlookData.length / 7 * 100));
   const marketSignal = topCrop?.profitSignal ?? 'watch';
   const marketSignalLabel = dashboardCopy[marketSignal];
   const marketName = formatMarketName(apmcDirectory.name || market.district + ' APMC', { district: market.district, state: market.state }, lang);
@@ -418,7 +410,7 @@ export default function Dashboard() {
                 <div className="ops-signal-row">
                   {commandCards.map((item) => {
                     const CommandIcon = item.icon;
-                    const destination = item.key === 'weather' ? 'weather' : item.key === 'market' ? 'mandi' : 'farm';
+                    const destination = item.key === 'weather' ? 'weather' : item.key === 'market' ? 'mandi' : item.key === 'crop' ? 'tools' : 'farm';
                     return (
                       <button key={item.key} type="button" onClick={() => setActiveTab(destination)} className={'ops-signal ops-signal-' + item.tone}>
                         <span className="ops-signal-icon"><CommandIcon className="h-4 w-4" /></span>
@@ -441,42 +433,30 @@ export default function Dashboard() {
                     <div><ThermometerSun className="h-4 w-4" /><span><small>{t.weather}</small><strong>{currentWeather ? Math.round(currentWeather.temperatureC) + ' C' : '--'}</strong></span></div>
                     <div><CloudRain className="h-4 w-4" /><span><small>{t.rain}</small><strong>{currentWeather ? Math.round(currentWeather.precipProbability) + '%' : '--'}</strong></span></div>
                     <div><Wind className="h-4 w-4" /><span><small>km/h</small><strong>{currentWeather ? Math.round(currentWeather.windSpeedKmh) : '--'}</strong></span></div>
-                    <div><BarChart3 className="h-4 w-4" /><span><small>{t.mandi}</small><strong>{displayMarketDistrict}</strong></span></div>
                   </div>
                 </div>
-                <div className="ops-readiness-proof" aria-label={dashboardCopy.scoreBasis}>
-                  <div>
-                    <span><small>{dashboardCopy.weatherSafety}</small><strong>{weatherSafety}%</strong></span>
-                    <span className="ops-proof-track"><span style={{ width: weatherSafety + '%', backgroundColor: getScoreSemantic(weatherSafety).color }} /></span>
-                  </div>
-                  <div>
-                    <span><small>{dashboardCopy.cropFit}</small><strong>{cropFit}%</strong></span>
-                    <span className="ops-proof-track"><span style={{ width: cropFit + '%', backgroundColor: getScoreSemantic(cropFit).color }} /></span>
-                  </div>
-                  <div>
-                    <span><small>{dashboardCopy.dataCoverage}</small><strong>{outlookData.length === 7 ? dashboardCopy.complete : outlookData.length + '/7'}</strong></span>
-                    <span className="ops-proof-track"><span style={{ width: dataCoverage + '%', backgroundColor: getScoreSemantic(dataCoverage).color }} /></span>
-                  </div>
-                </div>
+
                 <p className="ops-score-basis">{dashboardCopy.scoreBasis}</p>
               </aside>
 
               <section className="ops-outlook-panel premium-glass-card">
                 <div className="ops-panel-heading">
-                  <span><BarChart3 className="h-4 w-4" /> {t.weather} - {t.sevenDays}</span>
-                  <div className="ops-chart-legend"><span className="ops-legend-rain">{t.rain} mm</span><span className="ops-legend-safe">{dashboardCopy.safeOn}</span><span className="ops-legend-temp">C</span></div>
+                  <span><CloudRain className="h-4 w-4" /> {t.weather}</span>
+                  <button type="button" onClick={() => setActiveTab('weather')}>{dashboardCopy.viewForecast}<ChevronRight className="h-4 w-4" /></button>
                 </div>
-                <div className="ops-chart">
-                  {outlookData.length ? (
-                    <WeatherOutlookChart
-                      data={outlookData}
-                      ariaLabel={t.weather + ' - ' + t.sevenDays}
-                      rainLabel={t.rain}
-                    />
-                  ) : (
-                    <div className="ops-chart-empty"><RefreshCw className="h-5 w-5 animate-spin" /> {t.loading}</div>
-                  )}
-                </div>
+                {outlookData.length ? (
+                  <div className="ops-day-strip" aria-label={t.weather + ' - ' + t.sevenDays}>
+                    {outlookData.slice(0, 4).map((day) => (
+                      <button key={day.day} type="button" onClick={() => setActiveTab('weather')} className={day.safe ? 'ops-day-card ops-day-safe' : 'ops-day-card'}>
+                        <strong>{day.day}</strong>
+                        <span><CloudRain className="h-3.5 w-3.5" /> {day.rainChance}%</span>
+                        <span><Wind className="h-3.5 w-3.5" /> {day.wind}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="ops-chart-empty"><RefreshCw className="h-5 w-5 animate-spin" /> {t.loading}</div>
+                )}
               </section>
 
               <section className="ops-action-panel premium-glass-card">
@@ -490,7 +470,7 @@ export default function Dashboard() {
                     <span><small>{t.alerts}</small><strong>{topAlert?.title || t.noMajorRisk}</strong></span>
                     <ChevronRight className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => setActiveTab('farm')}>
+                  <button type="button" onClick={() => setActiveTab('tools')}>
                     <span className="ops-action-number">02</span>
                     <span><small>{t.timing}</small><strong>{intelligence.fertilizerPlan.timing}</strong></span>
                     <ChevronRight className="h-4 w-4" />
@@ -526,16 +506,20 @@ export default function Dashboard() {
                 <button type="button" onClick={() => setActiveTab('mandi')}>{dashboardCopy.compareMarkets}<ChevronRight className="h-4 w-4" /></button>
               </section>
 
-              <details className="ops-plan-panel premium-glass-card">
-                <summary><span><MapPin className="h-4 w-4" /> {t.farmPlan}</span><span className="ops-plan-context">{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {displayDistrict}</span><ChevronDown className="h-4 w-4" /></summary>
-                <div className="ops-plan-content"><FieldPlanner coords={coords} market={market} /></div>
-              </details>
+              <section className="ops-plan-panel premium-glass-card ops-plan-compact">
+                <div>
+                  <span><MapPin className="h-4 w-4" /> {t.farmPlan}</span>
+                  <strong>{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {displayDistrict}</strong>
+                </div>
+                <button type="button" onClick={() => setActiveTab('tools')}>{t.farmPlan}<ChevronRight className="h-4 w-4" /></button>
+              </section>
             </div>
           </section>
 
           <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}><WeatherTab t={t} lang={lang} coords={coords} /></section>
           <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} lang={lang} market={{ ...market, village: displayLocality, apmcName: marketName }} /></section>
           <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: displayDistrict || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
+          <section className={activeTab === 'tools' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'tools'}><FieldPlanner coords={coords} market={market} /></section>
         </main>
 
         <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} locality={displayLocality} userName={userName} />
