@@ -268,6 +268,14 @@ export type AiLandPlan = {
 };
 
 export async function analyzeLandForCropPlan(context: string, imageBase64?: string, mimeType?: string): Promise<AiLandPlan> {
+  let requestedLanguage = 'English';
+  try {
+    const parsed = JSON.parse(context) as { language?: string };
+    requestedLanguage = parsed.language === 'mr' ? 'Marathi' : parsed.language === 'hi' ? 'Hindi' : 'English';
+  } catch {
+    requestedLanguage = 'English';
+  }
+
   const fallback: AiLandPlan = {
     landQualityScore: 50,
     confidence: 35,
@@ -288,14 +296,14 @@ export async function analyzeLandForCropPlan(context: string, imageBase64?: stri
   });
   const prompt = `You are the crop-selection decision engine for KisanMitra.
 Evidence: ${context}
-Use only supplied evidence and what is genuinely visible in the optional land image. Score suitability using:
+Respond in ${requestedLanguage}. Keep crop names recognizable for Indian farmers. Use only supplied evidence and what is genuinely visible in the optional land image. Score suitability using:
 season/weather 25%, soil report and soil type 25%, water 15%, GPS agro-climate fit 15%, crop rotation 10%, budget/input risk 10%.
 Do not invent live market prices. Do not prescribe fertilizer dosage. Explain uncertainty.
 Return JSON exactly:
 {
  "landQualityScore": 0,
  "confidence": 0,
- "summary": "plain bilingual-friendly English",
+ "summary": "plain language in the requested language",
  "take": [{"crop":"", "score":0, "why":"", "fertilizerFocus":"category only"}],
  "caution": [{"crop":"", "score":0, "why":""}],
  "avoid": [{"crop":"", "score":0, "why":""}],

@@ -519,7 +519,7 @@ export default function Dashboard() {
           <section className={activeTab === 'weather' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'weather'}><WeatherTab t={t} lang={lang} coords={coords} /></section>
           <section className={activeTab === 'mandi' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'mandi'}><MandiTab t={t} lang={lang} market={{ ...market, village: displayLocality, apmcName: marketName }} /></section>
           <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: displayDistrict || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
-          <section className={activeTab === 'tools' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'tools'}><FieldPlanner coords={coords} market={market} /></section>
+          <section className={activeTab === 'tools' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'tools'}><FieldPlanner coords={coords} market={market} lang={lang} placeLabel={displayDistrict} /></section>
         </main>
 
         <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} locality={displayLocality} userName={userName} />
