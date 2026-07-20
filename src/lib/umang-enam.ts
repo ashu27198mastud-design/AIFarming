@@ -1,6 +1,7 @@
 const UMANG_BASE_URL = 'https://apigw.umangapp.in/umang/apisetu/dept/enamapi/ws1';
 const DEPARTMENT_ID = '324';
-const SERVICE_ID = '1408';
+const APMC_SERVICE_ID = '1408';
+const BID_SERVICE_ID = '1411';
 const SUBSERVICE_ID = '0';
 const FORM_TRACKER = '0';
 
@@ -9,6 +10,31 @@ type UnknownRecord = Record<string, unknown>;
 export type ApmcOption = {
   state: string;
   name: string;
+};
+
+export type EnamBid = {
+  apmcId: string;
+  apmcName: string;
+  transactionId: string;
+  lotCode: string;
+  productId: string;
+  productName: string;
+  bags: number;
+  weightQuintal: number;
+  bidType: string;
+  bidStatus: 'open' | 'closed' | 'unknown';
+  maxBidValue: number;
+  bidEndTime: string;
+  rateUom: string;
+};
+
+export type EnamBidSummary = {
+  lots: number;
+  openLots: number;
+  highestBid: number;
+  totalWeightQuintal: number;
+  rateUom: string;
+  closesAt: string;
 };
 
 type UmangConfig = {
@@ -35,7 +61,14 @@ function recordList(value: unknown): UnknownRecord[] {
 }
 
 function text(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  return normalized.toLowerCase() === 'none' ? '' : normalized;
+}
+
+function numberFrom(value: unknown): number {
+  const normalized = typeof value === 'number' ? String(value) : text(value);
+  const parsed = Number(normalized.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/)?.[0] ?? '');
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function readConfig(): UmangConfig | null {
@@ -72,14 +105,66 @@ export function parseApmcList(payload: unknown): ApmcOption[] {
   return options;
 }
 
-async function callUmang(operation: string, requestData: UnknownRecord): Promise<unknown> {
+function bidStatus(value: unknown): EnamBid['bidStatus'] {
+  const normalized = text(value).toLowerCase();
+  if (normalized === 'o' || normalized === 'open') return 'open';
+  if (normalized === 'c' || normalized === 'closed') return 'closed';
+  return 'unknown';
+}
+
+export function parseBidList(payload: unknown): EnamBid[] {
+  const blocks = recordList(record(payload).pd);
+  const bids: EnamBid[] = [];
+  for (const block of blocks) {
+    for (const row of recordList(block.listNewBid)) {
+      const lotCode = text(row.lotCode);
+      const transactionId = text(row.tranId);
+      const maxBidValue = numberFrom(row.maxOpenBidVal ?? row.lastBidVal);
+      if (!lotCode && !transactionId) continue;
+      bids.push({
+        apmcId: text(row.oprId),
+        apmcName: text(row.oprNameEn ?? row.oprName),
+        transactionId,
+        lotCode,
+        productId: text(row.productId),
+        productName: text(row.productName),
+        bags: numberFrom(row.noOfBag),
+        weightQuintal: numberFrom(row.wbWeight),
+        bidType: text(row.bidType),
+        bidStatus: bidStatus(row.bidStatus),
+        maxBidValue,
+        bidEndTime: text(row.bidEndTime ?? row.extendedEndTime ?? row.endDate),
+        rateUom: text(row.rateUom) || 'QUINTAL',
+      });
+    }
+  }
+  return bids.sort((a, b) => b.maxBidValue - a.maxBidValue);
+}
+
+export function summarizeBids(bids: EnamBid[]): EnamBidSummary {
+  const valid = bids.filter((bid) => bid.maxBidValue > 0 || bid.weightQuintal > 0);
+  const dated = valid
+    .map((bid) => ({ value: bid.bidEndTime, time: new Date(bid.bidEndTime).getTime() }))
+    .filter((item) => Number.isFinite(item.time))
+    .sort((a, b) => a.time - b.time);
+  return {
+    lots: valid.length,
+    openLots: valid.filter((bid) => bid.bidStatus === 'open').length,
+    highestBid: valid.reduce((max, bid) => Math.max(max, bid.maxBidValue), 0),
+    totalWeightQuintal: Math.round(valid.reduce((sum, bid) => sum + bid.weightQuintal, 0) * 10) / 10,
+    rateUom: valid.find((bid) => bid.rateUom)?.rateUom || 'QUINTAL',
+    closesAt: dated[0]?.value || '',
+  };
+}
+
+async function callUmang(operation: string, requestData: UnknownRecord, serviceId = APMC_SERVICE_ID): Promise<unknown> {
   const config = readConfig();
   if (!config) throw new UmangGatewayError('UMANG/eNAM credentials are not configured', 503);
   const body: UnknownRecord = {
     tkn: config.requestToken,
     trkr: config.tracker,
     usrid: config.userId,
-    srvid: SERVICE_ID,
+    srvid: serviceId,
     mode: 'web',
     pltfrm: 'apisetu',
     did: null,
@@ -95,7 +180,7 @@ async function callUmang(operation: string, requestData: UnknownRecord): Promise
       accept: 'application/json',
       Authorization: 'Bearer ' + config.accessToken,
       deptid: DEPARTMENT_ID,
-      srvid: SERVICE_ID,
+      srvid: serviceId,
       subsid: SUBSERVICE_ID,
       subsid2: SUBSERVICE_ID,
       formtrkr: FORM_TRACKER,
@@ -133,4 +218,14 @@ export async function getMandiInformation(input: { language: string; state: stri
     mandiName: input.mandi,
   });
   return Array.isArray(record(payload).pd) ? record(payload).pd as unknown[] : [];
+}
+
+export async function getAllBids(input: { language: string; stateId: number; apmcId: number; commodityId: string }): Promise<EnamBid[]> {
+  const payload = await callUmang('getAllBids', {
+    language: input.language,
+    stateId: input.stateId,
+    apmcId: input.apmcId,
+    commodityId: input.commodityId,
+  }, BID_SERVICE_ID);
+  return parseBidList(payload);
 }

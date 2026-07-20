@@ -78,3 +78,13 @@ UMANG_ENAM_USER_ID=09
 ```
 
 The UMANG gateway requires both the bearer authorization token and `x-api-key`. When credentials are absent, expired, or forbidden, the dashboard labels the market as a GPS estimate and uses the local fallback rather than presenting it as live data.
+
+For live eNAM bid details, also map farmer-facing market/crop names to eNAM IDs on the server. Keep this in the deployment secret store, not in client code:
+
+```bash
+UMANG_ENAM_MARKET_LINKS='[
+  {"state":"Maharashtra","district":"Nashik","market":"Nashik APMC","commodity":"Tomato","stateId":27,"apmcId":501,"commodityId":"replace-with-enam-commodity-id"}
+]'
+```
+
+A request can also pass `stateId`, `apmcId`, and `commodityId` directly to `/api/bids` for testing. The bid adapter strips seller names, agent names, emails, and phone numbers before returning data to the dashboard.

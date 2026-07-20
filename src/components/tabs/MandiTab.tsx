@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Info, MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { Gavel, Info, MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { TranslationSet } from '@/lib/i18n';
 
 const CROPS = [
@@ -11,6 +11,51 @@ const CROPS = [
   { key: 'Soyabean', label: { en: 'Soyabean', hi: 'सोयाबीन', mr: 'सोयाबीन' } },
   { key: 'Cotton', label: { en: 'Cotton', hi: 'कपास', mr: 'कापूस' } },
 ];
+
+const BID_COPY = {
+  en: {
+    title: 'Live auction demand',
+    subtitle: 'Open lot bids from the linked mandi',
+    unavailable: 'Live auction bids are not linked for this market yet. Use the price guidance above and confirm locally before selling.',
+    highestBid: 'Highest bid',
+    openLots: 'Open lots',
+    arrival: 'Arrival',
+    closes: 'Closes',
+    open: 'Open',
+    unavailablePill: 'Not linked',
+    lot: 'Lot',
+    bags: 'bags',
+    quintal: 'quintal',
+  },
+  hi: {
+    title: 'ताज़ा बोली संकेत',
+    subtitle: 'जुड़ी मंडी के खुले लॉट',
+    unavailable: 'इस बाजार के लिए ताज़ा बोली अभी जुड़ी नहीं है। ऊपर दिए भाव सल्लाह का उपयोग करें और बेचने से पहले स्थानीय पुष्टि करें।',
+    highestBid: 'सबसे ऊंची बोली',
+    openLots: 'खुले लॉट',
+    arrival: 'आवक',
+    closes: 'बंद समय',
+    open: 'खुली',
+    unavailablePill: 'नहीं जुड़ा',
+    lot: 'लॉट',
+    bags: 'बोरी',
+    quintal: 'क्विंटल',
+  },
+  mr: {
+    title: 'ताजे लिलाव संकेत',
+    subtitle: 'जोडलेल्या बाजारपेठेतील खुले लॉट',
+    unavailable: 'या बाजारासाठी ताजी बोली अजून जोडलेली नाही. वरचा भाव सल्ला वापरा आणि विक्रीपूर्वी स्थानिक खात्री करा.',
+    highestBid: 'सर्वोच्च बोली',
+    openLots: 'खुले लॉट',
+    arrival: 'आवक',
+    closes: 'बंद वेळ',
+    open: 'खुली',
+    unavailablePill: 'जोडलेले नाही',
+    lot: 'लॉट',
+    bags: 'गोण्या',
+    quintal: 'क्विंटल',
+  },
+} as const;
 
 type MandiRecord = {
   commodity: string;
@@ -30,10 +75,45 @@ type MandiResponse = {
   fetchedAt: string;
 };
 
+type BidRecord = {
+  lotCode: string;
+  bags: number;
+  weightQuintal: number;
+  bidStatus: 'open' | 'closed' | 'unknown';
+  maxBidValue: number;
+  bidEndTime: string;
+};
+
+type BidSummary = {
+  lots: number;
+  openLots: number;
+  highestBid: number;
+  totalWeightQuintal: number;
+  rateUom: string;
+  closesAt: string;
+};
+
+type BidResponse = {
+  bids: BidRecord[];
+  summary: BidSummary;
+  dataSource: 'live' | 'unavailable';
+  reason?: string;
+  fetchedAt: string;
+};
+
 type Props = {
   t: TranslationSet;
   lang: string;
   market: { state: string; district: string; distanceKm: number; village?: string; apmcName?: string };
+};
+
+const EMPTY_BID_SUMMARY: BidSummary = {
+  lots: 0,
+  openLots: 0,
+  highestBid: 0,
+  totalWeightQuintal: 0,
+  rateUom: 'QUINTAL',
+  closesAt: '',
 };
 
 function parseArrivalDate(value: string): number {
@@ -46,6 +126,11 @@ function parseArrivalDate(value: string): number {
 function cropLabel(crop: typeof CROPS[number], lang: string): string {
   if (lang === 'hi' || lang === 'mr' || lang === 'en') return crop.label[lang];
   return crop.label.en;
+}
+
+function bidCopy(lang: string) {
+  if (lang === 'hi' || lang === 'mr' || lang === 'en') return BID_COPY[lang];
+  return BID_COPY.en;
 }
 
 function decision(direction: MandiResponse['trend']['direction'], t: TranslationSet): string {
@@ -64,10 +149,20 @@ function sourceDetail(response: MandiResponse, t: TranslationSet): string {
   if (response.dataSource === 'live') return t.liveSource;
   return t.fallbackSource;
 }
+
+function formatBidDate(value: string, lang: string): string {
+  const time = new Date(value).getTime();
+  if (!Number.isFinite(time)) return '';
+  const locale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
+  return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(time));
+}
+
 export default function MandiTab({ t, lang, market }: Props) {
   const [selected, setSelected] = useState('Tomato');
   const [prices, setPrices] = useState<Record<string, MandiResponse>>({});
   const [loading, setLoading] = useState(true);
+  const [bidInfo, setBidInfo] = useState<BidResponse | null>(null);
+  const [bidLoading, setBidLoading] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -97,6 +192,35 @@ export default function MandiTab({ t, lang, market }: Props) {
     };
   }, [market.district, market.state]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+    const loadingTimer = window.setTimeout(() => {
+      if (active) setBidLoading(true);
+    }, 0);
+    const url = `/api/bids?language=${encodeURIComponent(lang)}&state=${encodeURIComponent(market.state)}&district=${encodeURIComponent(market.district)}&commodity=${encodeURIComponent(selected)}`;
+    fetch(url, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error('Bid request failed');
+        return response.json() as Promise<BidResponse>;
+      })
+      .then((payload) => {
+        if (active) setBidInfo(payload);
+      })
+      .catch((error) => {
+        if ((error as Error).name !== 'AbortError') console.error('Bid data failed:', error);
+        if (active) setBidInfo({ bids: [], summary: EMPTY_BID_SUMMARY, dataSource: 'unavailable', reason: 'request_failed', fetchedAt: new Date().toISOString() });
+      })
+      .finally(() => {
+        if (active) setBidLoading(false);
+      });
+    return () => {
+      active = false;
+      window.clearTimeout(loadingTimer);
+      controller.abort();
+    };
+  }, [lang, market.district, market.state, selected]);
+
   const current = prices[selected];
   const record = useMemo(() => {
     if (!current?.records.length) return null;
@@ -104,6 +228,12 @@ export default function MandiTab({ t, lang, market }: Props) {
   }, [current]);
 
   const TrendIcon = current?.trend.direction === 'rising' ? TrendingUp : current?.trend.direction === 'falling' ? TrendingDown : Minus;
+  const selectedCrop = CROPS.find((crop) => crop.key === selected) ?? CROPS[0];
+  const selectedCropLabel = cropLabel(selectedCrop, lang);
+  const bidsCopy = bidCopy(lang);
+  const hasLiveBids = bidInfo?.dataSource === 'live' && bidInfo.summary.highestBid > 0;
+  const topBids = (bidInfo?.bids ?? []).filter((bid) => bid.maxBidValue > 0).slice(0, 3);
+  const closingLabel = formatBidDate(bidInfo?.summary.closesAt ?? '', lang);
 
   return (
     <div className="space-y-4">
@@ -138,7 +268,7 @@ export default function MandiTab({ t, lang, market }: Props) {
           <section className="m3-card">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <span className="section-kicker">{record.commodity}</span>
+                <span className="section-kicker">{selectedCropLabel}</span>
                 <div className="mt-2 flex items-end gap-2">
                   <strong className="text-3xl font-bold text-[#202124]">₹{Math.round(record.modalPrice).toLocaleString('en-IN')}</strong>
                   <span className="pb-1 text-xs font-medium text-[#5F6368]">/ {t.quintal}</span>
@@ -163,6 +293,54 @@ export default function MandiTab({ t, lang, market }: Props) {
               <p className="mt-2 text-sm font-bold leading-relaxed text-[#2F4B3A]">{cropAdvice(current, market.distanceKm, t)}</p>
               <p className="mt-2 text-xs font-semibold leading-relaxed text-[#66736C]">{sourceDetail(current, t)}</p>
             </div>
+          </section>
+
+          <section className="m3-card">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className="section-kicker">{bidsCopy.title}</span>
+                <h3 className="mt-1 text-lg font-bold text-[#202124]">{selectedCropLabel}</h3>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-[#5F6368]">{hasLiveBids ? bidsCopy.subtitle : bidsCopy.unavailable}</p>
+              </div>
+              <span className={`google-icon ${hasLiveBids ? 'google-icon-green' : 'google-icon-amber'}`}><Gavel className="h-5 w-5" /></span>
+            </div>
+
+            {bidLoading && <div className="mt-4 rounded-2xl bg-[#F8F9FA] p-3 text-center text-xs font-bold text-[#5F6368]">{t.loading}</div>}
+
+            {!bidLoading && hasLiveBids && bidInfo && (
+              <>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-[#F8FBF8] p-3">
+                    <span className="text-[11px] font-bold uppercase text-[#5F6368]">{bidsCopy.highestBid}</span>
+                    <strong className="mt-1 block text-xl text-[#137333]">₹{Math.round(bidInfo.summary.highestBid).toLocaleString('en-IN')}</strong>
+                  </div>
+                  <div className="rounded-2xl bg-[#F8FBF8] p-3">
+                    <span className="text-[11px] font-bold uppercase text-[#5F6368]">{bidsCopy.openLots}</span>
+                    <strong className="mt-1 block text-xl text-[#202124]">{bidInfo.summary.openLots || bidInfo.summary.lots}</strong>
+                  </div>
+                  <div className="rounded-2xl bg-[#F8FBF8] p-3">
+                    <span className="text-[11px] font-bold uppercase text-[#5F6368]">{bidsCopy.arrival}</span>
+                    <strong className="mt-1 block text-xl text-[#202124]">{bidInfo.summary.totalWeightQuintal.toLocaleString('en-IN')} {bidsCopy.quintal}</strong>
+                  </div>
+                </div>
+
+                <div className="mt-3 divide-y divide-[#EEF0EF] rounded-2xl border border-[#EEF0EF] bg-white/70 px-3">
+                  {topBids.map((bid) => (
+                    <div key={bid.lotCode} className="flex items-center justify-between gap-3 py-3 text-sm">
+                      <span className="min-w-0 truncate font-semibold text-[#3C4043]">{bidsCopy.lot} {bid.lotCode}</span>
+                      <span className="whitespace-nowrap text-xs font-semibold text-[#5F6368]">{bid.bags} {bidsCopy.bags}</span>
+                      <strong className="whitespace-nowrap text-[#202124]">₹{Math.round(bid.maxBidValue).toLocaleString('en-IN')}</strong>
+                    </div>
+                  ))}
+                </div>
+
+                {closingLabel && <p className="mt-2 text-xs font-semibold text-[#5F6368]">{bidsCopy.closes}: {closingLabel}</p>}
+              </>
+            )}
+
+            {!bidLoading && !hasLiveBids && (
+              <span className="mt-4 inline-flex rounded-full bg-[#F8F9FA] px-3 py-2 text-xs font-bold text-[#5F6368]">{bidsCopy.unavailablePill}</span>
+            )}
           </section>
 
           <section className="m3-card">
