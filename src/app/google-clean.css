@@ -19,7 +19,7 @@ html,
 body {
   background: var(--g-bg) !important;
   color: var(--g-text) !important;
-  font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 body { font-size: 16px; }

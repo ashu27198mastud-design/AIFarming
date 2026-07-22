@@ -39,7 +39,7 @@ body {
     radial-gradient(circle at 94% 8%, rgba(214, 225, 237, 0.42), transparent 27%),
     linear-gradient(180deg, #fbfaf7 0%, #f6f5f1 55%, #f0efeb 100%) !important;
   color: var(--text) !important;
-  font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   font-size: 17px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -79,7 +79,7 @@ h3 { font-size: 20px; }
 
 code,
 pre {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body), system-ui, sans-serif;
   font-size: 16px;
 }
 

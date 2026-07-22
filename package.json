@@ -7,8 +7,9 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "start": "next start",
-    "lint": "eslint",
-    "test": "vitest run --pool=threads --maxWorkers=1"
+    "lint": "eslint && npm run check:design",
+    "test": "vitest run --pool=threads --maxWorkers=1",
+    "check:design": "node scripts/check-v12-foundations.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

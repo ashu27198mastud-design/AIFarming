@@ -24,7 +24,7 @@ body {
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif !important;
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 button:focus-visible,
@@ -1005,7 +1005,7 @@ CINEMATIC LOGIN (60/40 Split) — MORNING LIGHT
   justify-content: center;
   overflow: hidden;
   color: #1F2A1F;
-  font-family: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Telugu', 'Noto Sans Tamil', 'Noto Sans Gujarati', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Oriya', 'Noto Sans Gurmukhi', 'Noto Sans Ol Chiki', 'Noto Sans Meetei Mayek', 'Noto Nastaliq Urdu', 'Noto Sans Arabic', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   background: linear-gradient(180deg, rgba(190,215,240,0.35) 0%, #FAFAF9 40%, #FBF7EF 100%);
 }
 

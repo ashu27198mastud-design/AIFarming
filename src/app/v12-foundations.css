@@ -1,0 +1,87 @@
+html {
+  background: var(--bg);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font-family: var(--font-body), system-ui, sans-serif !important;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+:where([data-number], .tabular-nums, time) {
+  font-variant-numeric: tabular-nums;
+}
+
+:where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus) 72%, transparent) !important;
+  outline-offset: 3px;
+}
+
+.depth-l1 {
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-l1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.depth-l2 {
+  transition: transform var(--motion-micro) var(--ease-house), box-shadow var(--motion-micro) var(--ease-house);
+}
+
+@media (hover: hover) {
+  .depth-l2:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-l2);
+  }
+}
+
+.depth-l2:active {
+  transform: scale(0.98);
+}
+
+.depth-l3 {
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-l3);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

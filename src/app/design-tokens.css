@@ -1,0 +1,49 @@
+:root {
+  color-scheme: light;
+
+  --bg: #fafaf7;
+  --surface: rgba(255, 255, 255, 0.85);
+  --surface-solid: #ffffff;
+  --surface-soft: #f3f6f2;
+  --primary: #146b32;
+  --primary-hover: #188038;
+  --accent: #e8842c;
+  --ok: #188038;
+  --warn: #d99114;
+  --danger: #c4402f;
+  --ink: #1a1f1a;
+  --ink-2: #3d453d;
+  --muted: #6b7268;
+  --line: rgba(26, 31, 26, 0.1);
+  --line-light: rgba(255, 255, 255, 0.85);
+  --focus: #0b5f2a;
+
+  --morning-sky: #bed7f0;
+  --morning-mid: #fafaf9;
+  --morning-ground: #fbf7ef;
+  --morning-gold: #ffcd6e;
+  --morning-rim: #ffbe64;
+  --wordmark-ink: #1f2a1f;
+
+  --google-blue: #4285f4;
+  --google-green: #34a853;
+  --google-yellow: #fbbc05;
+  --google-red: #ea4335;
+  --google-ink: #202124;
+  --google-line: #dadce0;
+
+  --chart-blue: #3978c5;
+  --chart-teal: #147a73;
+  --chart-violet: #6f61a8;
+
+  --radius-card: 20px;
+  --radius-control: 14px;
+  --shadow-l1: 0 1px 2px rgba(16, 24, 16, 0.04), 0 12px 32px rgba(16, 24, 16, 0.06);
+  --shadow-l2: 0 2px 4px rgba(16, 24, 16, 0.05), 0 20px 48px rgba(16, 24, 16, 0.1);
+  --shadow-l3: 0 16px 40px rgba(16, 24, 16, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  --motion-micro: 150ms;
+  --motion-standard: 300ms;
+  --motion-entrance: 520ms;
+  --ease-house: cubic-bezier(0.22, 1, 0.36, 1);
+}
