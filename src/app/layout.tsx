@@ -4,6 +4,7 @@ import './google-clean.css';
 import './google-compact.css';
 import './liquid-glass.css';
 import './device-hub.css';
+import './elite-ui.css';
 
 
 export const metadata: Metadata = {

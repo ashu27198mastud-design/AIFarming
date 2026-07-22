@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Activity,
   BarChart3,
@@ -10,14 +10,17 @@ import {
   ChevronRight,
   CloudRain,
   MapPin,
+  Moon,
   Navigation,
   RefreshCw,
   ShieldCheck,
+  Sun,
   Sprout,
   ThermometerSun,
   Wind,
 } from 'lucide-react';
 import BottomNav, { type TabId } from '@/components/BottomNav';
+import DashboardSkeleton from '@/components/DashboardSkeleton';
 import LatinLeakScanner from '@/components/LatinLeakScanner';
 import ScoreRing from '@/components/ScoreRing';
 import FertilizerGapCard from '@/components/FertilizerGapCard';
@@ -29,8 +32,10 @@ import WeatherTab from '@/components/tabs/WeatherTab';
 import MandiTab from '@/components/tabs/MandiTab';
 import FarmTab from '@/components/tabs/FarmTab';
 import { buildFarmIntelligence } from '@/lib/farm-intelligence';
+import { dashboardLocationFromPath, dashboardPath, type DeviceId } from '@/lib/dashboard-navigation';
 import { readAuthSession } from '@/lib/auth-session';
 import { formatLocality, formatMarketName } from '@/lib/locality';
+import { INTERFACE_COPY } from '@/lib/interface-copy';
 import { LANGUAGES, TRANSLATIONS, resolveGpsMarket, resolveGpsToLanguage, type LanguageCode } from '@/lib/i18n';
 import { useFarmStore } from '@/store/farmStore';
 import type { WeatherForecast } from '@/types';
@@ -38,6 +43,8 @@ import type { WeatherForecast } from '@/types';
 const DEFAULT_COORDS = { lat: 20.014, lng: 73.785 };
 const SCAN_STORAGE_KEY = 'km-scans-history-v2';
 const LANGUAGE_STORAGE_KEY = 'km-lang';
+const THEME_STORAGE_KEY = 'km-theme-mode';
+type ThemeMode = 'auto' | 'light' | 'dark';
 
 const DASHBOARD_COPY: Record<LanguageCode, {
   safeWindow: string;
@@ -137,33 +144,53 @@ function readSavedScans(): ScanHistoryItem[] {
 
 export default function Dashboard() {
   const router = useRouter();
+  const pathname = usePathname();
+  const navigationState = dashboardLocationFromPath(pathname);
+  const activeTab = navigationState.tab;
+  const activeDevice = navigationState.device;
   const { farmTwin } = useFarmStore();
   const [authReady, setAuthReady] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>('home');
   const [userName, setUserName] = useState('Asha Pawar');
   const [lang, setLang] = useState<LanguageCode>('hi');
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'searching' | 'success' | 'error'>('idle');
   const [coords, setCoords] = useState(DEFAULT_COORDS);
   const [scans, setScans] = useState<ScanHistoryItem[]>([]);
   const [forecast, setForecast] = useState<WeatherForecast | null>(null);
-  const [theme, setTheme] = useState('theme-day');
+  const [weatherFailed, setWeatherFailed] = useState(false);
+  const [ambientTheme, setAmbientTheme] = useState('theme-day');
+  const [themeMode, setThemeMode] = useState<ThemeMode>('auto');
+  const theme = themeMode === 'dark' ? 'theme-night' : themeMode === 'light' ? 'theme-day' : ambientTheme;
   const [place, setPlace] = useState({ village: 'Nashik', district: 'Nashik', state: 'Maharashtra', source: 'fallback' });
   const [apmcDirectory, setApmcDirectory] = useState<{ name: string; dataSource: 'live' | 'fallback' }>({ name: '', dataSource: 'fallback' });
 
   useEffect(() => {
     const updateTheme = () => {
+      const savedMode = window.localStorage.getItem(THEME_STORAGE_KEY);
+      if (savedMode === 'light' || savedMode === 'dark') setThemeMode(savedMode);
       const hour = new Date().getHours();
-      if (hour >= 4 && hour < 7) setTheme('theme-dawn');
-      else if (hour >= 7 && hour < 17) setTheme('theme-day');
-      else if (hour >= 17 && hour < 20) setTheme('theme-dusk');
-      else setTheme('theme-night');
+      if (hour >= 4 && hour < 7) setAmbientTheme('theme-dawn');
+      else if (hour >= 7 && hour < 17) setAmbientTheme('theme-day');
+      else if (hour >= 17 && hour < 20) setAmbientTheme('theme-dusk');
+      else setAmbientTheme('theme-night');
     };
-    updateTheme();
-    const interval = setInterval(updateTheme, 60000);
-    return () => clearInterval(interval);
+    const initialTimer = window.setTimeout(updateTheme, 0);
+    const interval = window.setInterval(updateTheme, 60000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const t = TRANSLATIONS[lang];
+  const uiCopy = INTERFACE_COPY[lang];
+  const navigateToTab = (tab: TabId, device: DeviceId = activeDevice) => {
+    router.push(dashboardPath(tab, device), { scroll: false });
+  };
+  const toggleTheme = () => {
+    const nextMode: ThemeMode = theme === 'theme-night' ? 'light' : 'dark';
+    setThemeMode(nextMode);
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextMode);
+  };
   const market = useMemo(() => resolveGpsMarket(coords.lat, coords.lng), [coords.lat, coords.lng]);
   const resolvedDistrict = place.district.replace(/\s+District$/i, '').trim() || market.district;
   const displayLocality = formatLocality(place, lang);
@@ -223,9 +250,19 @@ export default function Dashboard() {
     if (!authReady) return undefined;
     const controller = new AbortController();
     fetch(`/api/weather?lat=${coords.lat}&lng=${coords.lng}`, { signal: controller.signal })
-      .then((response) => response.json())
-      .then((payload: WeatherForecast) => setForecast(payload))
-      .catch(() => setForecast(null));
+      .then((response) => {
+        if (!response.ok) throw new Error('weather-request-failed');
+        return response.json();
+      })
+      .then((payload: WeatherForecast) => {
+        setForecast(payload);
+        setWeatherFailed(false);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setForecast(null);
+        setWeatherFailed(true);
+      });
     return () => controller.abort();
   }, [coords.lat, coords.lng, authReady]);
 
@@ -285,12 +322,8 @@ export default function Dashboard() {
     );
   };
 
-  if (!authReady) {
-    return (
-      <div className={`living-field-root ${theme} flex min-h-screen items-center justify-center p-4`}>
-        <div className="m3-card max-w-sm text-center text-sm font-bold text-[var(--lf-ink)]">{t.loading}</div>
-      </div>
-    );
+  if (!authReady || (!forecast && !weatherFailed)) {
+    return <DashboardSkeleton theme={theme} title={uiCopy.loadingTitle} hint={uiCopy.loadingHint} />;
   }
 
   const currentWeather = forecast?.hourly?.[0];
@@ -310,6 +343,9 @@ export default function Dashboard() {
               ? (lang === 'en' ? 'Smart devices' : lang === 'hi' ? 'स्मार्ट उपकरण' : 'स्मार्ट उपकरणे')
               : t.home;
   const outlookLocale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
+  const forecastFreshness = forecast?.fetchedAt
+    ? `${uiCopy.updated} ${new Intl.DateTimeFormat(outlookLocale, { hour: '2-digit', minute: '2-digit' }).format(new Date(forecast.fetchedAt))}`
+    : t.loading;
   const outlookData = (forecast?.daily ?? []).slice(0, 7).map((day) => ({
     day: new Intl.DateTimeFormat(outlookLocale, { weekday: 'short' }).format(new Date(day.date + 'T00:00:00')),
     rainMm: Number(day.precipMm.toFixed(1)),
@@ -365,6 +401,7 @@ export default function Dashboard() {
 
   return (
     <div className={`living-field-root ${theme} flex min-h-screen flex-col items-center`}>
+      <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); window.setTimeout(() => document.getElementById('main-content')?.focus(), 0); }}>{uiCopy.skipToContent}</a>
       <LatinLeakScanner locale={lang} />
       <div className="living-field-sky-glow" aria-hidden="true" />
       <div className="app-shell relative z-10 flex min-h-screen w-full max-w-none flex-col">
@@ -373,7 +410,7 @@ export default function Dashboard() {
             <strong>{activeSectionLabel}</strong>
             <span>{displayLocality}</span>
           </div>
-          <button type="button" onClick={() => setActiveTab('home')} className="premium-header-brand flex min-w-0 items-center gap-2.5 text-left">
+          <button type="button" onClick={() => navigateToTab('home')} className="premium-header-brand flex min-w-0 items-center gap-2.5 text-left">
             <div className="brand-orb flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-[#1F6B4F]">
               <Sprout className="h-5 w-5" />
             </div>
@@ -384,7 +421,10 @@ export default function Dashboard() {
           </button>
 
           <div className="flex items-center gap-2">
-            <button type="button" onClick={locate} disabled={gpsStatus === 'searching'} className="glass-icon-button flex h-10 w-10 items-center justify-center rounded-full" aria-label="Use GPS">
+            <button type="button" onClick={toggleTheme} className="glass-icon-button flex h-10 w-10 items-center justify-center rounded-full" aria-label={theme === 'theme-night' ? uiCopy.switchToLight : uiCopy.switchToDark} title={theme === 'theme-night' ? uiCopy.switchToLight : uiCopy.switchToDark} aria-pressed={theme === 'theme-night'}>
+              {theme === 'theme-night' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <button type="button" onClick={locate} disabled={gpsStatus === 'searching'} className="glass-icon-button flex h-10 w-10 items-center justify-center rounded-full" aria-label={uiCopy.useGps} title={uiCopy.useGps}>
               {gpsStatus === 'searching' ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
             </button>
             <div className="language-select-wrap">
@@ -392,7 +432,7 @@ export default function Dashboard() {
                 value={lang}
                 onChange={(event) => setLang(event.target.value as LanguageCode)}
                 className="language-pill h-10 appearance-none rounded-full py-0 pl-3 pr-8 text-xs font-semibold"
-                aria-label="Language"
+                aria-label={uiCopy.chooseLanguage}
               >
                 {LANGUAGES.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
               </select>
@@ -401,10 +441,11 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {gpsStatus === 'success' && <div className="status-strip">{t.locationUpdated}</div>}
-        {gpsStatus === 'error' && <div className="status-strip status-strip-error">{t.locationUnavailable}</div>}
+        {gpsStatus === 'success' && <div className="status-strip" role="status" aria-live="polite">{t.locationUpdated}</div>}
+        {gpsStatus === 'error' && <div className="status-strip status-strip-error" role="alert">{t.locationUnavailable}</div>}
+        {weatherFailed && <div className="status-strip status-strip-error" role="alert">{t.weatherUnavailable}</div>}
 
-        <main className="premium-main flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
+        <main id="main-content" tabIndex={-1} className="premium-main flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-28">
           <section className={activeTab === 'home' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'home'}>
             <div className="farm-ops-grid">
               <section className="ops-decision-panel premium-glass-card premium-glass-card-raised" aria-labelledby="dashboard-heading">
@@ -418,7 +459,7 @@ export default function Dashboard() {
                     <span><CalendarCheck className="h-4 w-4" /> {dashboardCopy.safeWindow}</span>
                     <strong>{!outlookData.length ? t.loading : safeDay ? dashboardCopy.safeOn + ': ' + safeDay.day : dashboardCopy.noSafeWindow}</strong>
                     <p><CloudRain className="h-3.5 w-3.5" /> {currentWeather ? Math.round(currentWeather.precipProbability) + '%' : '--'} <Wind className="h-3.5 w-3.5" /> {currentWeather ? Math.round(currentWeather.windSpeedKmh) + ' km/h' : '--'}</p>
-                    <button type="button" onClick={() => setActiveTab('weather')}>{dashboardCopy.viewForecast}<ChevronRight className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => navigateToTab('weather')}>{dashboardCopy.viewForecast}<ChevronRight className="h-4 w-4" /></button>
                   </aside>
                 </div>
                 <div className="ops-signal-row">
@@ -426,7 +467,7 @@ export default function Dashboard() {
                     const CommandIcon = item.icon;
                     const destination = item.key === 'weather' ? 'weather' : item.key === 'market' ? 'mandi' : item.key === 'crop' ? 'tools' : 'farm';
                     return (
-                      <button key={item.key} type="button" onClick={() => setActiveTab(destination)} className={'ops-signal ops-signal-' + item.tone}>
+                      <button key={item.key} type="button" onClick={() => navigateToTab(destination)} className={'ops-signal ops-signal-' + item.tone}>
                         <span className="ops-signal-icon"><CommandIcon className="h-4 w-4" /></span>
                         <span><small>{item.label}</small><strong>{item.title}</strong><em>{item.detail}</em></span>
                         <ChevronRight className="h-4 w-4" />
@@ -439,7 +480,7 @@ export default function Dashboard() {
               <aside className="ops-readiness-panel premium-glass-card premium-glass-card-raised" aria-label={t.score}>
                 <div className="ops-panel-heading">
                   <span><Activity className="h-4 w-4" /> {t.myFarm}</span>
-                  <small>{displayLocality}</small>
+                  <small>{displayLocality} · {forecastFreshness}</small>
                 </div>
                 <div className="ops-readiness-body">
                   <ScoreRing score={displayedScore} t={t} />
@@ -450,18 +491,21 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <p className="ops-score-basis">{dashboardCopy.scoreBasis}</p>
+                <details className="ops-score-details">
+                  <summary>{uiCopy.scoreDetails}</summary>
+                  <p className="ops-score-basis">{dashboardCopy.scoreBasis}</p>
+                </details>
               </aside>
 
               <section className="ops-outlook-panel premium-glass-card">
                 <div className="ops-panel-heading">
                   <span><CloudRain className="h-4 w-4" /> {t.weather}</span>
-                  <button type="button" onClick={() => setActiveTab('weather')}>{dashboardCopy.viewForecast}<ChevronRight className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => navigateToTab('weather')}>{dashboardCopy.viewForecast}<ChevronRight className="h-4 w-4" /></button>
                 </div>
                 {outlookData.length ? (
                   <div className="ops-day-strip" aria-label={t.weather + ' - ' + t.sevenDays}>
                     {outlookData.slice(0, 4).map((day) => (
-                      <button key={day.day} type="button" onClick={() => setActiveTab('weather')} className={day.safe ? 'ops-day-card ops-day-safe' : 'ops-day-card'}>
+                      <button key={day.day} type="button" onClick={() => navigateToTab('weather')} className={day.safe ? 'ops-day-card ops-day-safe' : 'ops-day-card'}>
                         <strong>{day.day}</strong>
                         <span><CloudRain className="h-3.5 w-3.5" /> {day.rainChance}%</span>
                         <span><Wind className="h-3.5 w-3.5" /> {day.wind}</span>
@@ -479,12 +523,12 @@ export default function Dashboard() {
                   <small>{t.today}</small>
                 </div>
                 <div className="ops-action-queue">
-                  <button type="button" onClick={() => setActiveTab('weather')}>
+                  <button type="button" onClick={() => navigateToTab('weather')}>
                     <span className="ops-action-number ops-action-critical">01</span>
                     <span><small>{t.alerts}</small><strong>{topAlert?.title || t.noMajorRisk}</strong></span>
                     <ChevronRight className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => setActiveTab('tools')}>
+                  <button type="button" onClick={() => navigateToTab('tools')}>
                     <span className="ops-action-number">02</span>
                     <span><small>{t.timing}</small><strong>{intelligence.fertilizerPlan.timing}</strong></span>
                     <ChevronRight className="h-4 w-4" />
@@ -517,7 +561,7 @@ export default function Dashboard() {
                   <span><small>{dashboardCopy.cropOpportunity}</small><strong>{topCrop?.localName || t.addFarmData}</strong></span>
                   <em className={'ops-market-signal ops-market-signal-' + marketSignal}>{marketSignalLabel}</em>
                 </div>
-                <button type="button" onClick={() => setActiveTab('mandi')}>{dashboardCopy.compareMarkets}<ChevronRight className="h-4 w-4" /></button>
+                <button type="button" onClick={() => navigateToTab('mandi')}>{dashboardCopy.compareMarkets}<ChevronRight className="h-4 w-4" /></button>
               </section>
 
               <section className="ops-plan-panel premium-glass-card ops-plan-compact">
@@ -525,7 +569,7 @@ export default function Dashboard() {
                   <span><MapPin className="h-4 w-4" /> {t.farmPlan}</span>
                   <strong>{farmTwin.farmSizeHectares.toFixed(1)} {t.hectareShort} - {displayDistrict}</strong>
                 </div>
-                <button type="button" onClick={() => setActiveTab('tools')}>{t.farmPlan}<ChevronRight className="h-4 w-4" /></button>
+                <button type="button" onClick={() => navigateToTab('tools')}>{t.farmPlan}<ChevronRight className="h-4 w-4" /></button>
               </section>
             </div>
           </section>
@@ -542,12 +586,14 @@ export default function Dashboard() {
               forecast={forecast}
               farmId={farmTwin.farmId}
               fieldId={farmTwin.fields[0]?.id || 'field-north'}
-              onViewWeather={() => setActiveTab('weather')}
+              onViewWeather={() => navigateToTab('weather')}
+              activeDevice={activeDevice}
+              onDeviceChange={(device) => navigateToTab('devices', device)}
             />
           </section>
         </main>
 
-        <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} locality={displayLocality} userName={userName} lang={lang} />
+        <BottomNav activeTab={activeTab} onChange={navigateToTab} t={t} locality={displayLocality} userName={userName} lang={lang} />
       </div>
     </div>
   );

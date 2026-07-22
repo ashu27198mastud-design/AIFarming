@@ -7,7 +7,7 @@ import CameraCapture, {
   type PreparedMedia,
 } from '@/components/CameraCapture';
 import DiagnosisCard, { type DiagnosisView } from '@/components/DiagnosisCard';
-import type { TranslationSet } from '@/lib/i18n';
+import type { LanguageCode, TranslationSet } from '@/lib/i18n';
 import type { WeatherForecast } from '@/types';
 
 export type ScanHistoryItem = {
@@ -26,25 +26,49 @@ export type HomeTabHandle = {
 
 type Props = {
   t: TranslationSet;
-  lang: string;
+  lang: LanguageCode;
   coords: { lat: number; lng: number };
   onAddScan: (scan: ScanHistoryItem) => void;
 };
 
-function unavailableDiagnosis(): DiagnosisView {
+function unavailableDiagnosis(lang: LanguageCode): DiagnosisView {
+  const copy = {
+    en: {
+      issue: 'Analysis unavailable',
+      question: 'Upload a clear close-up photo of the affected leaf or plant.',
+      action: 'Do not apply treatment from this scan. Take another clear photo.',
+      fertilizer: 'Choose fertilizer dosage only after a soil test.',
+      prevention: 'Avoid chemical use until the crop issue is clearly identified.',
+    },
+    hi: {
+      issue: 'विश्लेषण उपलब्ध नहीं है',
+      question: 'प्रभावित पत्ती या पौधे की साफ और पास से ली गई फोटो अपलोड करें।',
+      action: 'इस स्कैन के आधार पर उपचार न करें। एक और साफ फोटो लें।',
+      fertilizer: 'मिट्टी की जांच के बाद ही उर्वरक की मात्रा चुनें।',
+      prevention: 'समस्या की स्पष्ट पहचान तक रसायन का उपयोग न करें।',
+    },
+    mr: {
+      issue: 'विश्लेषण उपलब्ध नाही',
+      question: 'बाधित पान किंवा रोपाचा स्वच्छ आणि जवळून घेतलेला फोटो अपलोड करा.',
+      action: 'या तपासणीवरून उपचार करू नका. आणखी एक स्वच्छ फोटो घ्या.',
+      fertilizer: 'माती तपासणीनंतरच खताचे प्रमाण निवडा.',
+      prevention: 'समस्येची स्पष्ट ओळख होईपर्यंत रसायन वापरू नका.',
+    },
+  }[lang];
+
   return {
-    mostLikelyIssue: 'विश्लेषण उपलब्ध नहीं / Analysis unavailable',
+    mostLikelyIssue: copy.issue,
     alternativePossibilities: [],
     confidence: 0,
     visibleIndicators: [],
     severity: 'unknown',
     urgency: 'review',
-    questionsForAccuracy: ['कृपया साफ़ क्लोज़-अप फोटो अपलोड करें। / Please upload a clear close-up image.'],
-    immediateAction: 'इस स्कैन के आधार पर कोई उपचार न करें। कृपया दोबारा प्रयास करें। / Do not apply treatment based on this scan. Please retry.',
+    questionsForAccuracy: [copy.question],
+    immediateAction: copy.action,
     organicOptions: [],
     chemicalCategory: '',
-    fertilizerAdvice: 'मिट्टी की जांच के बिना उर्वरक की मात्रा तय न करें। / Do not choose fertilizer dosage without a soil test.',
-    preventionAdvice: 'स्पष्ट पहचान के बिना रसायन का उपयोग न करें। / Avoid chemical use without a clear diagnosis.',
+    fertilizerAdvice: copy.fertilizer,
+    preventionAdvice: copy.prevention,
     followUpDays: 0,
     requiresExpert: false,
     imageQuality: 'poor',
@@ -52,7 +76,6 @@ function unavailableDiagnosis(): DiagnosisView {
     dataSource: 'unavailable',
   };
 }
-
 const HomeTab = forwardRef<HomeTabHandle, Props>(function HomeTab(
   { t, lang, coords, onAddScan },
   ref,
@@ -96,7 +119,7 @@ const HomeTab = forwardRef<HomeTabHandle, Props>(function HomeTab(
       result = payload as DiagnosisView;
     } catch (error) {
       console.error('Diagnosis request failed:', error);
-      result = unavailableDiagnosis();
+      result = unavailableDiagnosis(lang);
     }
 
     setDiagnosis(result);
@@ -110,7 +133,7 @@ const HomeTab = forwardRef<HomeTabHandle, Props>(function HomeTab(
 
     onAddScan({
       id: `scan-${Date.now()}`,
-      date: new Date().toLocaleDateString('en-IN'),
+      date: new Date().toLocaleDateString(lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN'),
       disease: result.mostLikelyIssue,
       severity: result.severity,
       status,
@@ -124,6 +147,7 @@ const HomeTab = forwardRef<HomeTabHandle, Props>(function HomeTab(
     <div className="space-y-5">
       <CameraCapture
         ref={cameraRef}
+        lang={lang}
         t={t}
         value={media}
         onChange={(next) => {

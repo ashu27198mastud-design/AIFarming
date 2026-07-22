@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+
 import { Drone, ShieldCheck } from 'lucide-react';
 import type { LanguageCode } from '@/lib/i18n';
+import type { DeviceId } from '@/lib/dashboard-navigation';
 import type { WeatherForecast } from '@/types';
 import DroneOperationsPanel from './DroneOperationsPanel';
 import SprayLockPanel from './SprayLockPanel';
 
-type DeviceId = 'spraylock' | 'drone';
+
 
 const COPY: Record<LanguageCode, {
   aria: string;
@@ -50,10 +51,12 @@ type Props = {
   farmId: string;
   fieldId: string;
   onViewWeather: () => void;
+  activeDevice: DeviceId;
+  onDeviceChange: (device: DeviceId) => void;
 };
 
 export default function DeviceHub(props: Props) {
-  const [activeDevice, setActiveDevice] = useState<DeviceId>('drone');
+  const { activeDevice, onDeviceChange } = props;
   const copy = COPY[props.lang];
 
   return (
@@ -63,7 +66,7 @@ export default function DeviceHub(props: Props) {
           type="button"
           className={activeDevice === 'spraylock' ? 'is-active' : ''}
           aria-pressed={activeDevice === 'spraylock'}
-          onClick={() => setActiveDevice('spraylock')}
+          onClick={() => onDeviceChange('spraylock')}
         >
           <span className="device-switcher-icon"><ShieldCheck className="h-5 w-5" /></span>
           <span><strong>{copy.spraylock}</strong><small>{copy.spraylockHint}</small></span>
@@ -73,7 +76,7 @@ export default function DeviceHub(props: Props) {
           type="button"
           className={activeDevice === 'drone' ? 'is-active' : ''}
           aria-pressed={activeDevice === 'drone'}
-          onClick={() => setActiveDevice('drone')}
+          onClick={() => onDeviceChange('drone')}
         >
           <span className="device-switcher-icon"><Drone className="h-5 w-5" /></span>
           <span><strong>{copy.drone}</strong><small>{copy.droneHint}</small></span>

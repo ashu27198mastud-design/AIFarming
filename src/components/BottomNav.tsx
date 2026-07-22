@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { CloudRain, LayoutDashboard, ListChecks, MoreHorizontal, Settings, ShieldCheck, Sprout, Store, TrendingUp } from 'lucide-react';
 import type { LanguageCode, TranslationSet } from '@/lib/i18n';
+import type { DashboardTabId } from '@/lib/dashboard-navigation';
 
-export type TabId = 'home' | 'weather' | 'mandi' | 'farm' | 'tools' | 'commerce' | 'devices';
+export type TabId = DashboardTabId;
 
 type Props = {
   activeTab: TabId;
@@ -32,6 +33,7 @@ export default function BottomNav({ activeTab, onChange, t, locality, userName, 
   const commerceLabel = lang === 'en' ? 'Seller hub' : lang === 'hi' ? 'बिक्री केंद्र' : 'विक्री केंद्र';
   const deviceLabel = lang === 'en' ? 'Smart devices' : lang === 'hi' ? 'स्मार्ट उपकरण' : 'स्मार्ट उपकरणे';
   const moreLabel = lang === 'en' ? 'More' : lang === 'hi' ? 'और' : 'अधिक';
+  const primaryNavigationLabel = lang === 'en' ? 'Primary navigation' : lang === 'hi' ? 'मुख्य नेविगेशन' : 'मुख्य नेव्हिगेशन';
   const items = [
     { id: 'home' as const, label: t.home, icon: LayoutDashboard },
     { id: 'weather' as const, label: t.weather, icon: CloudRain },
@@ -49,7 +51,7 @@ export default function BottomNav({ activeTab, onChange, t, locality, userName, 
   };
 
   return (
-    <nav className="app-navigation" aria-label="Primary navigation">
+    <nav className="app-navigation" aria-label={primaryNavigationLabel}>
       <div className="app-navigation-surface">
         <button
           type="button"
