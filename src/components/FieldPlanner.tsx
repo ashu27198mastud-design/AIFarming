@@ -540,17 +540,17 @@ export default function FieldPlanner({ coords, market, lang, placeLabel }: Props
             {soilAnalysis && <span className="metric-pill">{soilAnalysis.confidence}% {copy.confidence}</span>}
           </div>
           {soilLoading && <div className="soil-loading-bar"><span /></div>}
-          {soilError && <p className="mt-3 text-sm font-bold text-rose-700">{soilError}</p>}
+          {soilError && <p className="mt-3 text-body font-bold text-rose-700">{soilError}</p>}
           {soilAnalysis && (
             <>
-              <p className="mt-3 text-sm font-semibold leading-relaxed text-zinc-700">{soilAnalysis.summary}</p>
+              <p className="mt-3 text-body font-semibold leading-relaxed text-zinc-700">{soilAnalysis.summary}</p>
               <div className="soil-metrics">
                 <div><span>pH</span><strong>{soilAnalysis.ph ?? copy.notFound}</strong></div>
                 <div><span>N</span><strong>{soilAnalysis.nitrogen}</strong></div>
                 <div><span>P</span><strong>{soilAnalysis.phosphorus}</strong></div>
                 <div><span>K</span><strong>{soilAnalysis.potassium}</strong></div>
               </div>
-              {soilAnalysis.recommendations[0] && <p className="mt-3 rounded-xl bg-white/70 p-3 text-xs font-bold text-[#46554D]">{copy.next}: {soilAnalysis.recommendations[0]}</p>}
+              {soilAnalysis.recommendations[0] && <p className="mt-3 rounded-xl bg-white/70 p-3 text-kicker font-bold text-[#46554D]">{copy.next}: {soilAnalysis.recommendations[0]}</p>}
             </>
           )}
         </div>
@@ -563,7 +563,7 @@ export default function FieldPlanner({ coords, market, lang, placeLabel }: Props
       {showResults && (
         <div className="planner-results">
           {planLoading && <div className="soil-analysis-panel"><span className="section-kicker">{copy.aiAnalysis}</span><h3 className="mt-2 text-lg font-black">{copy.combining}</h3><div className="soil-loading-bar"><span /></div></div>}
-          {planError && <p className="rounded-xl bg-rose-50 p-3 text-sm font-bold text-rose-700">{planError} {copy.planErrorSuffix}</p>}
+          {planError && <p className="rounded-xl bg-rose-50 p-3 text-body font-bold text-rose-700">{planError} {copy.planErrorSuffix}</p>}
           {aiPlan && (
             <section className="ai-land-plan">
               <div className="ai-land-plan-head">
@@ -574,8 +574,8 @@ export default function FieldPlanner({ coords, market, lang, placeLabel }: Props
                 {aiPlan.take.map((crop) => <div key={crop.crop} className="ai-crop-take"><span>{copy.take}</span><strong>{cropLabel(crop.crop, lang)} · {crop.score}/100</strong><p>{crop.why}</p><small>{copy.nutrition}: {crop.fertilizerFocus}</small></div>)}
                 {aiPlan.avoid.map((crop) => <div key={crop.crop} className="ai-crop-avoid"><span>{copy.avoidNow}</span><strong>{cropLabel(crop.crop, lang)} · {crop.score}/100</strong><p>{crop.why}</p></div>)}
               </div>
-              {aiPlan.preventiveActions[0] && <p className="mt-3 text-sm font-bold text-[#43534b]">{copy.preventFirst}: {aiPlan.preventiveActions[0]}</p>}
-              <p className="mt-2 text-[11px] font-bold text-zinc-500">{aiPlan.confidence}% {copy.confidence}. {aiPlan.disclaimer}</p>
+              {aiPlan.preventiveActions[0] && <p className="mt-3 text-body font-bold text-[#43534b]">{copy.preventFirst}: {aiPlan.preventiveActions[0]}</p>}
+              <p className="mt-2 text-kicker font-bold text-zinc-500">{aiPlan.confidence}% {copy.confidence}. {aiPlan.disclaimer}</p>
             </section>
           )}
           <div className="planner-local-head">

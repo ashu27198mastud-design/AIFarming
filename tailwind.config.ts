@@ -25,6 +25,18 @@ const config: Config = {
         display: ['var(--font-display)', 'system-ui', 'sans-serif'],
         body: ['var(--font-body)', 'system-ui', 'sans-serif'],
       },
+      fontSize: {
+        kicker: ['13px', { lineHeight: '1.3', letterSpacing: '0.06em' }],
+        meta: ['14px', { lineHeight: '1.45' }],
+        nav: ['15px', { lineHeight: '1' }],
+        body: ['16px', { lineHeight: '1.6' }],
+        btn: ['16px', { lineHeight: '1' }],
+        title: ['18px', { lineHeight: '1.4' }],
+        'market-title': ['22px', { lineHeight: '1.3' }],
+        stat: ['26px', { lineHeight: '1.1' }],
+        'hero-num': ['36px', { lineHeight: '1.05' }],
+        hero: ['40px', { lineHeight: '1.15' }],
+      },
       animation: {
         'fade-slide-up': 'fadeSlideUp 450ms cubic-bezier(.22,1,.36,1) both',
       },

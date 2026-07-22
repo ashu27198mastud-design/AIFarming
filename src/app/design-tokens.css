@@ -6,6 +6,7 @@
   --surface-solid: #ffffff;
   --surface-soft: #f3f6f2;
   --primary: #146b32;
+  --primary-soft: rgba(20, 107, 50, 0.12);
   --primary-hover: #188038;
   --accent: #e8842c;
   --ok: #188038;
@@ -46,4 +47,14 @@
   --motion-standard: 300ms;
   --motion-entrance: 520ms;
   --ease-house: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --type-kicker: 13px;
+  --type-meta: 14px;
+  --type-navigation: 15px;
+  --type-body: 16px;
+  --type-title: 18px;
+  --type-market-title: 22px;
+  --type-stat: 26px;
+  --type-hero-number: 36px;
+  --type-hero: 40px;
 }

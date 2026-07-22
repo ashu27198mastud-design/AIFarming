@@ -163,7 +163,7 @@ const HomeTab = forwardRef<HomeTabHandle, Props>(function HomeTab(
               <ShieldCheck className="h-5 w-5" /> {loading ? t.analyzing : t.analyze}
             </button>
           )}
-          {loading && <p className="animate-pulse text-center text-sm font-semibold text-[#4E5953]">{t.analyzing}</p>}
+          {loading && <p className="animate-pulse text-center text-body font-semibold text-[#4E5953]">{t.analyzing}</p>}
           {diagnosis && <DiagnosisCard diagnosis={diagnosis} t={t} lang={lang} hourlyWeather={weather?.hourly ?? []} />}
         </div>
       )}

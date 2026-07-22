@@ -415,8 +415,8 @@ export default function Dashboard() {
               <Sprout className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-[19px] font-bold tracking-[-0.02em] text-[var(--lf-ink)]">{t.title}</h1>
-              <p className="truncate text-[11px] font-medium text-[#6F7478]">{displayLocality}</p>
+              <h1 className="truncate text-title font-bold text-[var(--lf-ink)]">{t.title}</h1>
+              <p className="truncate text-meta font-medium text-[#6F7478]">{displayLocality}</p>
             </div>
           </button>
 
@@ -431,7 +431,7 @@ export default function Dashboard() {
               <select
                 value={lang}
                 onChange={(event) => setLang(event.target.value as LanguageCode)}
-                className="language-pill h-10 appearance-none rounded-full py-0 pl-3 pr-8 text-xs font-semibold"
+                className="language-pill h-10 appearance-none rounded-full py-0 pl-3 pr-8 text-meta font-semibold"
                 aria-label={uiCopy.chooseLanguage}
               >
                 {LANGUAGES.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
