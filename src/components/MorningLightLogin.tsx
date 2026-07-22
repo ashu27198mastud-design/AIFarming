@@ -8,7 +8,6 @@ import { wordmarkFontClass } from '@/app/fonts';
 import {
   clearAuthSession,
   createSession,
-  readAuthSession,
   saveLocalAccount,
   verifyLocalAccount,
   writeAuthSession,
@@ -203,12 +202,6 @@ export default function MorningLightLogin({
       if (forceLogin) {
         clearAuthSession();
         window.history.replaceState(null, '', '/');
-      } else {
-        const session = readAuthSession();
-        if (session) {
-          router.replace(session.setupCompleted ? '/dashboard' : '/setup');
-          return;
-        }
       }
 
       const savedLanguage = readSavedLanguage(initialLanguage);

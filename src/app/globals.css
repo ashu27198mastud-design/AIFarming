@@ -40,7 +40,7 @@ body {
     linear-gradient(180deg, #fbfaf7 0%, #f6f5f1 55%, #f0efeb 100%) !important;
   color: var(--text) !important;
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

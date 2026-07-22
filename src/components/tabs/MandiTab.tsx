@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Gavel, Info, MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
-import type { TranslationSet } from '@/lib/i18n';
+import type { LanguageCode, TranslationSet } from '@/lib/i18n';
+import { formatLocality, formatMarketName } from '@/lib/locality';
 
 const CROPS = [
   { key: 'Tomato', label: { en: 'Tomato', hi: 'टमाटर', mr: 'टोमॅटो' } },
@@ -103,7 +104,7 @@ type BidResponse = {
 
 type Props = {
   t: TranslationSet;
-  lang: string;
+  lang: LanguageCode;
   market: { state: string; district: string; distanceKm: number; village?: string; apmcName?: string };
 };
 
@@ -235,29 +236,43 @@ export default function MandiTab({ t, lang, market }: Props) {
   const topBids = (bidInfo?.bids ?? []).filter((bid) => bid.maxBidValue > 0).slice(0, 3);
   const closingLabel = formatBidDate(bidInfo?.summary.closesAt ?? '', lang);
 
+  const localizedMarketName = formatMarketName(
+    market.apmcName || market.district,
+    { village: market.village, district: market.district, state: market.state },
+    lang,
+  );
+  const localizedVillage = formatLocality(
+    { village: market.village || market.district, district: market.district, state: market.state },
+    lang,
+  );
+  const localizedDistrict = formatLocality(
+    { village: market.district, district: market.district, state: market.state },
+    lang,
+  );
+  const marketContext = Array.from(new Set([localizedVillage, localizedDistrict])).join(' · ');
   return (
     <div className="space-y-4">
       <section className="m3-card flex items-center justify-between gap-3">
         <div className="min-w-0">
           <span className="section-kicker">{t.nearestMarket}</span>
-          <h2 className="mt-1 truncate text-xl font-bold text-[#202124]">{market.apmcName || market.district}</h2>
-          <p className="mt-1 text-xs font-medium text-[#5F6368]">{market.village || market.district} · {market.district} · ~{market.distanceKm} km</p>
+          <h2 className="mt-1 truncate text-market-title font-bold text-[#202124]">{localizedMarketName}</h2>
+          <p className="mt-1 text-meta font-medium text-[#5F6368]">{marketContext} · ~{market.distanceKm} km</p>
         </div>
         <span className="google-icon google-icon-blue"><MapPin className="h-5 w-5" /></span>
       </section>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {CROPS.map((crop) => (
-          <button key={crop.key} type="button" onClick={() => setSelected(crop.key)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold ${selected === crop.key ? 'bg-[#1A73E8] text-white' : 'border border-[#DADCE0] bg-white text-[#3C4043]'}`}>
+          <button key={crop.key} type="button" onClick={() => setSelected(crop.key)} className={'mandi-crop-chip' + (selected === crop.key ? ' is-selected' : '')}>
             {cropLabel(crop, lang)}
           </button>
         ))}
       </div>
 
-      {loading && <div className="m3-card text-center text-sm font-medium text-[#5F6368]">{t.loading}</div>}
+      {loading && <div className="m3-card text-center text-body font-medium text-[#5F6368]">{t.loading}</div>}
 
       {current?.dataSource === 'fallback' && (
-        <div className="flex items-start gap-3 rounded-2xl border border-[#DCE8DE] bg-white/75 p-3 text-xs font-semibold leading-relaxed text-[#5F6368] shadow-[0_10px_30px_rgba(60,64,67,0.08)]">
+        <div className="flex items-start gap-3 rounded-2xl border border-[#DCE8DE] bg-white/75 p-3 text-kicker font-semibold leading-relaxed text-[#5F6368] shadow-[0_10px_30px_rgba(60,64,67,0.08)]">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#188038]" aria-hidden="true" />
           <span>{t.liveMarketKeyMissing}</span>
         </div>
@@ -270,28 +285,28 @@ export default function MandiTab({ t, lang, market }: Props) {
               <div>
                 <span className="section-kicker">{selectedCropLabel}</span>
                 <div className="mt-2 flex items-end gap-2">
-                  <strong className="text-3xl font-bold text-[#202124]">₹{Math.round(record.modalPrice).toLocaleString('en-IN')}</strong>
-                  <span className="pb-1 text-xs font-medium text-[#5F6368]">/ {t.quintal}</span>
+                  <strong className="text-hero-num tabular-nums font-bold text-[#202124]">₹{Math.round(record.modalPrice).toLocaleString('en-IN')}</strong>
+                  <span className="pb-1 text-kicker font-medium text-[#5F6368]">/ {t.quintal}</span>
                 </div>
-                <p className="mt-2 text-xs font-medium text-[#5F6368]">₹{Math.round(record.minPrice).toLocaleString('en-IN')} – ₹{Math.round(record.maxPrice).toLocaleString('en-IN')}</p>
+                <p className="mt-2 text-meta font-medium text-[#5F6368]">₹{Math.round(record.minPrice).toLocaleString('en-IN')} – ₹{Math.round(record.maxPrice).toLocaleString('en-IN')}</p>
               </div>
               <div className={`rounded-2xl px-3 py-2 text-right ${current.trend.direction === 'rising' ? 'bg-[#E6F4EA] text-[#137333]' : current.trend.direction === 'falling' ? 'bg-[#FCE8E6] text-[#C5221F]' : 'bg-[#F1F3F4] text-[#5F6368]'}`}>
                 <TrendIcon className="ml-auto h-5 w-5" />
-                <strong className="mt-1 block text-sm">{current.trend.percent > 0 ? '+' : ''}{current.trend.percent}%</strong>
+                <strong className="mt-1 block text-body">{current.trend.percent > 0 ? '+' : ''}{current.trend.percent}%</strong>
               </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#F8F9FA] px-4 py-3">
-              <span className="text-sm font-semibold text-[#3C4043]">{decision(current.trend.direction, t)}</span>
-              <span className={`text-xs font-semibold ${current.dataSource === 'live' ? 'text-[#137333]' : 'text-[#B06000]'}`}>
+              <span className="text-body font-semibold text-[#3C4043]">{decision(current.trend.direction, t)}</span>
+              <span className={`text-kicker font-semibold ${current.dataSource === 'live' ? 'text-[#137333]' : 'text-[#B06000]'}`}>
                 {current.dataSource === 'live' ? t.livePrice : `${t.lastKnown} · ${record.arrivalDate}`}
               </span>
             </div>
 
             <div className="mt-3 rounded-2xl border border-[#DCE8DE] bg-[#F3FAF5] p-4">
               <span className="section-kicker">{t.cropAdvice}</span>
-              <p className="mt-2 text-sm font-bold leading-relaxed text-[#2F4B3A]">{cropAdvice(current, market.distanceKm, t)}</p>
-              <p className="mt-2 text-xs font-semibold leading-relaxed text-[#66736C]">{sourceDetail(current, t)}</p>
+              <p className="mt-2 text-body font-bold leading-relaxed text-[#2F4B3A]">{cropAdvice(current, market.distanceKm, t)}</p>
+              <p className="mt-2 text-kicker font-semibold leading-relaxed text-[#66736C]">{sourceDetail(current, t)}</p>
             </div>
           </section>
 
@@ -300,46 +315,46 @@ export default function MandiTab({ t, lang, market }: Props) {
               <div className="min-w-0">
                 <span className="section-kicker">{bidsCopy.title}</span>
                 <h3 className="mt-1 text-lg font-bold text-[#202124]">{selectedCropLabel}</h3>
-                <p className="mt-1 text-xs font-semibold leading-relaxed text-[#5F6368]">{hasLiveBids ? bidsCopy.subtitle : bidsCopy.unavailable}</p>
+                <p className="mt-1 text-kicker font-semibold leading-relaxed text-[#5F6368]">{hasLiveBids ? bidsCopy.subtitle : bidsCopy.unavailable}</p>
               </div>
               <span className={`google-icon ${hasLiveBids ? 'google-icon-green' : 'google-icon-amber'}`}><Gavel className="h-5 w-5" /></span>
             </div>
 
-            {bidLoading && <div className="mt-4 rounded-2xl bg-[#F8F9FA] p-3 text-center text-xs font-bold text-[#5F6368]">{t.loading}</div>}
+            {bidLoading && <div className="mt-4 rounded-2xl bg-[#F8F9FA] p-3 text-center text-kicker font-bold text-[#5F6368]">{t.loading}</div>}
 
             {!bidLoading && hasLiveBids && bidInfo && (
               <>
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
                   <div className="rounded-2xl bg-[#F8FBF8] p-3">
-                    <span className="text-[11px] font-bold uppercase text-[#5F6368]">{bidsCopy.highestBid}</span>
+                    <span className="text-kicker font-bold uppercase text-[#5F6368]">{bidsCopy.highestBid}</span>
                     <strong className="mt-1 block text-xl text-[#137333]">₹{Math.round(bidInfo.summary.highestBid).toLocaleString('en-IN')}</strong>
                   </div>
                   <div className="rounded-2xl bg-[#F8FBF8] p-3">
-                    <span className="text-[11px] font-bold uppercase text-[#5F6368]">{bidsCopy.openLots}</span>
+                    <span className="text-kicker font-bold uppercase text-[#5F6368]">{bidsCopy.openLots}</span>
                     <strong className="mt-1 block text-xl text-[#202124]">{bidInfo.summary.openLots || bidInfo.summary.lots}</strong>
                   </div>
                   <div className="rounded-2xl bg-[#F8FBF8] p-3">
-                    <span className="text-[11px] font-bold uppercase text-[#5F6368]">{bidsCopy.arrival}</span>
+                    <span className="text-kicker font-bold uppercase text-[#5F6368]">{bidsCopy.arrival}</span>
                     <strong className="mt-1 block text-xl text-[#202124]">{bidInfo.summary.totalWeightQuintal.toLocaleString('en-IN')} {bidsCopy.quintal}</strong>
                   </div>
                 </div>
 
                 <div className="mt-3 divide-y divide-[#EEF0EF] rounded-2xl border border-[#EEF0EF] bg-white/70 px-3">
                   {topBids.map((bid) => (
-                    <div key={bid.lotCode} className="flex items-center justify-between gap-3 py-3 text-sm">
+                    <div key={bid.lotCode} className="flex items-center justify-between gap-3 py-3 text-body">
                       <span className="min-w-0 truncate font-semibold text-[#3C4043]">{bidsCopy.lot} {bid.lotCode}</span>
-                      <span className="whitespace-nowrap text-xs font-semibold text-[#5F6368]">{bid.bags} {bidsCopy.bags}</span>
+                      <span className="whitespace-nowrap text-kicker font-semibold text-[#5F6368]">{bid.bags} {bidsCopy.bags}</span>
                       <strong className="whitespace-nowrap text-[#202124]">₹{Math.round(bid.maxBidValue).toLocaleString('en-IN')}</strong>
                     </div>
                   ))}
                 </div>
 
-                {closingLabel && <p className="mt-2 text-xs font-semibold text-[#5F6368]">{bidsCopy.closes}: {closingLabel}</p>}
+                {closingLabel && <p className="mt-2 text-kicker font-semibold text-[#5F6368]">{bidsCopy.closes}: {closingLabel}</p>}
               </>
             )}
 
             {!bidLoading && !hasLiveBids && (
-              <span className="mt-4 inline-flex rounded-full bg-[#F8F9FA] px-3 py-2 text-xs font-bold text-[#5F6368]">{bidsCopy.unavailablePill}</span>
+              <span className="mt-4 inline-flex rounded-full bg-[#F8F9FA] px-3 py-2 text-kicker font-bold text-[#5F6368]">{bidsCopy.unavailablePill}</span>
             )}
           </section>
 
@@ -347,9 +362,9 @@ export default function MandiTab({ t, lang, market }: Props) {
             <span className="section-kicker">{t.nearby}</span>
             <div className="mt-3 divide-y divide-[#EEF0EF]">
               {current.records.slice(0, 5).map((item, index) => (
-                <div key={`${item.market}-${item.arrivalDate}-${index}`} className="flex items-center justify-between gap-3 py-3 text-sm">
-                  <span className="truncate font-medium text-[#3C4043]">{item.market}</span>
-                  <strong className="whitespace-nowrap text-[#202124]">₹{Math.round(item.modalPrice).toLocaleString('en-IN')}</strong>
+                <div key={`${item.market}-${item.arrivalDate}-${index}`} className="flex items-center justify-between gap-3 py-3 text-body">
+                  <span className="truncate text-body font-medium text-[#3C4043]">{formatLocality({ village: item.market }, lang)}</span>
+                  <strong className="whitespace-nowrap text-title tabular-nums text-[#202124]">₹{Math.round(item.modalPrice).toLocaleString('en-IN')}</strong>
                 </div>
               ))}
             </div>

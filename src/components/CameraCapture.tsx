@@ -494,19 +494,19 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {!cameraReady && !captureInProgress && (
           <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center bg-[#101311]/75 px-8 text-center text-white backdrop-blur-sm">
             <RefreshCcw className="mb-3 h-8 w-8 animate-spin" />
-            <p className="text-sm font-bold">{copy.starting}</p>
+            <p className="text-body font-bold">{copy.starting}</p>
           </div>
         )}
 
         {captureInProgress && (
           <div className="absolute inset-0 z-[12] flex flex-col items-center justify-center bg-white/16 text-white backdrop-blur-[2px]">
             {captureComplete ? <Check className="mb-2 h-12 w-12" /> : <RefreshCcw className="mb-2 h-10 w-10 animate-spin" />}
-            <p className="text-sm font-extrabold">{captureComplete ? copy.captured : copy.capturing}</p>
+            <p className="text-body font-extrabold">{captureComplete ? copy.captured : copy.capturing}</p>
           </div>
         )}
 
         {error && (
-          <div className="absolute inset-x-4 top-4 z-20 rounded-2xl border border-amber-200/40 bg-black/62 px-4 py-3 text-center text-xs font-bold text-white backdrop-blur-md" role="alert">
+          <div className="absolute inset-x-4 top-4 z-20 rounded-2xl border border-amber-200/40 bg-black/62 px-4 py-3 text-center text-kicker font-bold text-white backdrop-blur-md" role="alert">
             {error}
           </div>
         )}
@@ -540,7 +540,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
           <button
             type="button"
             onClick={() => { stopCamera(); openDeviceCamera(); }}
-            className="absolute bottom-24 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/30 bg-black/62 px-4 py-2.5 text-xs font-extrabold text-white shadow-lg backdrop-blur-md"
+            className="absolute bottom-24 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/30 bg-black/62 px-4 py-2.5 text-kicker font-extrabold text-white shadow-lg backdrop-blur-md"
           >
             {t.openDeviceCamera}
           </button>
@@ -555,7 +555,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {hiddenInputs}
         <NextImage src={value.previewUrl} alt={copy.cropPreview} fill unoptimized className="object-cover" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/24 via-transparent to-white/10" />
-        <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-black/58 px-4 py-3 text-left text-xs font-bold text-white backdrop-blur-md">
+        <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-black/58 px-4 py-3 text-left text-kicker font-bold text-white backdrop-blur-md">
           {t.photoReady}
         </div>
         <button type="button" onClick={() => onChange(null)} className="absolute right-3 top-3 flex min-h-12 min-w-12 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-md" aria-label={t.removeImage}>
@@ -572,8 +572,8 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         <Camera className="relative z-10 h-11 w-11" />
       </div>
       <span className="section-kicker mb-2">{t.cropDiseaseScan}</span>
-      <h2 className="mb-2 text-[22px] font-extrabold text-[#202421]">{t.captureOrUploadCropPhoto}</h2>
-      <p className="mx-auto mb-5 max-w-[330px] text-sm font-semibold leading-relaxed text-[#6F746F]">{t.photoGuidance}</p>
+      <h2 className="mb-2 text-market-title font-extrabold text-[#202421]">{t.captureOrUploadCropPhoto}</h2>
+      <p className="mx-auto mb-5 max-w-[330px] text-body font-semibold leading-relaxed text-[#6F746F]">{t.photoGuidance}</p>
 
       <div className="capture-tips" aria-label={t.photoGuidance}>
         <span><Check className="h-3.5 w-3.5" /><span>{t.symptomStep}</span></span>
@@ -623,8 +623,8 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
           </label>
         </div>
       </div>
-      <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">{t.diagnosisDisclaimer}</p>
-      {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm" role="alert">{error}</div>}
+      <p className="mt-4 text-kicker font-bold uppercase tracking-[0.12em] text-zinc-400">{t.diagnosisDisclaimer}</p>
+      {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-body font-semibold text-amber-900 shadow-sm" role="alert">{error}</div>}
     </div>
   );
 });

@@ -142,7 +142,7 @@ export default function WeatherTab({ t, lang, coords }: Props) {
     return () => window.clearTimeout(timer);
   }, [alerts, notificationState, notifyAlerts, pushEnabled]);
 
-  if (!forecast && !error) return <div className="m3-card text-center text-sm font-medium text-[#5F6368]">{t.loading}</div>;
+  if (!forecast && !error) return <div className="m3-card text-center text-body font-medium text-[#5F6368]">{t.loading}</div>;
 
   const pushCopy = notificationState === 'unsupported'
     ? t.browserAlertsUnavailable
@@ -154,7 +154,7 @@ export default function WeatherTab({ t, lang, coords }: Props) {
 
   return (
     <div className="space-y-4">
-      {error && <div className="rounded-2xl bg-[#FCE8E6] p-4 text-sm font-semibold text-[#C5221F]">{t.weatherUnavailable}</div>}
+      {error && <div className="rounded-2xl bg-[#FCE8E6] p-4 text-body font-semibold text-[#C5221F]">{t.weatherUnavailable}</div>}
 
       {current && (
         <section className="m3-card">
@@ -163,7 +163,7 @@ export default function WeatherTab({ t, lang, coords }: Props) {
               <span className="section-kicker">{t.now}</span>
               <div className="mt-2 flex items-end gap-2">
                 <strong className="text-4xl font-bold text-[#202124]">{Math.round(current.temperatureC)} C</strong>
-                <span className="pb-1 text-sm font-medium text-[#5F6368]">{forecast.dataSource}</span>
+                <span className="pb-1 text-body font-medium text-[#5F6368]">{forecast.dataSource}</span>
               </div>
             </div>
             <CloudRain className="h-12 w-12 text-[#1A73E8]" />
@@ -183,7 +183,7 @@ export default function WeatherTab({ t, lang, coords }: Props) {
             type="button"
             onClick={() => void enablePushAlerts()}
             disabled={notificationState === 'unsupported' || notificationState === 'denied'}
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#DADCE0] bg-white px-4 text-xs font-extrabold text-[#3C4043] disabled:opacity-60"
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#DADCE0] bg-white px-4 text-kicker font-extrabold text-[#3C4043] disabled:opacity-60"
           >
             {pushEnabled && notificationState === 'granted' ? <BellRing className="h-4 w-4 text-[#137333]" /> : <Bell className="h-4 w-4 text-[#F9AB00]" />}
             {pushCopy}
@@ -197,9 +197,9 @@ export default function WeatherTab({ t, lang, coords }: Props) {
               </div>
             ))}
           </div>
-        ) : <p className="text-sm font-medium text-[#5F6368]">{t.noMajorWeatherRisk}</p>}
+        ) : <p className="text-body font-medium text-[#5F6368]">{t.noMajorWeatherRisk}</p>}
         {pushEnabled && notificationState === 'granted' && (
-          <p className="mt-3 flex items-center gap-2 rounded-2xl bg-[#E6F4EA] px-4 py-3 text-xs font-bold text-[#137333]"><CheckCircle2 className="h-4 w-4" /> {t.weatherRisksNotify}</p>
+          <p className="mt-3 flex items-center gap-2 rounded-2xl bg-[#E6F4EA] px-4 py-3 text-kicker font-bold text-[#137333]"><CheckCircle2 className="h-4 w-4" /> {t.weatherRisksNotify}</p>
         )}
       </section>
 
@@ -207,7 +207,7 @@ export default function WeatherTab({ t, lang, coords }: Props) {
         <span className="section-kicker">{t.sevenDays}</span>
         <div className="mt-3 divide-y divide-[#EEF0EF]">
           {forecast?.daily.map((day) => (
-            <div key={day.date} className="flex items-center justify-between gap-3 py-3 text-sm">
+            <div key={day.date} className="flex items-center justify-between gap-3 py-3 text-body">
               <span className="w-12 font-semibold text-[#3C4043]">{new Date(day.date).toLocaleDateString(weatherLocale(lang), { weekday: 'short' })}</span>
               <span className="flex items-center gap-2 text-[#5F6368]"><Sun className="h-4 w-4" />{Math.round(day.precipProbability)}% {t.rain}</span>
               <span className="font-semibold text-[#202124]">{Math.round(day.maxTempC)} / {Math.round(day.minTempC)} C</span>

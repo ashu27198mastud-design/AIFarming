@@ -291,7 +291,7 @@ export default function SetupPage() {
                   </label>
 
                   {error && (
-                    <div role="alert" className="mb-4 p-3 text-sm font-semibold rounded-xl bg-red-50 text-red-700 border border-red-100">
+                    <div role="alert" className="mb-4 p-3 text-body font-semibold rounded-xl bg-red-50 text-red-700 border border-red-100">
                       {error}
                     </div>
                   )}
