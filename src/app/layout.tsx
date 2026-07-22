@@ -3,6 +3,7 @@ import './globals.css';
 import './google-clean.css';
 import './google-compact.css';
 import './liquid-glass.css';
+import './device-hub.css';
 
 
 export const metadata: Metadata = {

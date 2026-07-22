@@ -23,6 +23,7 @@ import ScoreRing from '@/components/ScoreRing';
 import FertilizerGapCard from '@/components/FertilizerGapCard';
 import FieldPlanner from '@/components/FieldPlanner';
 import CommerceHub from '@/components/CommerceHub';
+import DeviceHub from '@/components/DeviceHub';
 import HomeTab, { type ScanHistoryItem } from '@/components/tabs/HomeTab';
 import WeatherTab from '@/components/tabs/WeatherTab';
 import MandiTab from '@/components/tabs/MandiTab';
@@ -295,7 +296,19 @@ export default function Dashboard() {
   const currentWeather = forecast?.hourly?.[0];
   const dashboardCopy = DASHBOARD_COPY[lang];
   const displayedScore = forecast ? intelligence.readinessScore : null;
-  const activeSectionLabel = activeTab === 'weather' ? t.weather : activeTab === 'mandi' ? t.mandi : activeTab === 'farm' ? t.myFarm : activeTab === 'tools' ? t.farmPlan : activeTab === 'commerce' ? (lang === 'en' ? 'Seller hub' : lang === 'hi' ? 'बिक्री केंद्र' : 'विक्री केंद्र') : t.home;
+  const activeSectionLabel = activeTab === 'weather'
+    ? t.weather
+    : activeTab === 'mandi'
+      ? t.mandi
+      : activeTab === 'farm'
+        ? t.myFarm
+        : activeTab === 'tools'
+          ? t.farmPlan
+          : activeTab === 'commerce'
+            ? (lang === 'en' ? 'Seller hub' : lang === 'hi' ? 'बिक्री केंद्र' : 'विक्री केंद्र')
+            : activeTab === 'devices'
+              ? (lang === 'en' ? 'Smart devices' : lang === 'hi' ? 'स्मार्ट उपकरण' : 'स्मार्ट उपकरणे')
+              : t.home;
   const outlookLocale = lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
   const outlookData = (forecast?.daily ?? []).slice(0, 7).map((day) => ({
     day: new Intl.DateTimeFormat(outlookLocale, { weekday: 'short' }).format(new Date(day.date + 'T00:00:00')),
@@ -522,6 +535,16 @@ export default function Dashboard() {
           <section className={activeTab === 'farm' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'farm'}><FarmTab t={t} lang={lang} scans={scans} farm={{ region: displayDistrict || farmTwin.region, farmSizeHectares: farmTwin.farmSizeHectares }} /></section>
           <section className={activeTab === 'tools' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'tools'}><FieldPlanner coords={coords} market={market} lang={lang} placeLabel={displayDistrict} /></section>
           <section className={activeTab === 'commerce' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'commerce'}><CommerceHub lang={lang} placeLabel={displayDistrict} /></section>
+          <section className={activeTab === 'devices' ? 'block' : 'hidden'} aria-hidden={activeTab !== 'devices'}>
+            <DeviceHub
+              lang={lang}
+              locality={displayLocality}
+              forecast={forecast}
+              farmId={farmTwin.farmId}
+              fieldId={farmTwin.fields[0]?.id || 'field-north'}
+              onViewWeather={() => setActiveTab('weather')}
+            />
+          </section>
         </main>
 
         <BottomNav activeTab={activeTab} onChange={setActiveTab} t={t} locality={displayLocality} userName={userName} lang={lang} />
