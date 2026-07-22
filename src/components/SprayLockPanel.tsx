@@ -5,6 +5,7 @@ import {
   Activity,
   BatteryCharging,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   CloudRain,
   Cpu,
@@ -20,6 +21,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import type { LanguageCode } from '@/lib/i18n';
+import { INTERFACE_COPY } from '@/lib/interface-copy';
 import {
   evaluateSprayLockPreflight,
   type SprayLockPreflightInput,
@@ -296,6 +298,7 @@ type Props = {
 
 export default function SprayLockPanel({ lang, locality, forecast, farmId, fieldId, onViewWeather }: Props) {
   const copy = COPY[lang];
+  const uiCopy = INTERFACE_COPY[lang];
   const [sampledAt, setSampledAt] = useState(() => new Date().toISOString());
   const [sequence, setSequence] = useState(248);
   const [records, setRecords] = useState<EvidenceRecord[]>([]);
@@ -429,7 +432,9 @@ export default function SprayLockPanel({ lang, locality, forecast, farmId, field
           {error && <p className="spraylock-error" role="alert">{error}</p>}
         </section>
 
-        <aside className="spraylock-panel spraylock-trust-panel">
+        <details className="device-disclosure spraylock-trust-disclosure">
+          <summary><span><ShieldCheck className="h-5 w-5" />{uiCopy.advancedDetails}</span><ChevronDown className="h-4 w-4" /></summary>
+          <aside className="spraylock-panel spraylock-trust-panel">
           <header><ShieldCheck className="h-5 w-5" /><strong>{copy.trust}</strong></header>
           <div className="spraylock-trust-list">
             <div><span>{copy.sourceIdentity}</span><strong>{sourceLabel}</strong></div>
@@ -437,14 +442,13 @@ export default function SprayLockPanel({ lang, locality, forecast, farmId, field
             <div><span>{copy.replayControl}</span><strong>{copy.sequenceBound}</strong></div>
             <div><span>{copy.firmware}</span><strong data-latin-ok>{input.telemetry.firmwareVersion}</strong></div>
           </div>
-        </aside>
+          </aside>
+        </details>
       </div>
 
-      <section className="spraylock-panel spraylock-evidence-panel">
-        <header>
-          <div><History className="h-5 w-5" /><span><strong>{copy.evidence}</strong><small>{copy.evidenceHint}</small></span></div>
-          <em>{records.length}</em>
-        </header>
+      <details className="device-disclosure device-disclosure-evidence">
+        <summary><span><History className="h-5 w-5" />{uiCopy.evidenceDetails}</span><em>{records.length}</em><ChevronDown className="h-4 w-4" /></summary>
+        <section className="spraylock-panel spraylock-evidence-panel">
         {records.length ? (
           <div className="spraylock-evidence-list">
             {records.map((record) => (
@@ -459,7 +463,8 @@ export default function SprayLockPanel({ lang, locality, forecast, farmId, field
         ) : (
           <div className="spraylock-evidence-empty"><FileKey2 className="h-7 w-7" /><p>{copy.emptyEvidence}</p></div>
         )}
-      </section>
+        </section>
+      </details>
     </div>
   );
 }

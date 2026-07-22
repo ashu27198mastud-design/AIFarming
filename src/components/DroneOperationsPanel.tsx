@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   BatteryCharging,
   CheckCircle2,
+  ChevronDown,
   CloudRain,
   Cpu,
   Crosshair,
@@ -27,6 +28,7 @@ import {
   Wind,
 } from 'lucide-react';
 import type { LanguageCode } from '@/lib/i18n';
+import { INTERFACE_COPY } from '@/lib/interface-copy';
 import {
   evaluateDronePreflight,
   type DroneMissionType,
@@ -197,6 +199,7 @@ type Props = {
 
 export default function DroneOperationsPanel({ lang, locality, forecast, farmId, fieldId, onViewWeather }: Props) {
   const copy = COPY[lang];
+  const uiCopy = INTERFACE_COPY[lang];
   const [missionType, setMissionType] = useState<DroneMissionType>('inspection');
   const [sampledAt, setSampledAt] = useState(() => new Date().toISOString());
   const [sequence, setSequence] = useState(102);
@@ -364,7 +367,9 @@ export default function DroneOperationsPanel({ lang, locality, forecast, farmId,
         </section>
       </div>
 
-      <div className="drone-lower-grid">
+      <details className="device-disclosure">
+        <summary><span><Cpu className="h-5 w-5" />{uiCopy.advancedDetails}</span><ChevronDown className="h-4 w-4" /></summary>
+        <div className="drone-lower-grid">
         <section className="drone-panel drone-telemetry-panel">
           <header><Cpu className="h-5 w-5" /><strong>{copy.telemetry}</strong></header>
           <div className="drone-metric-grid">
@@ -387,10 +392,12 @@ export default function DroneOperationsPanel({ lang, locality, forecast, farmId,
           </div>
           <small className="drone-device-id" data-latin-ok>ANV-DR-0102 · {locality}</small>
         </aside>
-      </div>
+        </div>
+      </details>
 
-      <section className="drone-panel drone-evidence-panel">
-        <header><div><History className="h-5 w-5" /><span><strong>{copy.evidence}</strong><small>{copy.evidenceHint}</small></span></div><em>{records.length}</em></header>
+      <details className="device-disclosure device-disclosure-evidence">
+        <summary><span><History className="h-5 w-5" />{uiCopy.evidenceDetails}</span><em>{records.length}</em><ChevronDown className="h-4 w-4" /></summary>
+        <section className="drone-panel drone-evidence-panel">
         {records.length ? <div className="drone-evidence-list">{records.map((record) => (
           <article key={record.recordId}>
             <span className={`drone-record-icon drone-record-${record.evaluation.decision}`}><LockKeyhole className="h-4 w-4" /></span>
@@ -398,7 +405,8 @@ export default function DroneOperationsPanel({ lang, locality, forecast, farmId,
             <code data-latin-ok>{record.evidenceHash.slice(0, 14)}...</code><span>{record.evaluation.confidencePercent}%</span>
           </article>
         ))}</div> : <div className="drone-evidence-empty"><FileKey2 className="h-7 w-7" /><p>{copy.emptyEvidence}</p></div>}
-      </section>
+        </section>
+      </details>
     </div>
   );
 }

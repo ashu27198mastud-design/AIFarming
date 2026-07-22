@@ -1,5 +1,7 @@
 'use client';
 
+import NextImage from 'next/image';
+
 import {
   forwardRef,
   useCallback,
@@ -9,7 +11,8 @@ import {
   useState,
 } from 'react';
 import { Camera, Check, ImagePlus, RefreshCcw, RotateCcw, X } from 'lucide-react';
-import type { TranslationSet } from '@/lib/i18n';
+import type { LanguageCode, TranslationSet } from '@/lib/i18n';
+import { CAMERA_COPY } from '@/lib/camera-copy';
 
 export type PreparedMedia = {
   file: File;
@@ -24,6 +27,7 @@ export type CameraCaptureHandle = {
 
 type Props = {
   t: TranslationSet;
+  lang: LanguageCode;
   value: PreparedMedia | null;
   onChange: (media: PreparedMedia | null) => void;
   disabled?: boolean;
@@ -230,7 +234,7 @@ async function waitForLiveFrame(video: HTMLVideoElement, timeoutMs = 3500): Prom
 }
 
 const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapture(
-  { t, value, onChange, disabled, captureToken = 0 },
+  { t, lang, value, onChange, disabled, captureToken = 0 },
   ref,
 ) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -242,7 +246,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
   const [preparing, setPreparing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
-  const openDeviceCameraLabel = t.openDeviceCamera;
+  const copy = CAMERA_COPY[lang];
   const [captureInProgress, setCaptureInProgress] = useState(false);
   const [captureComplete, setCaptureComplete] = useState(false);
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
@@ -262,7 +266,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
     setShowDeviceFallback(false);
     const input = cameraInputRef.current;
     if (!input) {
-      setError('Device camera control is unavailable. Please reload and try again.');
+      setError(copy.deviceUnavailable);
       return;
     }
 
@@ -274,28 +278,28 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
     } catch {
       input.click();
     }
-  }, []);
+  }, [copy.deviceUnavailable]);
 
   const handleFile = useCallback(async (file: File) => {
     setError(null);
     setShowDeviceFallback(false);
     if (file.size > 25 * 1024 * 1024) {
-      setError('File size is too large. Maximum 25 MB.');
+      setError(copy.fileTooLarge);
       return;
     }
     setPreparing(true);
     try {
       const media = file.type.startsWith('video/') ? await extractVideoFrames(file) : await prepareImage(file);
       onChange(media);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to prepare this file.');
+    } catch {
+      setError(copy.prepareFailed);
       onChange(null);
     } finally {
       setPreparing(false);
       if (cameraInputRef.current) cameraInputRef.current.value = '';
       if (galleryInputRef.current) galleryInputRef.current.value = '';
     }
-  }, [onChange]);
+  }, [copy.fileTooLarge, copy.prepareFailed, onChange]);
 
   const startCamera = useCallback(async () => {
     if (disabled || preparing || captureInProgress) return;
@@ -312,7 +316,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
     }
 
     if (!window.isSecureContext) {
-      setError('Live camera requires a secure HTTPS connection. Use the device camera button below.');
+      setError(copy.secureRequired);
       setShowDeviceFallback(true);
       return;
     }
@@ -341,16 +345,16 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       stopCamera();
       setShowDeviceFallback(true);
       if (cameraError?.name === 'NotAllowedError' || cameraError?.name === 'SecurityError') {
-        setError(`Camera permission was blocked. Allow camera access in browser settings, or use ${openDeviceCameraLabel}.`);
+        setError(copy.permissionBlocked);
       } else if (cameraError?.name === 'NotFoundError') {
-        setError('No camera was detected. Use gallery upload or another device.');
+        setError(copy.cameraMissing);
       } else if (cameraError?.name === 'NotReadableError') {
-        setError('The camera is being used by another app. Close it and try again.');
+        setError(copy.cameraBusy);
       } else {
-        setError('Live camera could not start. Use the device camera option below.');
+        setError(copy.startFailed);
       }
     }
-  }, [captureInProgress, disabled, openDeviceCamera, openDeviceCameraLabel, preparing, stopCamera]);
+  }, [captureInProgress, copy, disabled, openDeviceCamera, preparing, stopCamera]);
 
   useEffect(() => {
     if (!cameraOpen || !activeStream || !videoRef.current) return undefined;
@@ -367,7 +371,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         markReady();
       } catch {
         setCameraReady(false);
-        setError('Camera opened but preview could not start. Tap restart or use the device camera.');
+        setError(copy.previewFailed);
       }
     };
 
@@ -383,13 +387,13 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       video.removeEventListener('canplay', markReady);
       video.removeEventListener('playing', markReady);
     };
-  }, [activeStream, cameraOpen]);
+  }, [activeStream, cameraOpen, copy.previewFailed]);
 
   const captureFrame = useCallback(async () => {
     if (captureInProgress) return;
     const video = videoRef.current;
     if (!video) {
-      setError('Camera preview is unavailable. Please restart the camera.');
+      setError(copy.previewUnavailable);
       return;
     }
 
@@ -415,15 +419,15 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
       await new Promise<void>((resolve) => window.setTimeout(resolve, 120));
       stopCamera();
       onChange(media);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to capture this photo.');
+    } catch {
+      setError(copy.captureFailed);
       setShowDeviceFallback(true);
       setCameraReady(video.videoWidth > 1 && video.videoHeight > 1);
       void video.play().catch(() => undefined);
     } finally {
       setCaptureInProgress(false);
     }
-  }, [captureInProgress, onChange, stopCamera]);
+  }, [captureInProgress, copy.captureFailed, copy.previewUnavailable, onChange, stopCamera]);
 
   useImperativeHandle(ref, () => ({
     openCamera: () => void startCamera(),
@@ -481,7 +485,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
           playsInline
           muted
           className="viewfinder-video"
-          aria-label="Live crop camera"
+          aria-label={copy.liveCamera}
           onLoadedData={() => setCameraReady(true)}
           onCanPlay={() => setCameraReady(true)}
           onPlaying={() => setCameraReady(true)}
@@ -490,25 +494,25 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         {!cameraReady && !captureInProgress && (
           <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center bg-[#101311]/75 px-8 text-center text-white backdrop-blur-sm">
             <RefreshCcw className="mb-3 h-8 w-8 animate-spin" />
-            <p className="text-sm font-bold">Starting camera...</p>
+            <p className="text-sm font-bold">{copy.starting}</p>
           </div>
         )}
 
         {captureInProgress && (
           <div className="absolute inset-0 z-[12] flex flex-col items-center justify-center bg-white/16 text-white backdrop-blur-[2px]">
             {captureComplete ? <Check className="mb-2 h-12 w-12" /> : <RefreshCcw className="mb-2 h-10 w-10 animate-spin" />}
-            <p className="text-sm font-extrabold">{captureComplete ? 'Photo captured' : 'Capturing photo...'}</p>
+            <p className="text-sm font-extrabold">{captureComplete ? copy.captured : copy.capturing}</p>
           </div>
         )}
 
         {error && (
-          <div className="absolute inset-x-4 top-4 z-20 rounded-2xl border border-amber-200/40 bg-black/62 px-4 py-3 text-center text-xs font-bold text-white backdrop-blur-md">
+          <div className="absolute inset-x-4 top-4 z-20 rounded-2xl border border-amber-200/40 bg-black/62 px-4 py-3 text-center text-xs font-bold text-white backdrop-blur-md" role="alert">
             {error}
           </div>
         )}
 
         <div className="absolute inset-x-0 bottom-5 z-10 flex items-center justify-center gap-5 px-5">
-          <button type="button" onClick={stopCamera} disabled={captureInProgress} className="camera-control" aria-label="Close camera">
+          <button type="button" onClick={stopCamera} disabled={captureInProgress} className="camera-control" aria-label={copy.close}>
             <X className="h-5 w-5" />
           </button>
           <button
@@ -516,7 +520,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
             onClick={() => void captureFrame()}
             disabled={captureInProgress}
             className="camera-shutter touch-manipulation disabled:opacity-60"
-            aria-label="Take crop photo"
+            aria-label={copy.takePhoto}
             aria-busy={captureInProgress}
           >
             {captureInProgress ? <RefreshCcw className="h-7 w-7 animate-spin" /> : <Camera className="h-7 w-7" />}
@@ -526,7 +530,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
             onClick={() => { stopCamera(); window.setTimeout(() => void startCamera(), 120); }}
             disabled={captureInProgress}
             className="camera-control"
-            aria-label="Restart camera"
+            aria-label={copy.restart}
           >
             <RotateCcw className="h-5 w-5" />
           </button>
@@ -549,7 +553,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
     return (
       <div className="relative h-72 overflow-hidden rounded-[28px] border border-white/80 bg-black shadow-[0_22px_50px_rgba(34,38,36,0.18)]">
         {hiddenInputs}
-        <img src={value.previewUrl} alt="Crop preview" className="h-full w-full object-cover" />
+        <NextImage src={value.previewUrl} alt={copy.cropPreview} fill unoptimized className="object-cover" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/24 via-transparent to-white/10" />
         <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-black/58 px-4 py-3 text-left text-xs font-bold text-white backdrop-blur-md">
           {t.photoReady}
@@ -592,6 +596,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
               accept="image/*"
               capture="environment"
               disabled={disabled || preparing}
+              aria-label={t.takePhonePhoto}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 if (file) void handleFile(file);
@@ -608,6 +613,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
               type="file"
               accept="image/jpeg,image/png,image/webp"
               disabled={disabled || preparing}
+              aria-label={t.uploadPhoto}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 if (file) void handleFile(file);
@@ -618,7 +624,7 @@ const CameraCapture = forwardRef<CameraCaptureHandle, Props>(function CameraCapt
         </div>
       </div>
       <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">{t.diagnosisDisclaimer}</p>
-      {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm">{error}</div>}
+      {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-sm font-semibold text-amber-900 shadow-sm" role="alert">{error}</div>}
     </div>
   );
 });
