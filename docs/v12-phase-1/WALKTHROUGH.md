@@ -9,7 +9,7 @@ This phase implements the v12 foundations and the direct `Morning Light` login a
 1. Open `/`: Hindi paints immediately unless a durable language preference exists.
 2. Approximate location selects Marathi for Maharashtra/Goa, Hindi for the rest of India, and English abroad; browser language is the timeout fallback.
 3. The farmer can override this from the globe menu containing only Marathi, Hindi, and English. The server cookie makes that choice survive restricted browser storage and route changes.
-4. The 23-script KisanMitra brand wordmark cycles independently from the single active application language.
+4. The 22-script KisanMitra brand wordmark cycles independently from the single active application language; Urdu is intentionally excluded.
 5. Continue with Google, request an OTP, expand email login, or enter the seeded demo.
 6. Privacy opens in the selected application language and returns to login without losing that choice.
 

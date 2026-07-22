@@ -7,9 +7,10 @@ import {
 } from './morning-light';
 
 describe('Morning Light language behavior', () => {
-  it('ships the reviewed 23-script wordmark cycle', () => {
-    expect(WORDMARKS).toHaveLength(23);
-    expect(new Set(WORDMARKS.map((item) => item.code)).size).toBe(23);
+  it('ships the reviewed 22-script wordmark cycle without Urdu', () => {
+    expect(WORDMARKS).toHaveLength(22);
+    expect(new Set(WORDMARKS.map((item) => item.code)).size).toBe(22);
+    expect(WORDMARKS.some((item) => item.code === 'ur')).toBe(false);
   });
 
   it('maps Maharashtra and Goa to Marathi', () => {

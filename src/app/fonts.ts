@@ -49,5 +49,4 @@ export const wordmarkFontClass: Record<string, string> = {
   sd: urdu.className,
   ta: tamil.className,
   te: telugu.className,
-  ur: urdu.className,
 };

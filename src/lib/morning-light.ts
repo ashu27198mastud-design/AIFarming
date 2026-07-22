@@ -24,7 +24,6 @@ export const WORDMARKS: readonly Wordmark[] = [
   { code: 'te', label: 'కిసాన్‌మిత్ర', caption: 'తెలుగు', lang: 'te' },
   { code: 'mr', label: 'किसानमित्र', caption: 'मराठी', lang: 'mr' },
   { code: 'ta', label: 'கிசான்மித்ரா', caption: 'தமிழ்', lang: 'ta' },
-  { code: 'ur', label: 'کسان متر', caption: 'اردو', lang: 'ur', dir: 'rtl' },
   { code: 'gu', label: 'કિસાનમિત્ર', caption: 'ગુજરાતી', lang: 'gu' },
   { code: 'kn', label: 'ಕಿಸಾನ್‌ಮಿತ್ರ', caption: 'ಕನ್ನಡ', lang: 'kn' },
   { code: 'ml', label: 'കിസാൻമിത്ര', caption: 'മലയാളം', lang: 'ml' },
