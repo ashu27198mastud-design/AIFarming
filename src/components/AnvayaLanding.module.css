@@ -11,7 +11,7 @@
   overflow: hidden;
   background: #f8f2e8;
   color: var(--ink);
-  font-family: 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   letter-spacing: 0;
 }
 
